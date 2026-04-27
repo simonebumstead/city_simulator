@@ -132,3 +132,35 @@ sequenceDiagram
 ### Polimorfismo: Quando la City interroga l'oggetto b chiamando getConstructionCost(), non sa (e non le interessa sapere) che si tratta di una centrale elettrica. Usa l'interfaccia generale per ottenere il costo.
 
 ### GoF - Observer Pattern: Nel ramo di successo dell' alt, dopo aver aggiornato i dati, la City chiama notifyObservers(). La UI, che è in ascolto, viene notificata e aggiorna i contatori a schermo, mantenendo la separazione netta tra Modello (dati) e Vista (grafica).
+
+
+## Save()
+```mermaid
+sequenceDiagram
+    participant UI as :ConsoleView
+    participant C as :GameController
+    participant IO as :SaveLoadManager
+    participant City as :City
+
+    UI->>C: saveGame("salvataggio1.json")
+    activate C
+    Note right of UI: GRASP: Controller
+    
+    C->>IO: save(City, "salvataggio1.json")
+    activate IO
+    Note right of C: GRASP: Pure Fabrication<br/>(Alta Coesione)
+    
+    IO->>City: getStateData()
+    activate City
+    Note right of City: GRASP: Information Expert
+    City-->>IO: dataToSerialize
+    deactivate City
+    
+    Note over IO: Scrittura dati su File System
+    
+    IO-->>C: success
+    deactivate IO
+    
+    C-->>UI: showMessage("Partita salvata con successo")
+    deactivate C
+```
