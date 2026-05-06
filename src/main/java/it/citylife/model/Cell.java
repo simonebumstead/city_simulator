@@ -5,18 +5,18 @@ package it.citylife.model;
  */
 public class Cell {
     private int x, y;
-    private Object structure; // Uso Object in attesa degli edifici
+    private Placeable structure;
 
     public Cell(int x, int y) {
         this.x = x;
         this.y = y;
-        this.structure = null; // Cella inizialmente vuota
+        this.structure = null;
     }
 
     public boolean isEmpty() {
         return structure == null;
     }
 
-    public Object getStructure() { return structure; }
-    public void setStructure(Object s) { this.structure = s; }
+    public Placeable getStructure() { return structure; }
+    public void setStructure(Placeable s) { this.structure = s; }
 }

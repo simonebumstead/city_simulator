@@ -19,6 +19,7 @@ public class CityState {
     private double pollution;
     private double happiness;
     private double health;
+    private int wasteLevel;
 
     /**
      * Costruttore: Inizializza lo stato della città con i valori di default.
@@ -29,6 +30,7 @@ public class CityState {
         this.population = 0;
         this.pollution = 0.0;
         this.health = 100.0; // I cittadini partono sani
+        this.wasteLevel = 0;
     }
 
     // --- METODI DI ACCESSO (Getter) ---
@@ -38,6 +40,7 @@ public class CityState {
     public double getPollution() { return pollution; }
     public double getHappiness() { return happiness; }
     public double getHealth() { return health; }
+    public int getWasteLevel() { return wasteLevel; }
 
     // --- METODI DI MODIFICA (Setter con Logica) ---
 
@@ -61,9 +64,19 @@ public class CityState {
         this.population = population;
     }
 
+    public void updateHealth(double amount) {
+        this.health += amount;
+        if (this.health > MAX_VAL) this.health = MAX_VAL;
+        if (this.health < MIN_VAL) this.health = MIN_VAL;
+    }
+
     public void updatePollution(double amount) {
         this.pollution += amount;
         if (this.pollution > MAX_VAL) this.pollution = MAX_VAL;
         if (this.pollution < MIN_VAL) this.pollution = MIN_VAL;
+    }
+
+    public void setWasteLevel(int value) {
+        this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, value));
     }
 }
