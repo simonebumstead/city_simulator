@@ -2,6 +2,7 @@ package it.citylife.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class City {
     // Componenti principali definiti nel Domain Model
@@ -14,6 +15,8 @@ public class City {
     // per mantenere il codice flessibile (Disaccoppiamento).
     private List<StateObserver> observers;
     private PolicyStrategy activePolicy;
+    private final DisasterManager disasterManager = new DisasterManager();
+    private final Random random = new Random();
 
     public City() {
         this.grid = new Grid();
@@ -21,6 +24,16 @@ public class City {
         this.powerNet = new PowerNetwork();
         this.observers = new ArrayList<>();
         this.activePolicy = new GreenPolicy();
+
+        // Edifici di default per la demo
+        grid.placeStructure(new PowerPlant(), 0, 0);
+        grid.placeStructure(new ResidentialBuilding(), 1, 0);
+        grid.placeStructure(new ResidentialBuilding(), 2, 0);
+        grid.placeStructure(new ResidentialBuilding(), 3, 0);
+        grid.placeStructure(new IndustrialBuilding(), 4, 0);
+        grid.placeStructure(new IndustrialBuilding(), 5, 0);
+        grid.placeStructure(new CommercialBuilding(), 6, 0);
+        grid.placeStructure(new Park(), 7, 0);
     }
 
     // --- METODI CORE  ---
@@ -58,6 +71,11 @@ public class City {
 
         // 4. Aggiorna la popolazione
         new PopulationManager().updateDemographics(state);
+
+        // Evento casuale: terremoto con probabilità 7%
+        if (random.nextDouble() < 0.07) {
+            disasterManager.triggerEarthquake(grid, state);
+        }
     }
 
     // Metodo per registrare la UI come osservatore

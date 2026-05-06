@@ -1,0 +1,10 @@
+.root { -fx-background-color: #1e1e2e; }
+.chart { -fx-background-color: #1e1e2e; }
+.chart-plot-background { -fx-background-color: #313244; }
+.chart-vertical-grid-lines { -fx-stroke: #45475a; }
+.chart-horizontal-grid-lines { -fx-stroke: #45475a; }
+.axis { -fx-tick-label-fill: #cdd6f4; }
+.axis-label { -fx-text-fill: #cdd6f4; }
+.chart-title { -fx-text-fill: #cdd6f4; }
+.chart-legend { -fx-background-color: #313244; -fx-text-fill: #cdd6f4; }
+.chart-legend-item { -fx-text-fill: #cdd6f4; }

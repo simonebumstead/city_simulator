@@ -8,7 +8,7 @@ public class Road extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updatePollution(1);
+        state.updatePollution(0.1);
     }
 
     @Override

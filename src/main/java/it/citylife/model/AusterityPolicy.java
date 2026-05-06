@@ -11,9 +11,9 @@ public class AusterityPolicy implements PolicyStrategy {
     @Override
     public PolicyModifiers getModifiers() {
         return new PolicyModifiers()
-                .setHappinessMultiplier(0.75) // Crollo della felicità (-25%)
+                .setHappinessMultiplier(0.95) // Calo della felicità (-5%)
                 .setHealthMultiplier(0.95)    // Lento declino dei servizi sanitari (-5%)
                 .setWasteMultiplier(0.90)     // Meno consumi = meno rifiuti (-10%)
-                .setFixedBudgetChange(2000);  // Tasse elevate
+                .setFixedBudgetChange(200);   // Tasse elevate
     }
 }

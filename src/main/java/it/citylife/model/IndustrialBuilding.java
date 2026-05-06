@@ -8,10 +8,10 @@ public class IndustrialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(200);
-        state.updatePollution(15);
-        state.updateHappiness(-5);
-        state.updateHealth(-3);
+        state.updateBudget(20);
+        state.updatePollution(1.5);
+        state.updateHappiness(-0.5);
+        state.updateHealth(-0.3);
         power.addConsumption(20);
     }
 

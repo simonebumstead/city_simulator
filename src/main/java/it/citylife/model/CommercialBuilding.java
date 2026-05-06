@@ -8,9 +8,9 @@ public class CommercialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(100);
-        state.updatePollution(5);
-        state.updateHappiness(5);
+        state.updateBudget(10);
+        state.updatePollution(0.5);
+        state.updateHappiness(0.5);
         power.addConsumption(10);
     }
 

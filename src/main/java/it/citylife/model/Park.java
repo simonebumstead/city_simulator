@@ -8,10 +8,10 @@ public class Park extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(-30);
-        state.updatePollution(-5);
-        state.updateHappiness(10);
-        state.updateHealth(5);
+        state.updateBudget(-3);
+        state.updatePollution(-0.5);
+        state.updateHappiness(1);
+        state.updateHealth(0.5);
     }
 
     @Override

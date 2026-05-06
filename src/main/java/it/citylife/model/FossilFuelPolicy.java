@@ -10,9 +10,9 @@ public class FossilFuelPolicy implements PolicyStrategy {
     @Override
     public PolicyModifiers getModifiers() {
         return new PolicyModifiers()
-                .setPollutionMultiplier(1.25) // Aumenta l'inquinamento del 25% a turno
+                .setPollutionMultiplier(1.05) // Aumenta l'inquinamento del 5% a turno
                 .setHappinessMultiplier(0.95) // Riduce leggermente la felicità (-5%)
-                .setHealthMultiplier(0.90)    // Impatto negativo sulla salute (-10%)
-                .setFixedBudgetChange(800);   // Entrata fissa
+                .setHealthMultiplier(0.97)    // Impatto negativo sulla salute (-3%)
+                .setFixedBudgetChange(80);    // Entrata fissa
     }
 }

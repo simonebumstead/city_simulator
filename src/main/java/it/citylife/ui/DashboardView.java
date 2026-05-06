@@ -18,6 +18,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -39,6 +40,11 @@ public class DashboardView extends Application implements StateObserver {
     private Label pollutionLabel;
     private Label wasteLabel;
     private Label energyLabel;
+    private Label tickLabel;
+    private Button activeBtn;
+    private VBox leftPanel;
+    private LineChart<Number, Number> chart;
+    private double lastHappiness = 67.0;
 
     // Chart series
     private XYChart.Series<Number, Number> populationSeries;
@@ -52,22 +58,37 @@ public class DashboardView extends Application implements StateObserver {
         controller.addObserver(this);
 
         BorderPane root = new BorderPane();
-        root.setLeft(buildLeftPanel());
-        root.setCenter(buildChart());
+        root.setStyle("-fx-background-color: #1e1e2e;");
+
+        tickLabel = new Label("🏙️ CityLogic  |  Tick: 0");
+        tickLabel.setStyle("-fx-text-fill: #cdd6f4; -fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 10px;");
+        root.setTop(tickLabel);
+        leftPanel = buildLeftPanel();
+        root.setLeft(leftPanel);
+        chart = buildChart();
+        root.setCenter(chart);
         root.setBottom(buildBottomBar());
 
         primaryStage.setTitle("City Simulator");
-        primaryStage.setScene(new Scene(root, 1000, 600));
+        Scene scene = new Scene(root, 1000, 600);
+        scene.getStylesheets().add(getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm());
+        primaryStage.setScene(scene);
         primaryStage.show();
     }
 
     private VBox buildLeftPanel() {
-        budgetLabel     = new Label("Budget: 1000");
-        populationLabel = new Label("Population: 0");
-        happinessLabel  = new Label("Happiness: 67.0");
-        healthLabel     = new Label("Health: 100.0");
-        pollutionLabel  = new Label("Pollution: 0.0");
-        wasteLabel      = new Label("Waste: 0");
+        budgetLabel     = new Label("💰 Budget: 1000");
+        budgetLabel.setTextFill(Color.web("#f9e64f"));
+        populationLabel = new Label("👥 Population: 0");
+        populationLabel.setTextFill(Color.WHITE);
+        happinessLabel  = new Label("😊 Happiness: 67.0");
+        happinessLabel.setTextFill(Color.web("#fab387"));
+        healthLabel     = new Label("❤️ Health: 100.0");
+        healthLabel.setTextFill(Color.web("#f38ba8"));
+        pollutionLabel  = new Label("🏭 Pollution: 0.0");
+        pollutionLabel.setTextFill(Color.web("#a6e3a1"));
+        wasteLabel      = new Label("🗑️ Waste: 0");
+        wasteLabel.setTextFill(Color.web("#cdd6f4"));
         energyLabel     = new Label("Power: OK");
         energyLabel.setTextFill(Color.GREEN);
 
@@ -84,6 +105,7 @@ public class DashboardView extends Application implements StateObserver {
         );
         vbox.setPadding(new Insets(15));
         vbox.setMinWidth(180);
+        vbox.setStyle("-fx-background-color: #313244;");
         return vbox;
     }
 
@@ -118,26 +140,59 @@ public class DashboardView extends Application implements StateObserver {
         }));
         timeline.setCycleCount(Timeline.INDEFINITE);
 
+        Slider speedSlider = new Slider(0.5, 3.0, 1.0);
+        speedSlider.setShowTickLabels(true);
+        speedSlider.setMajorTickUnit(0.5);
+        Label speedLabel = new Label("Speed: 1.0x");
+        speedSlider.valueProperty().addListener((obs, old, val) -> {
+            speedLabel.setText(String.format("Speed: %.1fx", val.doubleValue()));
+            timeline.setRate(val.doubleValue());
+        });
+
         startBtn.setOnAction(e -> timeline.play());
         stopBtn.setOnAction(e -> timeline.pause());
-        greenBtn.setOnAction(e -> controller.setPolicy(new GreenPolicy()));
-        austerityBtn.setOnAction(e -> controller.setPolicy(new AusterityPolicy()));
-        fossilBtn.setOnAction(e -> controller.setPolicy(new FossilFuelPolicy()));
+        greenBtn.setOnAction(e -> setActivePolicy(greenBtn, new GreenPolicy()));
+        austerityBtn.setOnAction(e -> setActivePolicy(austerityBtn, new AusterityPolicy()));
+        fossilBtn.setOnAction(e -> setActivePolicy(fossilBtn, new FossilFuelPolicy()));
 
-        HBox hbox = new HBox(10, startBtn, stopBtn, new Separator(), greenBtn, austerityBtn, fossilBtn);
+        HBox hbox = new HBox(10, startBtn, stopBtn, new Separator(), greenBtn, austerityBtn, fossilBtn, new Separator(), speedSlider, speedLabel);
         hbox.setPadding(new Insets(10));
         return hbox;
+    }
+
+    private void showEarthquakeAlert() {
+        XYChart.Series<Number, Number> markerSeries = new XYChart.Series<>();
+        markerSeries.setName("🌍 Earthquake");
+        markerSeries.getData().add(new XYChart.Data<>(tickCount, 0));
+        markerSeries.getData().add(new XYChart.Data<>(tickCount, 110));
+        chart.getData().add(markerSeries);
+
+        Label alert = new Label("⚠️ EARTHQUAKE!");
+        alert.setStyle("-fx-text-fill: #f38ba8; -fx-font-weight: bold;");
+        leftPanel.getChildren().add(0, alert);
+
+        new Timeline(new KeyFrame(Duration.seconds(3), e -> {
+            leftPanel.getChildren().remove(alert);
+        })).play();
+    }
+
+    private void setActivePolicy(Button btn, it.citylife.model.PolicyStrategy policy) {
+        if (activeBtn != null) activeBtn.setStyle("");
+        activeBtn = btn;
+        btn.setStyle("-fx-border-color: #a6e3a1; -fx-border-width: 2px;");
+        controller.setPolicy(policy);
     }
 
     @Override
     public void onStateChanged(CityState state) {
         Platform.runLater(() -> {
-            budgetLabel.setText(String.format("Budget: %.0f", state.getBudget()));
-            populationLabel.setText("Population: " + state.getPopulation());
-            happinessLabel.setText(String.format("Happiness: %.1f", state.getHappiness()));
-            healthLabel.setText(String.format("Health: %.1f", state.getHealth()));
-            pollutionLabel.setText(String.format("Pollution: %.1f", state.getPollution()));
-            wasteLabel.setText("Waste: " + state.getWasteLevel());
+            tickLabel.setText("🏙️ CityLogic  |  Tick: " + tickCount);
+            budgetLabel.setText(String.format("💰 Budget: %.0f", state.getBudget()));
+            populationLabel.setText("👥 Population: " + state.getPopulation());
+            happinessLabel.setText(String.format("😊 Happiness: %.1f", state.getHappiness()));
+            healthLabel.setText(String.format("❤️ Health: %.1f", state.getHealth()));
+            pollutionLabel.setText(String.format("🏭 Pollution: %.1f", state.getPollution()));
+            wasteLabel.setText("🗑️ Waste: " + state.getWasteLevel());
 
             boolean powered = controller.hasPower();
             energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
@@ -147,6 +202,11 @@ public class DashboardView extends Application implements StateObserver {
             happinessSeries.getData().add(new XYChart.Data<>(tickCount, state.getHappiness()));
             healthSeries.getData().add(new XYChart.Data<>(tickCount, state.getHealth()));
             pollutionSeries.getData().add(new XYChart.Data<>(tickCount, state.getPollution()));
+
+            if (lastHappiness - state.getHappiness() > 10) {
+                showEarthquakeAlert();
+            }
+            lastHappiness = state.getHappiness();
         });
     }
 }

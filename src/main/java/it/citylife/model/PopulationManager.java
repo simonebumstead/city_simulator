@@ -33,9 +33,9 @@ public class PopulationManager {
         
         // Log per il debug e per il giocatore
         if (deltaPop > 0) {
-            System.out.println(String.format("La popolazione è cresciuta di %d unità. Popolazione totale: %d", deltaPop, newPop));
+            System.out.println(String.format("Population grew by %d units. Total population: %d", deltaPop, newPop));
         } else {
-            System.out.println(String.format("La popolazione è diminuita di %d unità. Popolazione totale: %d", -deltaPop, newPop));
+            System.out.println(String.format("Population decreased by %d units. Total population: %d", -deltaPop, newPop));
         }
     }
 }

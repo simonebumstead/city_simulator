@@ -24,9 +24,9 @@ public class DisasterManager {
         int healthMalus = (int) (0.5 * Math.pow(magnitude, 2));
 
         // Stampa un messaggio di DEBUG
-        System.out.println(String.format("---  Un terremoto di magnitudo %.1f ha colpito la città! ---", magnitude));
-        System.out.println(String.format("Ogni edificio subirà %d danni.", damageToInflict));
-        System.out.println(String.format("La felicità dei cittadini è scesa di %d punti e la salute di %d.", happinessMalus, healthMalus));
+        System.out.println(String.format("--- Earthquake of magnitude %.1f has struck the city! ---", magnitude));
+        System.out.println(String.format("Each building will suffer %d damage.", damageToInflict));
+        System.out.println(String.format("Citizens' happiness dropped by %d points and health by %d.", happinessMalus, healthMalus));
 
         // 4. Applica il malus a Felicità e Salute (non farli scendere sotto zero)
         state.updateHappiness(-happinessMalus);
@@ -51,9 +51,9 @@ public class DisasterManager {
 
         // Stampa un messaggio di DEBUG
         if (collapsedBuildings > 0) {
-            System.out.println(String.format("Sono crollati %d edifici", collapsedBuildings));
+            System.out.println(String.format("%d buildings have collapsed.", collapsedBuildings));
         } else {
-            System.out.println("Fortunatamente, nessun edificio è crollato.");
+            System.out.println("Fortunately, no buildings collapsed.");
         }
     }
 }

@@ -8,8 +8,8 @@ public class ResidentialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(-50);
-        state.updateHappiness(3);
+        state.updateBudget(-5);
+        state.updateHappiness(0.5);
         power.addConsumption(10);
     }
 
