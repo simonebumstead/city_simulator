@@ -1,3 +1,4 @@
+```mermaid
 classDiagram
     %% --- Entità Centrali ---
     class City
@@ -76,3 +77,8 @@ classDiagram
     
     %% --- Eventi ---
     RandomEvent "*" --> "*" Structure : damages
+
+```
+
+
+
