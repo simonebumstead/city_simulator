@@ -29,8 +29,8 @@ public class DisasterManager {
         System.out.println(String.format("La felicità dei cittadini è scesa di %d punti e la salute di %d.", happinessMalus, healthMalus));
 
         // 4. Applica il malus a Felicità e Salute (non farli scendere sotto zero)
-        state.updateHappiness(Math.max(0, state.getHappiness() - happinessMalus));
-        state.updateHealth(Math.max(0, state.getHealth() - healthMalus));
+        state.updateHappiness(-happinessMalus);
+        state.updateHealth(-healthMalus);
 
         int collapsedBuildings = 0;
 
@@ -39,15 +39,11 @@ public class DisasterManager {
             for (int y = 0; y < grid.getWidth(); y++) {
                 Cell targetCell = grid.getCell(x, y);
 
-                if (targetCell != null && !targetCell.isEmpty()) {
-                    Structure building = targetCell.getStructure();
-                    if (building != null) {
-                        int remainingHp = building.takeDamage(damageToInflict);
-
-                        if (remainingHp <= 0) {
-                            targetCell.setStructure(null); // L'edificio è crollato
-                            collapsedBuildings++;
-                        }
+                if (targetCell != null && targetCell.getStructure() instanceof Structure building) {
+                    int remainingHp = building.takeDamage(damageToInflict);
+                    if (remainingHp <= 0) {
+                        targetCell.setStructure(null);
+                        collapsedBuildings++;
                     }
                 }
             }

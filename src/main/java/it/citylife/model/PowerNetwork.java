@@ -38,6 +38,11 @@ public class PowerNetwork {
         return totalProduction >= totalConsumption;
     }
 
+    public void reset() {
+        this.totalProduction = 0;
+        this.totalConsumption = 0;
+    }
+
     // Getters per la UI
     public int getTotalProduction() { return totalProduction; }
     public int getTotalConsumption() { return totalConsumption; }
