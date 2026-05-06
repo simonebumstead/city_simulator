@@ -48,7 +48,6 @@ public class Grid {
         return (cell != null && cell.isEmpty());
     }
 
-    // --- I NUOVI METODI RICHIESTI DA TE ---
 
     /**
      * Restituisce la larghezza della mappa (asse X).
