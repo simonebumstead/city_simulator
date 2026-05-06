@@ -49,6 +49,17 @@ public class Grid {
     }
 
 
+    public boolean placeStructure(Structure s, int x, int y) {
+        if (!isCellEmpty(x, y)) return false;
+        getCell(x, y).setStructure(s);
+        return true;
+    }
+
+    public void removeStructure(int x, int y) {
+        Cell cell = getCell(x, y);
+        if (cell != null) cell.setStructure(null);
+    }
+
     /**
      * Restituisce la larghezza della mappa (asse X).
      * Indispensabile per lo Sviluppatore 4 per disegnare le colonne.

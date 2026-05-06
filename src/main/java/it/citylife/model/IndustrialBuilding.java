@@ -8,11 +8,18 @@ public class IndustrialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        // placeholder
+        state.updateBudget(200);
+        state.updatePollution(15);
+        state.updateHappiness(-5);
+        state.updateHealth(-3);
+        power.addConsumption(20);
     }
 
     @Override
     public StructureType getType() {
         return StructureType.INDUSTRIAL;
     }
+
+    @Override
+    public int getConstructionCost() { return 1000; }
 }

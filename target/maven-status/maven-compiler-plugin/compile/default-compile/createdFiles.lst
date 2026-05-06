@@ -8,7 +8,9 @@ it\citylife\model\StructureType.class
 it\citylife\model\DisasterManager.class
 it\citylife\model\PolicyStrategy.class
 it\citylife\model\AusterityPolicy.class
+it\citylife\model\BuildingFactory.class
 it\citylife\model\PopulationManager.class
+it\citylife\model\GameController.class
 it\citylife\model\CommercialBuilding.class
 it\citylife\model\Placeable.class
 it\citylife\model\PowerPlant.class

@@ -8,11 +8,17 @@ public class CommercialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        // placeholder
+        state.updateBudget(100);
+        state.updatePollution(5);
+        state.updateHappiness(5);
+        power.addConsumption(10);
     }
 
     @Override
     public StructureType getType() {
         return StructureType.COMMERCIAL;
     }
+
+    @Override
+    public int getConstructionCost() { return 750; }
 }

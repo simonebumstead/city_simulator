@@ -8,11 +8,17 @@ public class Park extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        // placeholder
+        state.updateBudget(-30);
+        state.updatePollution(-5);
+        state.updateHappiness(10);
+        state.updateHealth(5);
     }
 
     @Override
     public StructureType getType() {
         return StructureType.PARK;
     }
+
+    @Override
+    public int getConstructionCost() { return 300; }
 }

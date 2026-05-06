@@ -5,10 +5,12 @@ C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\I
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\PolicyStrategy.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\PolicyModifiers.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\Road.java
+C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\GameController.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\DisasterManager.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\Cell.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\PopulationManager.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\PowerPlant.java
+C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\BuildingFactory.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\StateObserver.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\Structure.java
 C:\Users\Paolo\Uni\EIDS Project\city_simulator\src\main\java\it\citylife\model\CommercialBuilding.java

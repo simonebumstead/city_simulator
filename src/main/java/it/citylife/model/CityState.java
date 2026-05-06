@@ -79,4 +79,9 @@ public class CityState {
     public void setWasteLevel(int value) {
         this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, value));
     }
+
+    public void setBudget(double value) { this.budget = value; }
+    public void setHappiness(double value) { this.happiness = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
+    public void setHealth(double value) { this.health = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
+    public void setPollution(double value) { this.pollution = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
 }

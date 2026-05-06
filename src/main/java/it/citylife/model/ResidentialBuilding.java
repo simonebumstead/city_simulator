@@ -8,11 +8,16 @@ public class ResidentialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        // placeholder
+        state.updateBudget(-50);
+        state.updateHappiness(3);
+        power.addConsumption(10);
     }
 
     @Override
     public StructureType getType() {
         return StructureType.RESIDENTIAL;
     }
+
+    @Override
+    public int getConstructionCost() { return 500; }
 }

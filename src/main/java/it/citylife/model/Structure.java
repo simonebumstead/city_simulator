@@ -22,4 +22,6 @@ public abstract class Structure implements Placeable {
     public abstract void applyEffects(CityState state, PowerNetwork power);
 
     public abstract StructureType getType();
+
+    public abstract int getConstructionCost();
 }

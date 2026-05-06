@@ -8,11 +8,14 @@ public class Road extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        // placeholder
+        state.updatePollution(1);
     }
 
     @Override
     public StructureType getType() {
         return StructureType.ROAD;
     }
+
+    @Override
+    public int getConstructionCost() { return 100; }
 }
