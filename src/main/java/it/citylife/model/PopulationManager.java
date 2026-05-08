@@ -9,11 +9,11 @@ public class PopulationManager {
     
     // Costanti per il bilanciamento del gioco. Modificando questi pesi,
     // puoi rendere certi fattori più o meno importanti.
-    private static final double HAPPINESS_WEIGHT = 1.0;
-    private static final double HEALTH_WEIGHT = 0.8;
-    private static final double POLLUTION_WEIGHT = -0.7; // Negativo perché un valore alto è un malus
-    private static final double WASTE_WEIGHT = -0.5;     // Negativo perché un valore alto è un malus
-    private static final int BASE_GROWTH = 5;           // Crescita naturale minima in condizioni stabili
+    private static final double HAPPINESS_WEIGHT = 0.3;
+    private static final double HEALTH_WEIGHT = 0.2;
+    private static final double POLLUTION_WEIGHT = -0.2; // Negativo perché un valore alto è un malus
+    private static final double WASTE_WEIGHT = -0.1;     // Negativo perché un valore alto è un malus
+    private static final int BASE_GROWTH = 2;            // Crescita naturale minima in condizioni stabili
     private static final int NEUTRAL_POINT = 50;        // Valore considerato "stabile" o "medio"
 
     public void updateDemographics(CityState state) {

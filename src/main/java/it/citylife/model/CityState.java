@@ -8,7 +8,7 @@ package it.citylife.model;
 public class CityState {
     
     // COSTANTI DI BILANCIAMENTO (Semplificano il Game Design)
-    private static final double INITIAL_BUDGET = 1000.0;
+    private static final double INITIAL_BUDGET = 5000.0;
     private static final double INITIAL_HAPPINESS = 67.0; // Partenza al 67% come richiesto
     private static final double MAX_VAL = 100.0;
     private static final double MIN_VAL = 0.0;

@@ -5,6 +5,8 @@ import it.citylife.model.CityState;
 import it.citylife.model.FossilFuelPolicy;
 import it.citylife.model.GreenPolicy;
 import it.citylife.model.StateObserver;
+import it.citylife.model.Structure;
+import it.citylife.model.StructureType;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -19,10 +21,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -41,8 +47,19 @@ public class DashboardView extends Application implements StateObserver {
     private Label wasteLabel;
     private Label energyLabel;
     private Label tickLabel;
+
+    // Policy highlight
     private Button activeBtn;
+
+    // Build tool
+    private String selectedTool = null;
+    private Button activeBuildBtn = null;
+
+    // Panels
     private VBox leftPanel;
+    private Rectangle[][] cells = new Rectangle[20][20];
+
+    // Chart
     private LineChart<Number, Number> chart;
     private double lastHappiness = 67.0;
 
@@ -63,57 +80,167 @@ public class DashboardView extends Application implements StateObserver {
         tickLabel = new Label("🏙️ CityLogic  |  Tick: 0");
         tickLabel.setStyle("-fx-text-fill: #cdd6f4; -fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 10px;");
         root.setTop(tickLabel);
-        leftPanel = buildLeftPanel();
-        root.setLeft(leftPanel);
-        chart = buildChart();
-        root.setCenter(chart);
+
+        TabPane tabPane = new TabPane();
+        Tab mapTab = new Tab("🗺️ City Map", buildMapView());
+        Tab dashTab = new Tab("📊 Dashboard", buildChart());
+        mapTab.setClosable(false);
+        dashTab.setClosable(false);
+        tabPane.getTabs().addAll(mapTab, dashTab);
+        root.setCenter(tabPane);
+        root.setLeft(buildMetricsPanel());
         root.setBottom(buildBottomBar());
 
         primaryStage.setTitle("City Simulator");
-        Scene scene = new Scene(root, 1000, 600);
+        Scene scene = new Scene(root, 1300, 750);
         scene.getStylesheets().add(getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm());
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    private VBox buildLeftPanel() {
-        budgetLabel     = new Label("💰 Budget: 1000");
-        budgetLabel.setTextFill(Color.web("#f9e64f"));
-        populationLabel = new Label("👥 Population: 0");
-        populationLabel.setTextFill(Color.WHITE);
-        happinessLabel  = new Label("😊 Happiness: 67.0");
-        happinessLabel.setTextFill(Color.web("#fab387"));
-        healthLabel     = new Label("❤️ Health: 100.0");
-        healthLabel.setTextFill(Color.web("#f38ba8"));
-        pollutionLabel  = new Label("🏭 Pollution: 0.0");
-        pollutionLabel.setTextFill(Color.web("#a6e3a1"));
-        wasteLabel      = new Label("🗑️ Waste: 0");
-        wasteLabel.setTextFill(Color.web("#cdd6f4"));
-        energyLabel     = new Label("Power: OK");
-        energyLabel.setTextFill(Color.GREEN);
+    // ── Tab 1: City Map ──────────────────────────────────────────────────────
 
-        VBox vbox = new VBox(10,
-            new Label("=== Metrics ==="),
-            budgetLabel,
-            populationLabel,
-            happinessLabel,
-            healthLabel,
-            pollutionLabel,
-            wasteLabel,
+    private HBox buildMapView() {
+        leftPanel = buildLeftPanel();
+        GridPane grid = buildGridPane();
+        HBox hbox = new HBox(leftPanel, grid);
+        HBox.setHgrow(grid, javafx.scene.layout.Priority.ALWAYS);
+        return hbox;
+    }
+
+    private VBox buildMetricsPanel() {
+        Label metricsTitle = new Label("=== Metrics ===");
+        metricsTitle.setTextFill(Color.web("#cdd6f4"));
+
+        budgetLabel     = new Label(String.format("💰 Budget: %.0f", controller.getState().getBudget()));
+        budgetLabel.setTextFill(Color.web("#f9e64f"));
+        populationLabel = new Label("👥 Population: " + controller.getState().getPopulation());
+        populationLabel.setTextFill(Color.WHITE);
+        happinessLabel  = new Label(String.format("😊 Happiness: %.1f", controller.getState().getHappiness()));
+        happinessLabel.setTextFill(Color.web("#fab387"));
+        healthLabel     = new Label(String.format("❤️ Health: %.1f", controller.getState().getHealth()));
+        healthLabel.setTextFill(Color.web("#f38ba8"));
+        pollutionLabel  = new Label(String.format("🏭 Pollution: %.1f", controller.getState().getPollution()));
+        pollutionLabel.setTextFill(Color.web("#a6e3a1"));
+        wasteLabel      = new Label("🗑️ Waste: " + controller.getState().getWasteLevel());
+        wasteLabel.setTextFill(Color.web("#cdd6f4"));
+        energyLabel     = new Label(controller.hasPower() ? "Power: OK" : "Power: BLACKOUT");
+        energyLabel.setTextFill(controller.hasPower() ? Color.GREEN : Color.RED);
+
+        VBox vbox = new VBox(8,
+            metricsTitle,
+            budgetLabel, populationLabel, happinessLabel,
+            healthLabel, pollutionLabel, wasteLabel,
             new Separator(),
             energyLabel
         );
-        vbox.setPadding(new Insets(15));
+        vbox.setPadding(new Insets(12));
         vbox.setMinWidth(180);
+        vbox.setMaxWidth(180);
         vbox.setStyle("-fx-background-color: #313244;");
         return vbox;
     }
+
+    private VBox buildLeftPanel() {
+        Label buildTitle = new Label("=== Build ===");
+        buildTitle.setTextFill(Color.web("#cdd6f4"));
+
+        Button resBtn   = buildToolButton("🏠 Residential",  "RESIDENTIAL");
+        Button indBtn   = buildToolButton("🏭 Industrial",   "INDUSTRIAL");
+        Button comBtn   = buildToolButton("🏪 Commercial",   "COMMERCIAL");
+        Button ppBtn    = buildToolButton("⚡ Power Plant",  "POWER_PLANT");
+        Button parkBtn  = buildToolButton("🌳 Park",         "PARK");
+        Button roadBtn  = buildToolButton("🛣️ Road",         "ROAD");
+        Button demolBtn = buildToolButton("🔨 Demolish",     "DEMOLISH");
+
+        VBox vbox = new VBox(8,
+            buildTitle,
+            resBtn, indBtn, comBtn, ppBtn, parkBtn, roadBtn, demolBtn
+        );
+        vbox.setPadding(new Insets(12));
+        vbox.setMinWidth(160);
+        vbox.setMaxWidth(160);
+        vbox.setStyle("-fx-background-color: #313244;");
+        return vbox;
+    }
+
+    private Button buildToolButton(String label, String tool) {
+        Button btn = new Button(label);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setOnAction(e -> {
+            if (activeBuildBtn != null) activeBuildBtn.setStyle("");
+            activeBuildBtn = btn;
+            btn.setStyle("-fx-border-color: #a6e3a1; -fx-border-width: 2px;");
+            selectedTool = tool;
+        });
+        return btn;
+    }
+
+    private GridPane buildGridPane() {
+        GridPane grid = new GridPane();
+        grid.setHgap(1);
+        grid.setVgap(1);
+        grid.setPadding(new Insets(10));
+        grid.setStyle("-fx-background-color: #1e1e2e;");
+        HBox.setHgrow(grid, javafx.scene.layout.Priority.ALWAYS);
+
+        for (int x = 0; x < 20; x++) {
+            for (int y = 0; y < 20; y++) {
+                Rectangle rect = new Rectangle(33, 33);
+                rect.setFill(Color.web("#313244"));
+                rect.setStroke(Color.web("#45475a"));
+                rect.setStrokeWidth(0.5);
+                final int fx = x, fy = y;
+                rect.setOnMouseClicked(e -> onCellClick(fx, fy));
+                cells[x][y] = rect;
+                grid.add(rect, x, y);
+            }
+        }
+        updateGrid();
+        return grid;
+    }
+
+    private void onCellClick(int x, int y) {
+        if (selectedTool == null) return;
+        if (selectedTool.equals("DEMOLISH")) {
+            controller.demolish(x, y);
+        } else {
+            controller.placeBuilding(selectedTool, x, y);
+        }
+        updateGrid();
+    }
+
+    private void updateGrid() {
+        for (int x = 0; x < 20; x++) {
+            for (int y = 0; y < 20; y++) {
+                var cell = controller.getGrid().getCell(x, y);
+                if (cell == null || cell.isEmpty()) {
+                    cells[x][y].setFill(Color.web("#313244"));
+                } else if (cell.getStructure() instanceof Structure s) {
+                    cells[x][y].setFill(colorForType(s.getType()));
+                }
+            }
+        }
+    }
+
+    private Color colorForType(StructureType type) {
+        return switch (type) {
+            case RESIDENTIAL -> Color.web("#89b4fa");
+            case INDUSTRIAL  -> Color.web("#fab387");
+            case COMMERCIAL  -> Color.web("#f9e64f");
+            case POWER_PLANT -> Color.web("#f38ba8");
+            case PARK        -> Color.web("#a6e3a1");
+            case ROAD        -> Color.web("#9399b2");
+        };
+    }
+
+    // ── Tab 2: Dashboard ─────────────────────────────────────────────────────
 
     private LineChart<Number, Number> buildChart() {
         NumberAxis xAxis = new NumberAxis(); xAxis.setLabel("Tick");
         NumberAxis yAxis = new NumberAxis(0, 110, 10); yAxis.setLabel("Value (0-110)");
 
-        LineChart<Number, Number> chart = new LineChart<>(xAxis, yAxis);
+        chart = new LineChart<>(xAxis, yAxis);
         chart.setTitle("City Trends");
         chart.setCreateSymbols(false);
         chart.setAnimated(false);
@@ -127,12 +254,14 @@ public class DashboardView extends Application implements StateObserver {
         return chart;
     }
 
+    // ── Bottom bar ────────────────────────────────────────────────────────────
+
     private HBox buildBottomBar() {
-        Button startBtn    = new Button("Start");
-        Button stopBtn     = new Button("Stop");
-        Button greenBtn    = new Button("Green");
+        Button startBtn     = new Button("Start");
+        Button stopBtn      = new Button("Stop");
+        Button greenBtn     = new Button("Green");
         Button austerityBtn = new Button("Austerity");
-        Button fossilBtn   = new Button("Fossil Fuel");
+        Button fossilBtn    = new Button("Fossil Fuel");
 
         timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             tickCount++;
@@ -160,6 +289,8 @@ public class DashboardView extends Application implements StateObserver {
         return hbox;
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private void showEarthquakeAlert() {
         XYChart.Series<Number, Number> markerSeries = new XYChart.Series<>();
         markerSeries.setName("🌍 Earthquake");
@@ -182,6 +313,8 @@ public class DashboardView extends Application implements StateObserver {
         btn.setStyle("-fx-border-color: #a6e3a1; -fx-border-width: 2px;");
         controller.setPolicy(policy);
     }
+
+    // ── Observer ──────────────────────────────────────────────────────────────
 
     @Override
     public void onStateChanged(CityState state) {
@@ -207,6 +340,8 @@ public class DashboardView extends Application implements StateObserver {
                 showEarthquakeAlert();
             }
             lastHappiness = state.getHappiness();
+
+            updateGrid();
         });
     }
 }

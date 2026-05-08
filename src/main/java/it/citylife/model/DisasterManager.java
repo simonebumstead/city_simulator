@@ -16,7 +16,7 @@ public class DisasterManager {
         double magnitude = 1.0 + (random.nextDouble() * 6.0);
 
         // 2. Calcola il danno in base alla formula quadratica
-        int damageToInflict = (int) (10 * Math.pow(magnitude, 2));
+        int damageToInflict = (int) (3 * Math.pow(magnitude, 2));
 
         // 3. Calcola il malus per Felicità e Salute (basi diverse per bilanciamento, sempre quadratiche)
         // Usiamo Math.pow() come richiesto per la proporzionalità quadratica

@@ -3,7 +3,7 @@ package it.citylife.model;
 public class ResidentialBuilding extends Structure {
 
     public ResidentialBuilding() {
-        super(100);
+        super(300);
     }
 
     @Override

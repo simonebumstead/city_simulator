@@ -14,6 +14,7 @@ it\citylife\model\GameController.class
 it\citylife\model\CommercialBuilding.class
 it\citylife\model\Placeable.class
 it\citylife\model\PowerPlant.class
+it\citylife\ui\DashboardView$1.class
 it\citylife\model\GreenPolicy.class
 it\citylife\model\Park.class
 it\citylife\model\Structure.class

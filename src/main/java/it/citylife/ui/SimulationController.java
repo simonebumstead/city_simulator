@@ -27,4 +27,20 @@ public class SimulationController {
     public boolean hasPower() {
         return controller.getPowerNet().hasEnoughPower();
     }
+
+    public void placeBuilding(String type, int x, int y) {
+        controller.placeBuilding(type, x, y);
+    }
+
+    public boolean demolish(int x, int y) {
+        return controller.demolish(x, y);
+    }
+
+    public it.citylife.model.Grid getGrid() {
+        return controller.getGrid();
+    }
+
+    public it.citylife.model.CityState getState() {
+        return controller.getState();
+    }
 }

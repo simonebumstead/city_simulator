@@ -3,7 +3,7 @@ package it.citylife.model;
 public class PowerPlant extends Structure {
 
     public PowerPlant() {
-        super(100);
+        super(500);
     }
 
     @Override

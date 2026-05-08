@@ -3,7 +3,7 @@ package it.citylife.model;
 public class Road extends Structure {
 
     public Road() {
-        super(100);
+        super(250);
     }
 
     @Override
