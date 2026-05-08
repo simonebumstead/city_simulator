@@ -28,8 +28,8 @@ public class SimulationController {
         return controller.getPowerNet().hasEnoughPower();
     }
 
-    public void placeBuilding(String type, int x, int y) {
-        controller.placeBuilding(type, x, y);
+    public boolean placeBuilding(String type, int x, int y) {
+        return controller.placeBuilding(type, x, y);
     }
 
     public boolean demolish(int x, int y) {

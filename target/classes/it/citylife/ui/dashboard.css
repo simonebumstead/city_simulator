@@ -8,3 +8,9 @@
 .chart-title { -fx-text-fill: #cdd6f4; }
 .chart-legend { -fx-background-color: #313244; -fx-text-fill: #cdd6f4; }
 .chart-legend-item { -fx-text-fill: #cdd6f4; }
+
+.tab-pane .tab-header-area .tab-header-background { -fx-background-color: #1e1e2e; }
+.tab-pane .tab { -fx-background-color: #313244; -fx-border-color: transparent; }
+.tab-pane .tab:selected { -fx-background-color: #45475a; }
+.tab-pane .tab .tab-label { -fx-text-fill: #cdd6f4; }
+.tab-pane .tab-header-area { -fx-padding: 0; }

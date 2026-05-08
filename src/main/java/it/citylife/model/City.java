@@ -3,6 +3,7 @@ package it.citylife.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Arrays;
 
 public class City {
     // Componenti principali definiti nel Domain Model
@@ -25,15 +26,22 @@ public class City {
         this.observers = new ArrayList<>();
         this.activePolicy = new GreenPolicy();
 
-        // Edifici di default per la demo
-        grid.placeStructure(new PowerPlant(), 0, 0);
-        grid.placeStructure(new ResidentialBuilding(), 1, 0);
-        grid.placeStructure(new ResidentialBuilding(), 2, 0);
-        grid.placeStructure(new ResidentialBuilding(), 3, 0);
-        grid.placeStructure(new IndustrialBuilding(), 4, 0);
-        grid.placeStructure(new IndustrialBuilding(), 5, 0);
-        grid.placeStructure(new CommercialBuilding(), 6, 0);
-        grid.placeStructure(new Park(), 7, 0);
+        // Edifici di default in posizioni casuali non sovrapposte
+        List<Structure> defaults = Arrays.asList(
+            new PowerPlant(),
+            new ResidentialBuilding(), new ResidentialBuilding(), new ResidentialBuilding(),
+            new IndustrialBuilding(), new IndustrialBuilding(),
+            new CommercialBuilding(),
+            new Park()
+        );
+        for (Structure s : defaults) {
+            int rx, ry;
+            do {
+                rx = random.nextInt(20);
+                ry = random.nextInt(20);
+            } while (!grid.getCell(rx, ry).isEmpty());
+            grid.placeStructure(s, rx, ry);
+        }
     }
 
     // --- METODI CORE  ---
@@ -68,6 +76,9 @@ public class City {
         state.updatePollution(state.getPollution() * mod.getPollutionMultiplier() - state.getPollution());
         state.setWasteLevel((int)(state.getWasteLevel() * mod.getWasteMultiplier()));
         state.updateBudget(mod.getFixedBudgetChange());
+        if (mod.getFixedHealthChange() != 0) {
+            state.updateHealth(mod.getFixedHealthChange());
+        }
 
         // 4. Aggiorna la popolazione
         new PopulationManager().updateDemographics(state);
@@ -76,6 +87,13 @@ public class City {
         if (random.nextDouble() < 0.07) {
             disasterManager.triggerEarthquake(grid, state);
         }
+
+        System.out.println("=== TICK ===");
+        System.out.printf("  Budget: %.0f | Pop: %d | Happiness: %.1f | Health: %.1f | Pollution: %.1f | Waste: %d%n",
+            state.getBudget(), state.getPopulation(), state.getHappiness(),
+            state.getHealth(), state.getPollution(), state.getWasteLevel());
+        System.out.println("  Policy: " + activePolicy.getClass().getSimpleName());
+        System.out.println("  Power: " + (powerNet.hasEnoughPower() ? "OK" : "BLACKOUT"));
     }
 
     // Metodo per registrare la UI come osservatore
@@ -89,7 +107,14 @@ public class City {
         }
     }
 
-    public void setPolicy(PolicyStrategy policy) { this.activePolicy = policy; }
+    public void notifyObserversPublic() {
+        notifyObservers();
+    }
+
+    public void setPolicy(PolicyStrategy policy) {
+        this.activePolicy = policy;
+        System.out.println("[POLICY] Cambiata a: " + policy.getClass().getSimpleName());
+    }
     public PolicyStrategy getActivePolicy() { return activePolicy; }
 
     // Getters per permettere alla UI di leggere (ma non modificare direttamente)

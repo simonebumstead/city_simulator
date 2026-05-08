@@ -13,6 +13,7 @@ public class PolicyModifiers {
     private double healthMultiplier = 1.0;
     private double wasteMultiplier = 1.0;
     private int fixedBudgetChange = 0; // Può essere positivo (bonus) o negativo (costo)
+    private double fixedHealthChange = 0;
 
     // Costruttore vuoto (usa i valori di default)
     public PolicyModifiers() {}
@@ -23,6 +24,7 @@ public class PolicyModifiers {
     public double getHealthMultiplier() { return healthMultiplier; }
     public double getWasteMultiplier() { return wasteMultiplier; }
     public int getFixedBudgetChange() { return fixedBudgetChange; }
+    public double getFixedHealthChange() { return fixedHealthChange; }
 
     // Setters (per costruire l'oggetto in modo più leggibile)
     public PolicyModifiers setPollutionMultiplier(double value) {
@@ -47,6 +49,11 @@ public class PolicyModifiers {
 
     public PolicyModifiers setFixedBudgetChange(int value) {
         this.fixedBudgetChange = value;
+        return this;
+    }
+
+    public PolicyModifiers setFixedHealthChange(double value) {
+        this.fixedHealthChange = value;
         return this;
     }
 }

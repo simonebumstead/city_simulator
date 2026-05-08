@@ -13,6 +13,7 @@ public class FossilFuelPolicy implements PolicyStrategy {
                 .setPollutionMultiplier(1.05) // Aumenta l'inquinamento del 5% a turno
                 .setHappinessMultiplier(0.95) // Riduce leggermente la felicità (-5%)
                 .setHealthMultiplier(0.97)    // Impatto negativo sulla salute (-3%)
-                .setFixedBudgetChange(80);    // Entrata fissa
+                .setFixedBudgetChange(80)     // Entrata fissa
+                .setFixedHealthChange(-1.0);  // Degrado additivo salute
     }
 }

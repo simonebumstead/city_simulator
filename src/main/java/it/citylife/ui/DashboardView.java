@@ -24,6 +24,7 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -77,7 +78,7 @@ public class DashboardView extends Application implements StateObserver {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #1e1e2e;");
 
-        tickLabel = new Label("🏙️ CityLogic  |  Tick: 0");
+        tickLabel = new Label("CityLogic  |  Tick: 0");
         tickLabel.setStyle("-fx-text-fill: #cdd6f4; -fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 10px;");
         root.setTop(tickLabel);
 
@@ -91,10 +92,23 @@ public class DashboardView extends Application implements StateObserver {
         root.setLeft(buildMetricsPanel());
         root.setBottom(buildBottomBar());
 
-        primaryStage.setTitle("City Simulator");
+        primaryStage.setTitle("CityLogic");
         Scene scene = new Scene(root, 1300, 750);
         scene.getStylesheets().add(getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm());
         primaryStage.setScene(scene);
+
+        javafx.scene.canvas.Canvas iconCanvas = new javafx.scene.canvas.Canvas(32, 32);
+        var gc = iconCanvas.getGraphicsContext2D();
+        gc.setFill(Color.web("#1e1e2e"));
+        gc.fillRect(0, 0, 32, 32);
+        gc.setFill(Color.web("#89b4fa"));
+        gc.fillRoundRect(4, 4, 24, 24, 6, 6);
+        gc.setFill(Color.web("#1e1e2e"));
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 16));
+        gc.fillText("C", 10, 22);
+        javafx.scene.image.WritableImage icon = iconCanvas.snapshot(null, null);
+        primaryStage.getIcons().add(icon);
+
         primaryStage.show();
     }
 
@@ -167,10 +181,12 @@ public class DashboardView extends Application implements StateObserver {
     private Button buildToolButton(String label, String tool) {
         Button btn = new Button(label);
         btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setStyle("-fx-background-color: #45475a; -fx-text-fill: #cdd6f4;");
         btn.setOnAction(e -> {
-            if (activeBuildBtn != null) activeBuildBtn.setStyle("");
+            if (activeBuildBtn != null)
+                activeBuildBtn.setStyle("-fx-background-color: #45475a; -fx-text-fill: #cdd6f4;");
             activeBuildBtn = btn;
-            btn.setStyle("-fx-border-color: #a6e3a1; -fx-border-width: 2px;");
+            btn.setStyle("-fx-background-color: #45475a; -fx-text-fill: #cdd6f4; -fx-border-color: #a6e3a1; -fx-border-width: 2px;");
             selectedTool = tool;
         });
         return btn;
@@ -202,12 +218,37 @@ public class DashboardView extends Application implements StateObserver {
 
     private void onCellClick(int x, int y) {
         if (selectedTool == null) return;
+        boolean ok;
         if (selectedTool.equals("DEMOLISH")) {
-            controller.demolish(x, y);
+            ok = controller.demolish(x, y);
         } else {
-            controller.placeBuilding(selectedTool, x, y);
+            ok = controller.placeBuilding(selectedTool, x, y);
         }
+        if (!ok) showPlacementError();
         updateGrid();
+        refreshMetricsDisplay();
+    }
+
+    private void showPlacementError() {
+        Label err = new Label("⚠️ Impossibile costruire!");
+        err.setStyle("-fx-text-fill: #f9e64f; -fx-font-weight: bold;");
+        leftPanel.getChildren().add(0, err);
+        new javafx.animation.Timeline(new javafx.animation.KeyFrame(
+            javafx.util.Duration.seconds(2), e -> leftPanel.getChildren().remove(err)
+        )).play();
+    }
+
+    private void refreshMetricsDisplay() {
+        CityState s = controller.getState();
+        budgetLabel.setText(String.format("💰 Budget: %.0f", s.getBudget()));
+        populationLabel.setText("👥 Population: " + s.getPopulation());
+        happinessLabel.setText(String.format("😊 Happiness: %.1f", s.getHappiness()));
+        healthLabel.setText(String.format("❤️ Health: %.1f", s.getHealth()));
+        pollutionLabel.setText(String.format("🏭 Pollution: %.1f", s.getPollution()));
+        wasteLabel.setText("🗑️ Waste: " + s.getWasteLevel());
+        boolean powered = controller.hasPower();
+        energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
+        energyLabel.setTextFill(powered ? Color.GREEN : Color.RED);
     }
 
     private void updateGrid() {
@@ -257,11 +298,11 @@ public class DashboardView extends Application implements StateObserver {
     // ── Bottom bar ────────────────────────────────────────────────────────────
 
     private HBox buildBottomBar() {
-        Button startBtn     = new Button("Start");
-        Button stopBtn      = new Button("Stop");
-        Button greenBtn     = new Button("Green");
-        Button austerityBtn = new Button("Austerity");
-        Button fossilBtn    = new Button("Fossil Fuel");
+        Button startBtn     = buildBarButton("Start");
+        Button stopBtn      = buildBarButton("Stop");
+        Button greenBtn     = buildBarButton("Green");
+        Button austerityBtn = buildBarButton("Austerity");
+        Button fossilBtn    = buildBarButton("Fossil Fuel");
 
         timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             tickCount++;
@@ -278,13 +319,39 @@ public class DashboardView extends Application implements StateObserver {
             timeline.setRate(val.doubleValue());
         });
 
-        startBtn.setOnAction(e -> timeline.play());
-        stopBtn.setOnAction(e -> timeline.pause());
+        stopBtn.setVisible(false);
+        stopBtn.setManaged(false);
+
+        startBtn.setOnAction(e -> {
+            timeline.play();
+            startBtn.setVisible(false);
+            startBtn.setManaged(false);
+            stopBtn.setVisible(true);
+            stopBtn.setManaged(true);
+        });
+        stopBtn.setOnAction(e -> {
+            timeline.pause();
+            stopBtn.setVisible(false);
+            stopBtn.setManaged(false);
+            startBtn.setVisible(true);
+            startBtn.setManaged(true);
+        });
         greenBtn.setOnAction(e -> setActivePolicy(greenBtn, new GreenPolicy()));
         austerityBtn.setOnAction(e -> setActivePolicy(austerityBtn, new AusterityPolicy()));
         fossilBtn.setOnAction(e -> setActivePolicy(fossilBtn, new FossilFuelPolicy()));
 
-        HBox hbox = new HBox(10, startBtn, stopBtn, new Separator(), greenBtn, austerityBtn, fossilBtn, new Separator(), speedSlider, speedLabel);
+        Region spacer1 = new Region();
+        Region spacer2 = new Region();
+        HBox.setHgrow(spacer1, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(spacer2, javafx.scene.layout.Priority.ALWAYS);
+
+        HBox hbox = new HBox(10,
+            startBtn, stopBtn,
+            spacer1,
+            greenBtn, austerityBtn, fossilBtn,
+            spacer2,
+            speedSlider, speedLabel
+        );
         hbox.setPadding(new Insets(10));
         return hbox;
     }
@@ -307,10 +374,17 @@ public class DashboardView extends Application implements StateObserver {
         })).play();
     }
 
+    private Button buildBarButton(String label) {
+        Button btn = new Button(label);
+        btn.setStyle("-fx-background-color: #45475a; -fx-text-fill: #cdd6f4;");
+        return btn;
+    }
+
     private void setActivePolicy(Button btn, it.citylife.model.PolicyStrategy policy) {
-        if (activeBtn != null) activeBtn.setStyle("");
+        if (activeBtn != null)
+            activeBtn.setStyle("-fx-background-color: #45475a; -fx-text-fill: #cdd6f4;");
         activeBtn = btn;
-        btn.setStyle("-fx-border-color: #a6e3a1; -fx-border-width: 2px;");
+        btn.setStyle("-fx-background-color: #45475a; -fx-text-fill: #cdd6f4; -fx-border-color: #a6e3a1; -fx-border-width: 2px;");
         controller.setPolicy(policy);
     }
 
@@ -319,7 +393,7 @@ public class DashboardView extends Application implements StateObserver {
     @Override
     public void onStateChanged(CityState state) {
         Platform.runLater(() -> {
-            tickLabel.setText("🏙️ CityLogic  |  Tick: " + tickCount);
+            tickLabel.setText("CityLogic  |  Tick: " + tickCount);
             budgetLabel.setText(String.format("💰 Budget: %.0f", state.getBudget()));
             populationLabel.setText("👥 Population: " + state.getPopulation());
             happinessLabel.setText(String.format("😊 Happiness: %.1f", state.getHappiness()));

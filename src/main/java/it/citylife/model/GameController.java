@@ -13,14 +13,24 @@ public class GameController {
         city.advanceTick();
     }
 
-    public void placeBuilding(String type, int x, int y) {
+    public boolean placeBuilding(String type, int x, int y) {
         Structure building = BuildingFactory.createBuilding(type);
-        if (city.getState().getBudget() >= building.getConstructionCost()) {
-            city.getGrid().placeStructure(building, x, y);
-            city.getState().updateBudget(-building.getConstructionCost());
-        } else {
-            System.out.println("Budget insufficiente per costruire: " + type);
+        Cell cell = city.getGrid().getCell(x, y);
+
+        if (cell == null || !cell.isEmpty()) {
+            System.out.println("Cella occupata o non valida.");
+            return false;
         }
+        if (city.getState().getBudget() < building.getConstructionCost()) {
+            System.out.println("Budget insufficiente per costruire: " + type);
+            return false;
+        }
+
+        city.getGrid().placeStructure(building, x, y);
+        city.getState().updateBudget(-building.getConstructionCost());
+        System.out.println("[BUILD] Piazzato " + type + " in (" + x + "," + y + ") | Costo: " + building.getConstructionCost() + " | Budget rimasto: " + city.getState().getBudget());
+        city.notifyObserversPublic();
+        return true;
     }
 
     public void changePolicy(PolicyStrategy policy) {
