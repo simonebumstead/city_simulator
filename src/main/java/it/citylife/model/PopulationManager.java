@@ -18,7 +18,7 @@ public class PopulationManager {
     private static final int MAX_GROWTH          = 8;     // cap crescita massima/tick
     private static final int MAX_DECLINE         = -15;   // cap declino massimo/tick
 
-    public void updateDemographics(CityState state) {
+    public void updateDemographics(CityState state, boolean hasPowerNearby) {
         // Calcola il contributo di ogni fattore in base a quanto si discosta dalla media (50)
         double happinessEffect = (state.getHappiness() - NEUTRAL_POINT) * HAPPINESS_WEIGHT;
         double healthEffect = (state.getHealth() - NEUTRAL_POINT) * HEALTH_WEIGHT;
@@ -28,12 +28,17 @@ public class PopulationManager {
         // Somma tutti i contributi e aggiungi la crescita di base, con cap
         int deltaPop = (int) Math.min(MAX_GROWTH, Math.max(MAX_DECLINE,
             BASE_GROWTH + happinessEffect + healthEffect + pollutionEffect + wasteEffect));
-        
+
+        // AC7.2: senza centrale elettrica vicina, la popolazione non può crescere
+        if (!hasPowerNearby) {
+            deltaPop = Math.min(0, deltaPop);
+        }
+
         // Applica il cambiamento alla popolazione
         int currentPop = state.getPopulation();
         int newPop = Math.max(10, currentPop + deltaPop); // Evita che la popolazione scenda sotto 10
         state.setPopulation(newPop);
-        
+
         // Log per il debug e per il giocatore
         if (deltaPop > 0) {
             System.out.println(String.format("Population grew by %d units. Total population: %d", deltaPop, newPop));

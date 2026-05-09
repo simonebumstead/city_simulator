@@ -83,8 +83,9 @@ public class City {
             state.updateHealth(mod.getFixedHealthChange());
         }
 
-        // 4. Aggiorna la popolazione
-        new PopulationManager().updateDemographics(state);
+        // 4. Aggiorna la popolazione (AC7.1–7.3: crescita bloccata senza centrale vicina)
+        boolean hasPowerNearby = anyResidentialHasPower();
+        new PopulationManager().updateDemographics(state, hasPowerNearby);
 
         // Evento casuale: terremoto con probabilità 7%
         if (random.nextDouble() < 0.07) {
@@ -98,6 +99,25 @@ public class City {
             state.getHealth(), state.getPollution(), state.getWasteLevel());
         System.out.println("  Policy: " + activePolicy.getClass().getSimpleName());
         System.out.println("  Power: " + (powerNet.hasEnoughPower() ? "OK" : "BLACKOUT"));
+    }
+
+    private boolean anyResidentialHasPower() {
+        for (int rx = 0; rx < grid.getWidth(); rx++) {
+            for (int ry = 0; ry < grid.getHeight(); ry++) {
+                Cell rc = grid.getCell(rx, ry);
+                if (!(rc.getStructure() instanceof ResidentialBuilding)) continue;
+                for (int px = 0; px < grid.getWidth(); px++) {
+                    for (int py = 0; py < grid.getHeight(); py++) {
+                        Cell pc = grid.getCell(px, py);
+                        if (pc.getStructure() instanceof PowerPlant) {
+                            if (Math.max(Math.abs(px - rx), Math.abs(py - ry)) <= 5)
+                                return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     // Metodo per registrare la UI come osservatore
