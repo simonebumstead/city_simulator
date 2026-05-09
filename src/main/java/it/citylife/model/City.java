@@ -63,6 +63,7 @@ public class City {
         powerNet.reset();
 
         // 2. Itera la griglia e applica gli effetti di ogni struttura
+        state.resetIndustrialDeltas();
         for (int x = 0; x < grid.getWidth(); x++) {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
@@ -82,6 +83,9 @@ public class City {
         if (mod.getFixedHealthChange() != 0) {
             state.updateHealth(mod.getFixedHealthChange());
         }
+        // Correzione industriale specifica della policy (AC9.1, AC9.2, AC10.1, AC10.2)
+        state.updateBudget(state.getLastIndustrialBudgetDelta() * (mod.getIndustrialBudgetMultiplier() - 1.0));
+        state.updatePollution(state.getLastIndustrialPollutionDelta() * (mod.getIndustrialPollutionMultiplier() - 1.0));
 
         // 4. Aggiorna la popolazione (AC7.1–7.3: crescita bloccata senza centrale vicina)
         boolean hasPowerNearby = anyResidentialHasPower();

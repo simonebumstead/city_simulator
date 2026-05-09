@@ -10,10 +10,11 @@ public class FossilFuelPolicy implements PolicyStrategy {
     @Override
     public PolicyModifiers getModifiers() {
         return new PolicyModifiers()
-                .setPollutionMultiplier(1.05) // Aumenta l'inquinamento del 5% a turno
-                .setHappinessMultiplier(0.95) // Riduce leggermente la felicità (-5%)
-                .setHealthMultiplier(0.97)    // Impatto negativo sulla salute (-3%)
-                .setFixedBudgetChange(80)     // Entrata fissa
-                .setFixedHealthChange(-1.0);  // Degrado additivo salute
+                .setHappinessMultiplier(0.95)           // Riduce leggermente la felicità (-5%)
+                .setHealthMultiplier(0.97)              // Impatto negativo sulla salute (-3%)
+                .setFixedBudgetChange(80)               // Entrata fissa
+                .setFixedHealthChange(-1.0)             // Degrado additivo salute
+                .setIndustrialBudgetMultiplier(1.30)    // +30% entrate industriali (AC10.1)
+                .setIndustrialPollutionMultiplier(1.20); // +20% inquinamento industriale (AC10.2)
     }
 }

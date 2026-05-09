@@ -21,6 +21,8 @@ public class CityState {
     private double health;
     private int wasteLevel;
     private boolean earthquakeOccurred = false;
+    private double lastIndustrialBudgetDelta = 0.0;
+    private double lastIndustrialPollutionDelta = 0.0;
 
     /**
      * Costruttore: Inizializza lo stato della città con i valori di default.
@@ -87,4 +89,13 @@ public class CityState {
     public void setHappiness(double value) { this.happiness = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
     public void setHealth(double value) { this.health = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
     public void setPollution(double value) { this.pollution = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
+
+    public void resetIndustrialDeltas() {
+        this.lastIndustrialBudgetDelta = 0.0;
+        this.lastIndustrialPollutionDelta = 0.0;
+    }
+    public void addIndustrialBudgetDelta(double v)    { this.lastIndustrialBudgetDelta += v; }
+    public void addIndustrialPollutionDelta(double v) { this.lastIndustrialPollutionDelta += v; }
+    public double getLastIndustrialBudgetDelta()    { return lastIndustrialBudgetDelta; }
+    public double getLastIndustrialPollutionDelta() { return lastIndustrialPollutionDelta; }
 }

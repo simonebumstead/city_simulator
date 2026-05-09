@@ -13,6 +13,8 @@ public class IndustrialBuilding extends Structure {
         state.updateHappiness(-0.5);
         state.updateHealth(-0.3);
         power.addConsumption(20);
+        state.addIndustrialBudgetDelta(20);
+        state.addIndustrialPollutionDelta(1.5);
     }
 
     @Override
