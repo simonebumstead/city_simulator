@@ -17,7 +17,9 @@ import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
@@ -33,6 +35,11 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
@@ -363,6 +370,8 @@ public class DashboardView extends Application implements StateObserver {
     private StackPane buildBottomBar() {
         Button startBtn     = buildBarButton("Start");
         Button stopBtn      = buildBarButton("Stop");
+        Button saveBtn      = buildBarButton("Save");
+        Button loadBtn      = buildBarButton("Load");
         Button greenBtn     = buildBarButton("Green");
         Button austerityBtn = buildBarButton("Austerity");
         Button fossilBtn    = buildBarButton("Fossil Fuel");
@@ -405,7 +414,65 @@ public class DashboardView extends Application implements StateObserver {
         austerityBtn.setOnAction(e -> setActivePolicy(austerityBtn, new AusterityPolicy()));
         fossilBtn.setOnAction(e -> setActivePolicy(fossilBtn, new FossilFuelPolicy()));
 
-        HBox leftGroup   = new HBox(10, startBtn, stopBtn);
+        saveBtn.setOnAction(e -> {
+            try {
+                controller.save(tickCount);
+                saveBtn.setText("✓ Salvato!");
+                saveBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #3fb950; -fx-font-size: 14px; -fx-border-color: #3fb950; -fx-border-width: 2px;");
+                new Timeline(new KeyFrame(Duration.seconds(2.5), ev -> {
+                    saveBtn.setText("Save");
+                    saveBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px;");
+                })).play();
+            } catch (IOException ex) {
+                showErrorAlert("Errore durante il salvataggio", ex.getMessage());
+            }
+        });
+
+        loadBtn.setOnAction(e -> {
+            try {
+                List<Path> saves = controller.listSaves();
+                if (saves.isEmpty()) {
+                    showErrorAlert("Nessun salvataggio trovato", "La cartella 'saves/' è vuota o non esiste.");
+                    return;
+                }
+                Path chosen;
+                if (saves.size() == 1) {
+                    chosen = saves.get(0);
+                } else {
+                    List<String> names = saves.stream()
+                            .map(p -> p.getFileName().toString())
+                            .toList();
+                    ChoiceDialog<String> dialog = new ChoiceDialog<>(names.get(names.size() - 1), names);
+                    dialog.setTitle("Carica partita");
+                    dialog.setHeaderText("Scegli un salvataggio");
+                    dialog.setContentText("File:");
+                    applyDarkTheme(dialog);
+                    Optional<String> result = dialog.showAndWait();
+                    if (result.isEmpty()) return;
+                    chosen = saves.stream()
+                            .filter(p -> p.getFileName().toString().equals(result.get()))
+                            .findFirst().orElseThrow();
+                }
+                timeline.pause();
+                startBtn.setVisible(true);  startBtn.setManaged(true);
+                stopBtn.setVisible(false);  stopBtn.setManaged(false);
+                tickCount = 0;
+                populationSeries.getData().clear();
+                happinessSeries.getData().clear();
+                healthSeries.getData().clear();
+                pollutionSeries.getData().clear();
+                int loadedTick = controller.load(chosen);
+                tickCount = loadedTick;
+                if (activeBtn != null) {
+                    activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px;");
+                    activeBtn = null;
+                }
+            } catch (IOException ex) {
+                showErrorAlert("Errore durante il caricamento", ex.getMessage());
+            }
+        });
+
+        HBox leftGroup   = new HBox(10, startBtn, stopBtn, saveBtn, loadBtn);
         HBox centerGroup = new HBox(10, greenBtn, austerityBtn, fossilBtn);
         HBox rightGroup  = new HBox(10, speedSlider, speedLabel);
 
@@ -460,6 +527,33 @@ public class DashboardView extends Application implements StateObserver {
         activeBtn = btn;
         btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
         controller.setPolicy(policy);
+    }
+
+    private void applyDarkTheme(javafx.scene.control.Dialog<?> dialog) {
+        javafx.scene.control.DialogPane dp = dialog.getDialogPane();
+        String css = getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm();
+        dp.getStylesheets().add(css);
+        dp.setStyle(
+            "-fx-background-color: #161b22;" +
+            "-fx-border-color: #30363d; -fx-border-width: 1px;"
+        );
+        if (dp.lookup(".header-panel") != null)
+            dp.lookup(".header-panel").setStyle("-fx-background-color: #0d1117;");
+        dp.lookupAll(".label").forEach(n ->
+            n.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
+        dp.lookupAll(".button").forEach(n ->
+            n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
+        dp.lookupAll(".combo-box").forEach(n ->
+            n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3;"));
+    }
+
+    private void showErrorAlert(String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Errore");
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        applyDarkTheme(alert);
+        alert.showAndWait();
     }
 
     // ── Observer ──────────────────────────────────────────────────────────────

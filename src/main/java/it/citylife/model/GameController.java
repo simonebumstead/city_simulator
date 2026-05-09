@@ -1,9 +1,13 @@
 package it.citylife.model;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
 public class GameController {
 
     private City city;
-    // private SaveLoadManager ioManager; // da implementare
+    private final SaveLoadManager ioManager = new SaveLoadManager();
 
     public GameController() {
         this.city = new City();
@@ -54,6 +58,20 @@ public class GameController {
         city.getGrid().removeStructure(x, y);
         city.notifyObserversPublic();
         return true;
+    }
+
+    public Path saveGame(int tick) throws IOException {
+        return ioManager.saveAuto(city, tick);
+    }
+
+    public List<Path> listSaves() throws IOException {
+        return ioManager.listSaves();
+    }
+
+    public int loadGame(Path path) throws IOException {
+        int tick = ioManager.load(city, path);
+        city.notifyObserversPublic();
+        return tick;
     }
 
     public CityState getState() { return city.getState(); }

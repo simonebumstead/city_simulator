@@ -4,6 +4,10 @@ import it.citylife.model.GameController;
 import it.citylife.model.PolicyStrategy;
 import it.citylife.model.StateObserver;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
 public class SimulationController {
 
     private final GameController controller;
@@ -42,5 +46,17 @@ public class SimulationController {
 
     public it.citylife.model.CityState getState() {
         return controller.getState();
+    }
+
+    public Path save(int tick) throws IOException {
+        return controller.saveGame(tick);
+    }
+
+    public List<Path> listSaves() throws IOException {
+        return controller.listSaves();
+    }
+
+    public int load(Path path) throws IOException {
+        return controller.loadGame(path);
     }
 }

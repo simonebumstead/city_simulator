@@ -1,0 +1,51 @@
+{
+  "tick" : 0,
+  "activePolicy" : "GreenPolicy",
+  "budget" : 3000.0,
+  "population" : 0,
+  "pollution" : 0.0,
+  "happiness" : 67.0,
+  "health" : 100.0,
+  "wasteLevel" : 0,
+  "buildings" : [ {
+    "type" : "INDUSTRIAL",
+    "x" : 0,
+    "y" : 12
+  }, {
+    "type" : "INDUSTRIAL",
+    "x" : 1,
+    "y" : 11
+  }, {
+    "type" : "RESIDENTIAL",
+    "x" : 4,
+    "y" : 5
+  }, {
+    "type" : "INDUSTRIAL",
+    "x" : 4,
+    "y" : 6
+  }, {
+    "type" : "RESIDENTIAL",
+    "x" : 4,
+    "y" : 14
+  }, {
+    "type" : "INDUSTRIAL",
+    "x" : 5,
+    "y" : 2
+  }, {
+    "type" : "POWER_PLANT",
+    "x" : 6,
+    "y" : 5
+  }, {
+    "type" : "COMMERCIAL",
+    "x" : 15,
+    "y" : 0
+  }, {
+    "type" : "RESIDENTIAL",
+    "x" : 18,
+    "y" : 18
+  }, {
+    "type" : "PARK",
+    "x" : 19,
+    "y" : 8
+  } ]
+}
