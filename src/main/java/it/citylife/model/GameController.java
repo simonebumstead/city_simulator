@@ -44,7 +44,15 @@ public class GameController {
     public boolean demolish(int x, int y) {
         Cell cell = city.getGrid().getCell(x, y);
         if (cell == null || cell.isEmpty()) return false;
+
+        if (cell.getStructure() instanceof Structure s) {
+            int refund = s.getConstructionCost() / 2;
+            city.getState().updateBudget(refund);
+            System.out.println("[DEMOLISH] Rimborsati " + refund + " | Budget: " + city.getState().getBudget());
+        }
+
         city.getGrid().removeStructure(x, y);
+        city.notifyObserversPublic();
         return true;
     }
 

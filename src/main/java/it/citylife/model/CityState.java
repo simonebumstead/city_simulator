@@ -20,6 +20,7 @@ public class CityState {
     private double happiness;
     private double health;
     private int wasteLevel;
+    private boolean earthquakeOccurred = false;
 
     /**
      * Costruttore: Inizializza lo stato della città con i valori di default.
@@ -41,6 +42,8 @@ public class CityState {
     public double getHappiness() { return happiness; }
     public double getHealth() { return health; }
     public int getWasteLevel() { return wasteLevel; }
+    public boolean isEarthquakeOccurred() { return earthquakeOccurred; }
+    public void setEarthquakeOccurred(boolean v) { this.earthquakeOccurred = v; }
 
     // --- METODI DI MODIFICA (Setter con Logica) ---
 

@@ -9,12 +9,14 @@ public class PopulationManager {
     
     // Costanti per il bilanciamento del gioco. Modificando questi pesi,
     // puoi rendere certi fattori più o meno importanti.
-    private static final double HAPPINESS_WEIGHT = 0.3;
-    private static final double HEALTH_WEIGHT = 0.2;
-    private static final double POLLUTION_WEIGHT = -0.2; // Negativo perché un valore alto è un malus
-    private static final double WASTE_WEIGHT = -0.1;     // Negativo perché un valore alto è un malus
-    private static final int BASE_GROWTH = 2;            // Crescita naturale minima in condizioni stabili
-    private static final int NEUTRAL_POINT = 50;        // Valore considerato "stabile" o "medio"
+    private static final double HAPPINESS_WEIGHT = 0.15;  // era 0.3
+    private static final double HEALTH_WEIGHT    = 0.10;  // era 0.2
+    private static final double POLLUTION_WEIGHT = -0.10; // era -0.2
+    private static final double WASTE_WEIGHT     = -0.05; // era -0.1
+    private static final int BASE_GROWTH         = 1;     // era 2
+    private static final int NEUTRAL_POINT       = 50;
+    private static final int MAX_GROWTH          = 8;     // cap crescita massima/tick
+    private static final int MAX_DECLINE         = -15;   // cap declino massimo/tick
 
     public void updateDemographics(CityState state) {
         // Calcola il contributo di ogni fattore in base a quanto si discosta dalla media (50)
@@ -23,8 +25,9 @@ public class PopulationManager {
         double pollutionEffect = (state.getPollution() - NEUTRAL_POINT) * POLLUTION_WEIGHT;
         double wasteEffect = (state.getWasteLevel() - NEUTRAL_POINT) * WASTE_WEIGHT;
 
-        // Somma tutti i contributi e aggiungi la crescita di base
-        int deltaPop = (int) (BASE_GROWTH + happinessEffect + healthEffect + pollutionEffect + wasteEffect);
+        // Somma tutti i contributi e aggiungi la crescita di base, con cap
+        int deltaPop = (int) Math.min(MAX_GROWTH, Math.max(MAX_DECLINE,
+            BASE_GROWTH + happinessEffect + healthEffect + pollutionEffect + wasteEffect));
         
         // Applica il cambiamento alla popolazione
         int currentPop = state.getPopulation();

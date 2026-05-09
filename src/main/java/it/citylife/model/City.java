@@ -56,6 +56,9 @@ public class City {
     }
 
     private void updateState() {
+        // 0. Reset flag earthquake
+        state.setEarthquakeOccurred(false);
+
         // 1. Reset della rete elettrica
         powerNet.reset();
 
@@ -86,6 +89,7 @@ public class City {
         // Evento casuale: terremoto con probabilità 7%
         if (random.nextDouble() < 0.07) {
             disasterManager.triggerEarthquake(grid, state);
+            state.setEarthquakeOccurred(true);
         }
 
         System.out.println("=== TICK ===");

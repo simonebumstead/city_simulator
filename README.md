@@ -1,5 +1,5 @@
 ## CityLogic
-### Sviluppatori: Alessandro Piano, Simone Iantosca, Michele Coppari, ...
+### Sviluppatori: Alessandro Piano, Simone Iantosca, Michele Coppari, Paolo Muraro.
 
 Citylogic è un simulatore gestionale di città sviluppato in Java, in cui il giocatore veste i panni del Sindaco. L'obiettivo principale è costruire, espandere e mantenere in salute una metropoli virtuale, bilanciando attentamente la crescita economica con il benessere dei cittadini e la tutela dell'ambiente.
 
