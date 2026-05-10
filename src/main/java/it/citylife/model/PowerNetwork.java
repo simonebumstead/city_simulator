@@ -17,14 +17,14 @@ public class PowerNetwork {
     // --- METODI PER GESTIRE LA RETE ---
 
     /**
-     * Aggiunge energia alla rete (chiamato quando lo Sviluppatore 2 costruisce una centrale)
+     * Aggiunge energia alla rete 
      */
     public void addProduction(int amount) {
         this.totalProduction += amount;
     }
 
     /**
-     * Aggiunge carico alla rete (chiamato quando lo Sviluppatore 2 costruisce un edificio normale)
+     * Aggiunge carico alla rete 
      */
     public void addConsumption(int amount) {
         this.totalConsumption += amount;

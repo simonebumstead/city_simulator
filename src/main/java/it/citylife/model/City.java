@@ -24,7 +24,9 @@ public class City {
         this.state = new CityState();
         this.powerNet = new PowerNetwork();
         this.observers = new ArrayList<>();
-        this.activePolicy = new GreenPolicy();
+        
+        // Impostiamo la politica neutrale di default alla partenza del gioco
+        this.activePolicy = new DefaultPolicy();
 
         // Edifici di default in posizioni casuali non sovrapposte
         List<Structure> defaults = Arrays.asList(
@@ -50,6 +52,8 @@ public class City {
     public void advanceTick() {
         // 1. Aggiorna lo stato interno (Information Expert)
         updateState();
+
+
         
         // 2. Notifica la UI che i dati sono cambiati (Observer Pattern)
         notifyObservers();
@@ -62,44 +66,42 @@ public class City {
         // 1. Reset della rete elettrica
         powerNet.reset();
 
+        // Variabile per contare la capacità abitativa
+        int residentialCount = 0;
+
         // 2. Itera la griglia e applica gli effetti di ogni struttura
-        state.resetIndustrialDeltas();
         for (int x = 0; x < grid.getWidth(); x++) {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
                 if (cell != null && cell.getStructure() instanceof Structure s) {
                     s.applyEffects(state, powerNet);
+                    
+                    // Se è un edificio residenziale, aumentiamo il conteggio
+                    if (s instanceof ResidentialBuilding) {
+                        residentialCount++;
+                    }
                 }
             }
         }
 
-        // 3. Applica i modificatori della policy attiva
+        // 3. Risoluzione dei Delta
         PolicyModifiers mod = activePolicy.getModifiers();
-        state.updateHappiness(state.getHappiness() * mod.getHappinessMultiplier() - state.getHappiness());
-        state.updateHealth(state.getHealth() * mod.getHealthMultiplier() - state.getHealth());
-        state.updatePollution(state.getPollution() * mod.getPollutionMultiplier() - state.getPollution());
-        state.setWasteLevel((int)(state.getWasteLevel() * mod.getWasteMultiplier()));
-        state.updateBudget(mod.getFixedBudgetChange());
-        if (mod.getFixedHealthChange() != 0) {
-            state.updateHealth(mod.getFixedHealthChange());
-        }
-        // Correzione industriale specifica della policy (AC9.1, AC9.2, AC10.1, AC10.2)
-        state.updateBudget(state.getLastIndustrialBudgetDelta() * (mod.getIndustrialBudgetMultiplier() - 1.0));
-        state.updatePollution(state.getLastIndustrialPollutionDelta() * (mod.getIndustrialPollutionMultiplier() - 1.0));
+        state.resolveTick(mod);
 
-        // 4. Aggiorna la popolazione (AC7.1–7.3: crescita bloccata senza centrale vicina)
+        // 4. Aggiorna la popolazione (Crescita e Sovrappopolazione)
         boolean hasPowerNearby = anyResidentialHasPower();
-        new PopulationManager().updateDemographics(state, hasPowerNearby);
+        int maxCapacity = residentialCount * 200; // 200 abitanti per ogni area residenziale
+        new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity);
 
-        // Evento casuale: terremoto con probabilità 7%
-        if (random.nextDouble() < 0.07) {
+        // Evento casuale: terremoto con probabilità 1%
+        if (random.nextDouble() < 0.01) {
             disasterManager.triggerEarthquake(grid, state);
             state.setEarthquakeOccurred(true);
         }
 
         System.out.println("=== TICK ===");
-        System.out.printf("  Budget: %.0f | Pop: %d | Happiness: %.1f | Health: %.1f | Pollution: %.1f | Waste: %d%n",
-            state.getBudget(), state.getPopulation(), state.getHappiness(),
+        System.out.printf("  Budget: %.0f | Pop: %d/%d | Happiness: %.1f | Health: %.1f | Pollution: %.1f | Waste: %d%n",
+            state.getBudget(), state.getPopulation(), maxCapacity, state.getHappiness(),
             state.getHealth(), state.getPollution(), state.getWasteLevel());
         System.out.println("  Policy: " + activePolicy.getClass().getSimpleName());
         System.out.println("  Power: " + (powerNet.hasEnoughPower() ? "OK" : "BLACKOUT"));
