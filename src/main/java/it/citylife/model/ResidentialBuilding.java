@@ -8,9 +8,9 @@ public class ResidentialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(-5);
-        state.updateHappiness(0.5);
-        power.addConsumption(10);
+        state.updateBudget(2); // I cittadini ora pagano le tasse
+        state.updateHappiness(0.2); // Base neutra/positiva
+        power.addConsumption(5); // Consumano meno di un'industria
     }
 
     @Override

@@ -8,11 +8,11 @@ public class PowerPlant extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(-10);
-        state.updatePollution(2);
-        state.updateHappiness(-0.5);
-        state.updateHealth(-0.5);
-        power.addProduction(200);
+        state.updateBudget(-20); // Alto costo di manutenzione
+        state.updatePollution(3.5); // Le ciminiere inquinano a dismisura
+        state.updateHappiness(-1.0);
+        state.updateHealth(-1.0);
+        power.addProduction(250); // Ma producono più energia
     }
 
     @Override

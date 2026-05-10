@@ -8,13 +8,13 @@ public class IndustrialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(20);
-        state.updatePollution(1.5);
-        state.updateHappiness(-0.5);
-        state.updateHealth(-0.3);
-        power.addConsumption(20);
-        state.addIndustrialBudgetDelta(20);
-        state.addIndustrialPollutionDelta(1.5);
+        state.updateBudget(30); // Il vero motore economico
+        state.updatePollution(2.5); // Ma inquina tantissimo
+        state.updateHappiness(-1.0); // Nessuno vuole viverci vicino
+        state.updateHealth(-0.8); // Malus serio alla salute
+        power.addConsumption(25); // Consumono molto energia
+        state.addIndustrialBudgetDelta(30);
+        state.addIndustrialPollutionDelta(2.5);
     }
 
     @Override

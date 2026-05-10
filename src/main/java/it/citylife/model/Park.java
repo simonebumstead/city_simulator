@@ -8,10 +8,10 @@ public class Park extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(-3);
-        state.updatePollution(-0.5);
-        state.updateHappiness(1);
-        state.updateHealth(0.5);
+        state.updateBudget(-10); // Mantenerli belli costa caro al Comune
+        state.updatePollution(-0.5); // Mitigano l'inquinamento in modo più incisivo
+        state.updateHappiness(1.5); // Ottimi per contrastare il malumore industriale
+        state.updateHealth(1.0); // Incentivano l'attività all'aria aperta
     }
 
     @Override

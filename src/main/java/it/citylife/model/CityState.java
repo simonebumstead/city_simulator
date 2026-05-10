@@ -99,7 +99,7 @@ public class CityState {
         this.deltaHappiness = 0;
         this.deltaHealth = 0;
         this.deltaPollution = 0;
-        this.deltaWaste = 0;
+        //this.deltaWaste = 0;//
     }
 
     // Retrocompatibilità per evitare altri errori
