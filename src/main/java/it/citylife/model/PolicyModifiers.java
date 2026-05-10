@@ -55,5 +55,5 @@ public class PolicyModifiers {
 
 
     // PROVVISORIO - DOBBIAMO GESTIRE I RIFIUTI
-    public double getWasteGenerationMultiplier() {return 1.0    }
+    public double getWasteGenerationMultiplier() {return 1.0;}
 }
