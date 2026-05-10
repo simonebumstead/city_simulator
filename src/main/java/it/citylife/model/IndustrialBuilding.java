@@ -8,12 +8,21 @@ public class IndustrialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(20);
+        // Se non c'è corrente, la fabbrica è ferma e non produce alcun effetto
+        if (!this.powered) {
+            return;
+        }
+
+        // Genera revenue SOLO se è connessa a una strada per il trasporto merci
+        if (this.connectedToRoad) {
+            state.updateBudget(20);
+            state.addIndustrialBudgetDelta(20);
+        }
+
         state.updatePollution(1.5);
         state.updateHappiness(-0.5);
         state.updateHealth(-0.3);
         power.addConsumption(20);
-        state.addIndustrialBudgetDelta(20);
         state.addIndustrialPollutionDelta(1.5);
     }
 

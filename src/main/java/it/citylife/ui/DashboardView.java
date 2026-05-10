@@ -546,6 +546,7 @@ public class DashboardView extends Application implements StateObserver {
         Button stopBtn      = buildBarButton("Stop");
         Button saveBtn      = buildBarButton("Save");
         Button loadBtn      = buildBarButton("Load");
+        Button defaultBtn   = buildBarButton("Default");
         Button greenBtn     = buildBarButton("Green");
         Button austerityBtn = buildBarButton("Austerity");
         Button fossilBtn    = buildBarButton("Fossil Fuel");
@@ -584,6 +585,8 @@ public class DashboardView extends Application implements StateObserver {
             startBtn.setVisible(true);
             startBtn.setManaged(true);
         });
+        
+        defaultBtn.setOnAction(e -> setActivePolicy(defaultBtn, new it.citylife.model.DefaultPolicy()));
         greenBtn.setOnAction(e -> setActivePolicy(greenBtn, new GreenPolicy()));
         austerityBtn.setOnAction(e -> setActivePolicy(austerityBtn, new AusterityPolicy()));
         fossilBtn.setOnAction(e -> setActivePolicy(fossilBtn, new FossilFuelPolicy()));
@@ -647,7 +650,7 @@ public class DashboardView extends Application implements StateObserver {
         });
 
         HBox leftGroup   = new HBox(10, startBtn, stopBtn, saveBtn, loadBtn);
-        HBox centerGroup = new HBox(10, greenBtn, austerityBtn, fossilBtn);
+        HBox centerGroup = new HBox(10, defaultBtn, greenBtn, austerityBtn, fossilBtn);
         HBox rightGroup  = new HBox(10, speedSlider, speedLabel);
 
         leftGroup.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
