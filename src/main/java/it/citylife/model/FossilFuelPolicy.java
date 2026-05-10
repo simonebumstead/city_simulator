@@ -11,7 +11,8 @@ public class FossilFuelPolicy implements PolicyStrategy {
         return new PolicyModifiers()
                 // Raddoppia l'inquinamento GENERATO in questo turno
                 .setPollutionGenerationMultiplier(2.0) 
-                
+
+                .setIndustrialBudgetMultiplier(1.5)
                 // Malus fisso alla salute (lo smog fa male)
                 .setFixedHealthChange(-1.5)
                 
