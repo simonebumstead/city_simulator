@@ -52,4 +52,8 @@ public class PolicyModifiers {
 
     public PolicyModifiers setIndustrialBudgetMultiplier(double value) { this.industrialBudgetMultiplier = value; return this; }
     public PolicyModifiers setIndustrialPollutionMultiplier(double value) { this.industrialPollutionMultiplier = value; return this; }
+
+
+    // PROVVISORIO - DOBBIAMO GESTIRE I RIFIUTI
+    public double getWasteGenerationMultiplier() {return 1.0    }
 }
