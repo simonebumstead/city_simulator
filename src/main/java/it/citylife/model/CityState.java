@@ -8,9 +8,7 @@ public class CityState {
     
     private static final int INITIAL_POPULATION = 10;
     private static final double INITIAL_BUDGET = 5000.0;
-
-    private static final double INITIAL_HAPPINESS = 67.0; // Partenza al 67%
-
+    private static final double INITIAL_HAPPINESS = 67.0; 
     private static final double MAX_VAL = 100.0;
     private static final double MIN_VAL = 0.0;
 
@@ -27,7 +25,7 @@ public class CityState {
     private double deltaHappiness = 0.0;
     private double deltaHealth = 0.0;
     private double deltaPollution = 0.0;
-    //private double deltaWaste = 0.0;//
+    private double deltaWaste = 0.0;
 
     public CityState() {
         this.budget = INITIAL_BUDGET;
@@ -70,6 +68,7 @@ public class CityState {
         double finalDeltaHappiness = (this.deltaHappiness * modifiers.getHappinessGenerationMultiplier());
         double finalDeltaHealth = (this.deltaHealth * modifiers.getHealthGenerationMultiplier());
         double finalDeltaPollution = (this.deltaPollution * modifiers.getPollutionGenerationMultiplier());
+        double finalDeltaWaste = (this.deltaWaste * modifiers.getWasteGenerationMultiplier());
         double finalDeltaBudget = this.deltaBudget; // Nessun moltiplicatore globale sul budget
 
         // 2. Somma gli additivi fissi della policy
@@ -93,14 +92,17 @@ public class CityState {
         this.happiness = Math.max(MIN_VAL, Math.min(MAX_VAL, this.happiness + finalDeltaHappiness));
         this.health = Math.max(MIN_VAL, Math.min(MAX_VAL, this.health + finalDeltaHealth));
         this.pollution = Math.max(MIN_VAL, Math.min(MAX_VAL, this.pollution + finalDeltaPollution));
+        this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, this.wasteLevel + finalDeltaWaste));
 
         // 5. Azzera i delta per il turno successivo
         this.deltaBudget = 0;
         this.deltaHappiness = 0;
         this.deltaHealth = 0;
         this.deltaPollution = 0;
-        //this.deltaWaste = 0;//
+        this.deltaWaste = 0;
     }
+
+    public double getDeltaBudget() { return deltaBudget;}
 
     // Retrocompatibilità per evitare altri errori
     public void resetIndustrialDeltas() {}

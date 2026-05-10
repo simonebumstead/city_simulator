@@ -8,9 +8,14 @@ public class ResidentialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(2); // I cittadini ora pagano le tasse
-        state.updateHappiness(0.2); // Base neutra/positiva
-        power.addConsumption(5); // Consumano meno di un'industria
+        // Se non c'è corrente, la casa non genera effetti (inclusa la felicità)
+        if (!this.powered) {
+            return;
+        }
+
+        state.updateBudget(2); // I cittadini pagano le tasse
+        state.updateHappiness(0.2);
+        power.addConsumption(5);
     }
 
     @Override

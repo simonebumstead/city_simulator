@@ -8,9 +8,18 @@ public class CommercialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(15); // Ottima fonte di guadagno
-        state.updatePollution(0.3); // Inquinano meno delle industrie
-        state.updateHappiness(1.0); // Lo shopping alza il morale!
+        // Se non c'è corrente, l'edificio è chiuso e non produce alcun effetto
+        if (!this.powered) {
+            return;
+        }
+
+        // Genera revenue (budget) SOLO se è connesso a una strada
+        if (this.connectedToRoad) {
+            state.updateBudget(15);
+        }
+
+        state.updatePollution(0.3);
+        state.updateHappiness(1.0);
         power.addConsumption(10);
     }
 
