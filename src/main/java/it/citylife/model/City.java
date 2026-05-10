@@ -10,7 +10,7 @@ public class City {
     private Grid grid;               // La mappa 20x20
     private CityState state;         // I contatori (budget, pop, ecc.)
     private PowerNetwork powerNet;   // La gestione dell'energia
-        
+
     // Questa è una lista che contiene tutti i "soggetti" interessati ai cambiamenti della città.
     // Usiamo l'interfaccia 'StateObserver' invece di una classe specifica (es. DashboardUI)
     // per mantenere il codice flessibile (Disaccoppiamento).
@@ -24,10 +24,12 @@ public class City {
         this.state = new CityState();
         this.powerNet = new PowerNetwork();
         this.observers = new ArrayList<>();
-        
+
         // Impostiamo la politica neutrale di default alla partenza del gioco
         this.activePolicy = new DefaultPolicy();
 
+
+        /*
         // Edifici di default in posizioni casuali non sovrapposte
         List<Structure> defaults = Arrays.asList(
             new PowerPlant(),
@@ -44,6 +46,7 @@ public class City {
             } while (!grid.getCell(rx, ry).isEmpty());
             grid.placeStructure(s, rx, ry);
         }
+         */
     }
 
     // --- METODI CORE  ---
@@ -54,7 +57,7 @@ public class City {
         updateState();
 
 
-        
+
         // 2. Notifica la UI che i dati sono cambiati (Observer Pattern)
         notifyObservers();
     }
@@ -74,9 +77,30 @@ public class City {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
                 if (cell != null && cell.getStructure() instanceof Structure s) {
-                    s.applyEffects(state, powerNet);
                     
-                    // Se è un edificio residenziale, aumentiamo il conteggio
+                    // 2. Edifici non alimentati non applicano effetti
+                    boolean powered = isPowered(x, y);
+                    if (!powered && requiresPower(s)) {
+                        // Salta l'applicazione degli effetti, ma conta comunque la struttura se è residenziale
+                        if (s instanceof ResidentialBuilding) residentialCount++;
+                        continue; 
+                    }
+
+                    // 3. Edifici isolati non generano revenue
+                    boolean isolated = !hasAdjacentRoad(x, y);
+                    if (isolated && isRevenueBuilding(s)) {
+                        // Applica effetti ma annulla la revenue
+                        double budgetBefore = state.getDeltaBudget();
+                        s.applyEffects(state, powerNet);
+                        double budgetAfter = state.getDeltaBudget();
+                        double budgetAdded = budgetAfter - budgetBefore;
+                        if (budgetAdded > 0) {
+                            state.updateBudget(-budgetAdded); // Annulla il guadagno
+                        }
+                    } else {
+                        s.applyEffects(state, powerNet);
+                    }
+                    
                     if (s instanceof ResidentialBuilding) {
                         residentialCount++;
                     }
@@ -84,7 +108,6 @@ public class City {
             }
         }
 
-        // 3. Risoluzione dei Delta
         PolicyModifiers mod = activePolicy.getModifiers();
         state.resolveTick(mod);
 
@@ -100,9 +123,9 @@ public class City {
         }
 
         System.out.println("=== TICK ===");
-        System.out.printf("  Budget: %.0f | Pop: %d/%d | Happiness: %.1f | Health: %.1f | Pollution: %.1f | Waste: %d%n",
+        System.out.printf("  Budget: %.0f | Pop: %d/%d | Happiness: %.1f | Health: %.1f | Pollution: %.1f",
             state.getBudget(), state.getPopulation(), maxCapacity, state.getHappiness(),
-            state.getHealth(), state.getPollution(), state.getWasteLevel());
+            state.getHealth(), state.getPollution());
         System.out.println("  Policy: " + activePolicy.getClass().getSimpleName());
         System.out.println("  Power: " + (powerNet.hasEnoughPower() ? "OK" : "BLACKOUT"));
     }
@@ -111,43 +134,55 @@ public class City {
         for (int rx = 0; rx < grid.getWidth(); rx++) {
             for (int ry = 0; ry < grid.getHeight(); ry++) {
                 Cell rc = grid.getCell(rx, ry);
-                if (!(rc.getStructure() instanceof ResidentialBuilding)) continue;
-                for (int px = 0; px < grid.getWidth(); px++) {
-                    for (int py = 0; py < grid.getHeight(); py++) {
-                        Cell pc = grid.getCell(px, py);
-                        if (pc.getStructure() instanceof PowerPlant) {
-                            if (Math.max(Math.abs(px - rx), Math.abs(py - ry)) <= 5)
-                                return true;
-                        }
-                    }
+                if (rc != null && rc.getStructure() instanceof ResidentialBuilding) {
+                    if (isPowered(rx, ry)) return true;
                 }
             }
         }
         return false;
     }
 
-    // Metodo per registrare la UI come osservatore
-    public void addObserver(StateObserver observer) {
-        this.observers.add(observer);
-    }
-
-    private void notifyObservers() {
-        for (StateObserver obs : observers) {
-            obs.onStateChanged(this.state);
+    public boolean isPowered(int x, int y) {
+        for (int px = 0; px < grid.getWidth(); px++) {
+            for (int py = 0; py < grid.getHeight(); py++) {
+                Cell pc = grid.getCell(px, py);
+                if (pc != null && pc.getStructure() instanceof PowerPlant) {
+                    if (Math.max(Math.abs(px - x), Math.abs(py - y)) <= 5)
+                        return true;
+                }
+            }
         }
+        return false;
     }
 
-    public void notifyObserversPublic() {
-        notifyObservers();
+    private boolean hasAdjacentRoad(int x, int y) {
+        int[][] dirs = {{0,1}, {0,-1}, {1,0}, {-1,0}};
+        for (int[] d : dirs) {
+            int nx = x + d[0];
+            int ny = y + d[1];
+            if (nx >= 0 && nx < grid.getWidth() && ny >= 0 && ny < grid.getHeight()) {
+                Cell c = grid.getCell(nx, ny);
+                if (c != null && c.getStructure() != null && c.getStructure().getType() == StructureType.ROAD) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    public void setPolicy(PolicyStrategy policy) {
-        this.activePolicy = policy;
-        System.out.println("[POLICY] Cambiata a: " + policy.getClass().getSimpleName());
+    private boolean requiresPower(Structure s) {
+        return s instanceof ResidentialBuilding || s instanceof CommercialBuilding || s instanceof IndustrialBuilding;
     }
+
+    private boolean isRevenueBuilding(Structure s) {
+        return s instanceof CommercialBuilding || s instanceof IndustrialBuilding;
+    }
+
+    public void addObserver(StateObserver observer) { this.observers.add(observer); }
+    private void notifyObservers() { for (StateObserver obs : observers) { obs.onStateChanged(this.state); } }
+    public void notifyObserversPublic() { notifyObservers(); }
+    public void setPolicy(PolicyStrategy policy) { this.activePolicy = policy; System.out.println("[POLICY] Cambiata a: " + policy.getClass().getSimpleName()); }
     public PolicyStrategy getActivePolicy() { return activePolicy; }
-
-    // Getters per permettere alla UI di leggere (ma non modificare direttamente)
     public CityState getState() { return state; }
     public Grid getGrid() { return grid; }
     public PowerNetwork getPowerNet() { return powerNet; }

@@ -17,7 +17,7 @@ public class CityState {
     private double pollution;
     private double happiness;
     private double health;
-    private int wasteLevel;
+    //private int wasteLevel;
     private boolean earthquakeOccurred = false;
 
     // --- VARIABILI PER IL TRACCIAMENTO DEI DELTA (Generazione per turno) ---
@@ -33,7 +33,7 @@ public class CityState {
         this.population = INITIAL_POPULATION;
         this.pollution = 0.0;
         this.health = 100.0; 
-        this.wasteLevel = 0;
+        //this.wasteLevel = 0;
     }
 
     // --- GETTER TOTALI ---
@@ -42,7 +42,7 @@ public class CityState {
     public double getPollution() { return pollution; }
     public double getHappiness() { return happiness; }
     public double getHealth() { return health; }
-    public int getWasteLevel() { return wasteLevel; }
+    //public int getWasteLevel() { return wasteLevel; }
     public boolean isEarthquakeOccurred() { return earthquakeOccurred; }
     public void setEarthquakeOccurred(boolean v) { this.earthquakeOccurred = v; }
 
@@ -52,7 +52,7 @@ public class CityState {
     public void setHappiness(double value) { this.happiness = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
     public void setHealth(double value) { this.health = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
     public void setPollution(double value) { this.pollution = Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
-    public void setWasteLevel(int value) { this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
+    //public void setWasteLevel(int value) { this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, value)); }
 
     // --- METODI DI UPDATE (Chiamati dagli edifici) ---
     // Ora non modificano direttamente il totale, ma si accumulano nel Delta!
@@ -68,7 +68,7 @@ public class CityState {
         double finalDeltaHappiness = (this.deltaHappiness * modifiers.getHappinessGenerationMultiplier());
         double finalDeltaHealth = (this.deltaHealth * modifiers.getHealthGenerationMultiplier());
         double finalDeltaPollution = (this.deltaPollution * modifiers.getPollutionGenerationMultiplier());
-        double finalDeltaWaste = (this.deltaWaste * modifiers.getWasteGenerationMultiplier());
+        //double finalDeltaWaste = (this.deltaWaste * modifiers.getWasteGenerationMultiplier());
         double finalDeltaBudget = this.deltaBudget; // Nessun moltiplicatore globale sul budget
 
         // 2. Somma gli additivi fissi della policy
@@ -92,15 +92,17 @@ public class CityState {
         this.happiness = Math.max(MIN_VAL, Math.min(MAX_VAL, this.happiness + finalDeltaHappiness));
         this.health = Math.max(MIN_VAL, Math.min(MAX_VAL, this.health + finalDeltaHealth));
         this.pollution = Math.max(MIN_VAL, Math.min(MAX_VAL, this.pollution + finalDeltaPollution));
-        this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, this.wasteLevel + finalDeltaWaste));
+        //this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, this.wasteLevel + finalDeltaWaste));
 
         // 5. Azzera i delta per il turno successivo
         this.deltaBudget = 0;
         this.deltaHappiness = 0;
         this.deltaHealth = 0;
         this.deltaPollution = 0;
-        this.deltaWaste = 0;
+        //this.deltaWaste = 0;
     }
+
+    public double getDeltaBudget() { return deltaBudget;}
 
     // Retrocompatibilità per evitare altri errori
     public void resetIndustrialDeltas() {}

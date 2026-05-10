@@ -21,10 +21,10 @@ public class PopulationManager {
         double happinessEffect = (state.getHappiness() - NEUTRAL_POINT) * HAPPINESS_WEIGHT;
         double healthEffect = (state.getHealth() - NEUTRAL_POINT) * HEALTH_WEIGHT;
         double pollutionEffect = (state.getPollution() - NEUTRAL_POINT) * POLLUTION_WEIGHT;
-        double wasteEffect = (state.getWasteLevel() - NEUTRAL_POINT) * WASTE_WEIGHT;
+        //double wasteEffect = (state.getWasteLevel() - NEUTRAL_POINT) * WASTE_WEIGHT;
 
         int deltaPop = (int) Math.min(MAX_GROWTH, Math.max(MAX_DECLINE,
-            BASE_GROWTH + happinessEffect + healthEffect + pollutionEffect + wasteEffect));
+            BASE_GROWTH + happinessEffect + healthEffect + pollutionEffect));
 
         // 2. Assenza di corrente (crescita bloccata)
         if (!hasPowerNearby) {

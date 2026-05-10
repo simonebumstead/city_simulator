@@ -9,6 +9,7 @@ public class BuildingFactory {
             case "POWER_PLANT" -> new PowerPlant();
             case "PARK"        -> new Park();
             case "ROAD"        -> new Road();
+            case "HOSPITAL"    -> new Hospital();
             default -> throw new IllegalArgumentException("Unknown building type: " + type);
         };
     }

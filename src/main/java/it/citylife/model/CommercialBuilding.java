@@ -8,7 +8,16 @@ public class CommercialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
-        state.updateBudget(10);
+        // Se non c'è corrente, l'edificio è chiuso e non produce alcun effetto
+        if (!this.powered) {
+            return; 
+        }
+
+        // Genera revenue (budget) SOLO se è connesso a una strada
+        if (this.connectedToRoad) {
+            state.updateBudget(10);
+        }
+
         state.updatePollution(0.5);
         state.updateHappiness(0.5);
         power.addConsumption(10);

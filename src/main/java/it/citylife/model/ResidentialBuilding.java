@@ -8,6 +8,11 @@ public class ResidentialBuilding extends Structure {
 
     @Override
     public void applyEffects(CityState state, PowerNetwork power) {
+        // Se non c'è corrente, la casa non genera effetti (inclusa la felicità)
+        if (!this.powered) {
+            return;
+        }
+
         state.updateBudget(-5);
         state.updateHappiness(0.5);
         power.addConsumption(10);
