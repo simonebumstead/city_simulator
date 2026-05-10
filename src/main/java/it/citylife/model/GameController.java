@@ -83,7 +83,9 @@ public class GameController {
         }
 
         city.getGrid().placeStructure(building, x, y);
-        city.getState().updateBudget(-building.getConstructionCost());
+        // Usa setBudget invece di updateBudget per modifiche immediate (non a fine turno)
+        city.getState().setBudget(city.getState().getBudget() - building.getConstructionCost());
+        
         System.out.println("[BUILD] Piazzato " + type + " in (" + x + "," + y + ") | Costo: " + building.getConstructionCost() + " | Budget rimasto: " + city.getState().getBudget());
         city.notifyObserversPublic();
         return true;
@@ -103,7 +105,8 @@ public class GameController {
 
         if (cell.getStructure() instanceof Structure s) {
             int refund = s.getConstructionCost() / 2;
-            city.getState().updateBudget(refund);
+            // Usa setBudget per rimborsi immediati
+            city.getState().setBudget(city.getState().getBudget() + refund);
             System.out.println("[DEMOLISH] Rimborsati " + refund + " | Budget: " + city.getState().getBudget());
         }
 
@@ -126,7 +129,9 @@ public class GameController {
             }
             
             s.fullRepair();
-            city.getState().updateBudget(-repairCost);
+            // Usa setBudget per pagamenti immediati
+            city.getState().setBudget(city.getState().getBudget() - repairCost);
+
             System.out.println("[REPAIR] Riparato per " + repairCost + " | Budget: " + city.getState().getBudget());
             city.notifyObserversPublic();
             return true;
