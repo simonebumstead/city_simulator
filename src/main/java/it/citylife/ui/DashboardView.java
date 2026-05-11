@@ -20,6 +20,8 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -125,17 +127,7 @@ public class DashboardView extends Application implements StateObserver {
 
         primaryStage.show();
 
-        // AC-12.3: ripristino automatico dell'ultimo salvataggio all'avvio
-        try {
-            List<Path> saves = controller.listSaves();
-            if (!saves.isEmpty()) {
-                Path latest = saves.get(saves.size() - 1);
-                tickCount = controller.load(latest);
-                logMessage("💾 Partita ripristinata: " + latest.getFileName(), "#58a6ff");
-            }
-        } catch (IOException ex) {
-            // nessun salvataggio disponibile, si parte da zero
-        }
+        showStartupDialog();
     }
 
     // ── Tab 1: City Map ──────────────────────────────────────────────────────
@@ -766,6 +758,41 @@ public class DashboardView extends Application implements StateObserver {
             n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
         dp.lookupAll(".combo-box").forEach(n ->
             n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3;"));
+    }
+
+    private void showStartupDialog() {
+        List<Path> saves;
+        try {
+            saves = controller.listSaves();
+        } catch (IOException ex) {
+            return;
+        }
+
+        if (saves.isEmpty()) return;
+
+        Path latest = saves.get(saves.size() - 1);
+
+        ButtonType newGameType  = new ButtonType("Nuova Partita",      ButtonBar.ButtonData.LEFT);
+        ButtonType loadGameType = new ButtonType("Carica Salvataggio", ButtonBar.ButtonData.RIGHT);
+
+        Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+        dialog.setTitle("CityLogic");
+        dialog.setHeaderText("Benvenuto in CityLogic!");
+        dialog.setContentText("Vuoi iniziare una nuova partita o riprendere dall'ultimo salvataggio?\n("
+                + latest.getFileName() + ")");
+        dialog.getButtonTypes().setAll(newGameType, loadGameType);
+        applyDarkTheme(dialog);
+
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        if (result.isEmpty() || result.get() != loadGameType) return;
+
+        try {
+            tickCount = controller.load(latest);
+            logMessage("💾 Partita ripristinata: " + latest.getFileName(), "#58a6ff");
+        } catch (IOException ex) {
+            showErrorAlert("Errore durante il caricamento", ex.getMessage());
+        }
     }
 
     private void showErrorAlert(String header, String content) {
