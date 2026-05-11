@@ -74,8 +74,11 @@ public class City {
         // 1. Reset della rete elettrica
         powerNet.reset();
 
-        // Variabile per contare la capacità abitativa
+        // Variabile per contare la capacità abitativa e i gruppi edilizi per AC-19
         int residentialCount = 0;
+        int industrialCount  = 0;
+        int commercialCount  = 0;
+        int hospitalCount    = 0;
 
         // 2. Itera la griglia e applica gli effetti di ogni struttura
         for (int x = 0; x < grid.getWidth(); x++) {
@@ -98,7 +101,7 @@ public class City {
                     boolean powered = isPowered(x, y);
                     if (!powered && requiresPower(s)) {
                         // Salta l'applicazione degli effetti, ma conta comunque la struttura se è residenziale
-                        if (s instanceof ResidentialBuilding) residentialCount++;
+                        if (s.getType() == StructureType.RESIDENTIAL) residentialCount++;
                         continue;
                     }
 
@@ -117,9 +120,13 @@ public class City {
                         s.applyEffects(state, powerNet);
                     }
                     
-                    // Se è un edificio residenziale, aumentiamo il conteggio
-                    if (s instanceof ResidentialBuilding) {
-                        residentialCount++;
+                    // Conteggio edifici per AC-19 (usa getType() per funzionare anche con i Decorator)
+                    switch (s.getType()) {
+                        case RESIDENTIAL -> residentialCount++;
+                        case INDUSTRIAL  -> industrialCount++;
+                        case COMMERCIAL  -> commercialCount++;
+                        case HOSPITAL    -> hospitalCount++;
+                        default -> {}
                     }
                 }
             }
@@ -133,7 +140,8 @@ public class City {
         // 4. Aggiorna la popolazione (Crescita e Sovrappopolazione)
         boolean hasPowerNearby = anyResidentialHasPower();
         int maxCapacity = residentialCount * 200; // 200 abitanti per ogni area residenziale
-        new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity);
+        new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity,
+            industrialCount, commercialCount, hospitalCount, residentialCount);
 
         // Evento casuale: terremoto con probabilità 1%
         if (random.nextDouble() < DisasterManager.EARTHQUAKE_PROBABILITY) {

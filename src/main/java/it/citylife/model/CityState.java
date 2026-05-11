@@ -21,6 +21,7 @@ public class CityState {
     private int wasteLevel;
     private int criticalBuildingCount = 0;
     private boolean earthquakeOccurred = false;
+    private PopulationGroup populationGroup = new PopulationGroup();
 
     // --- VARIABILI PER IL TRACCIAMENTO DEI DELTA (Generazione per turno) ---
     private double deltaBudget = 0.0;
@@ -50,6 +51,7 @@ public class CityState {
     public void resetCriticalBuildings() { criticalBuildingCount = 0; }
     public boolean isEarthquakeOccurred() { return earthquakeOccurred; }
     public void setEarthquakeOccurred(boolean v) { this.earthquakeOccurred = v; }
+    public PopulationGroup getPopulationGroup() { return populationGroup; }
 
     // --- SETTER DIRETTI (Per i disastri o forzature) ---
     public void setPopulation(int population) { this.population = population; }
@@ -82,6 +84,13 @@ public class CityState {
         finalDeltaHealth += modifiers.getFixedHealthChange();
         finalDeltaPollution += modifiers.getFixedPollutionChange();
         finalDeltaBudget += modifiers.getFixedBudgetChange();
+
+        // AC-19.4: malus happiness proporzionale ai bisogni insoddisfatti del gruppo demografico
+        double groupMalus = 0.0;
+        if (populationGroup.getJobSatisfaction()    < 50.0) groupMalus += (50.0 - populationGroup.getJobSatisfaction())    * 0.04;
+        if (populationGroup.getHealthSatisfaction() < 50.0) groupMalus += (50.0 - populationGroup.getHealthSatisfaction()) * 0.04;
+        if (populationGroup.getSafetySatisfaction() < 50.0) groupMalus += (50.0 - populationGroup.getSafetySatisfaction()) * 0.04;
+        finalDeltaHappiness -= groupMalus;
 
         // 3. Se c'è troppo inquinamento, applica malus di base al delta
         if (this.pollution > 30.0) {

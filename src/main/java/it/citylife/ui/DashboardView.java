@@ -4,6 +4,7 @@ import it.citylife.model.AusterityPolicy;
 import it.citylife.model.CityState;
 import it.citylife.model.FossilFuelPolicy;
 import it.citylife.model.GreenPolicy;
+import it.citylife.model.PopulationGroup;
 import it.citylife.model.StateObserver;
 import it.citylife.model.Structure;
 import it.citylife.model.StructureDecorator;
@@ -60,6 +61,9 @@ public class DashboardView extends Application implements StateObserver {
     private Label healthLabel;
     private Label pollutionLabel;
     private Label wasteLabel;
+    private Label jobSatLabel;
+    private Label healthSatLabel;
+    private Label safetySatLabel;
     private Label energyLabel;
     private Label tickLabel;
 
@@ -164,6 +168,9 @@ public class DashboardView extends Application implements StateObserver {
         healthLabel     = makeMetricLabel(String.format("Health: %.1f",     controller.getState().getHealth()),     FontAwesomeSolid.HEART,       "#f472b6");
         pollutionLabel  = makeMetricLabel(String.format("Pollution: %.1f",  controller.getState().getPollution()),  FontAwesomeSolid.SMOG,        "#4ade80");
         wasteLabel      = makeMetricLabel("Waste: " +                        controller.getState().getWasteLevel(),  FontAwesomeSolid.TRASH,       "#8b949e");
+        jobSatLabel    = makeMetricLabel("Job Sat.: 50%",    FontAwesomeSolid.BRIEFCASE,    "#60a5fa");
+        healthSatLabel = makeMetricLabel("Health Sat.: 50%", FontAwesomeSolid.NOTES_MEDICAL, "#34d399");
+        safetySatLabel = makeMetricLabel("Safety Sat.: 50%", FontAwesomeSolid.SHIELD_ALT,    "#a78bfa");
 
         boolean powered = controller.hasPower();
         FontIcon boltIcon = new FontIcon(FontAwesomeSolid.BOLT);
@@ -182,6 +189,7 @@ public class DashboardView extends Application implements StateObserver {
             metricsTitle,
             budgetLabel, populationLabel, happinessLabel,
             healthLabel, pollutionLabel, wasteLabel,
+            jobSatLabel, healthSatLabel, safetySatLabel,
             new Separator(),
             energyLabel,
             new Separator(),
@@ -398,6 +406,10 @@ public class DashboardView extends Application implements StateObserver {
         healthLabel.setText(String.format("Health: %.1f",    s.getHealth()));
         pollutionLabel.setText(String.format("Pollution: %.1f", s.getPollution()));
         wasteLabel.setText("Waste: " +                        s.getWasteLevel());
+        PopulationGroup pg = s.getPopulationGroup();
+        jobSatLabel.setText(String.format("Job Sat.: %.0f%%",    pg.getJobSatisfaction()));
+        healthSatLabel.setText(String.format("Health Sat.: %.0f%%", pg.getHealthSatisfaction()));
+        safetySatLabel.setText(String.format("Safety Sat.: %.0f%%", pg.getSafetySatisfaction()));
         boolean powered = controller.hasPower();
         energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
         energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-size: 14px; -fx-font-weight: bold;");
@@ -816,6 +828,10 @@ public class DashboardView extends Application implements StateObserver {
             healthLabel.setText(String.format("Health: %.1f",     state.getHealth()));
             pollutionLabel.setText(String.format("Pollution: %.1f", state.getPollution()));
             wasteLabel.setText("Waste: " +                         state.getWasteLevel());
+            PopulationGroup pg2 = state.getPopulationGroup();
+            jobSatLabel.setText(String.format("Job Sat.: %.0f%%",    pg2.getJobSatisfaction()));
+            healthSatLabel.setText(String.format("Health Sat.: %.0f%%", pg2.getHealthSatisfaction()));
+            safetySatLabel.setText(String.format("Safety Sat.: %.0f%%", pg2.getSafetySatisfaction()));
 
             boolean powered = controller.hasPower();
             energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");

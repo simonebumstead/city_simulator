@@ -15,8 +15,22 @@ public class PopulationManager {
     private static final int MAX_GROWTH          = 8;     
     private static final int MAX_DECLINE         = -15;   
 
-    public void updateDemographics(CityState state, boolean hasPowerNearby, int maxCapacity) {
-        
+    public void updateDemographics(CityState state, boolean hasPowerNearby, int maxCapacity,
+            int industrialCount, int commercialCount, int hospitalCount, int residentialCount) {
+
+        // AC-19.2/19.3: aggiorna le soddisfazioni del gruppo demografico
+        PopulationGroup pg = state.getPopulationGroup();
+        if (residentialCount == 0) {
+            // Nessun residente: nessuna domanda insoddisfatta
+            pg.setJobSatisfaction(100.0);
+            pg.setHealthSatisfaction(100.0);
+            pg.setSafetySatisfaction(100.0);
+        } else {
+            pg.setJobSatisfaction(Math.min(100.0, (industrialCount + commercialCount) * 100.0 / residentialCount));
+            pg.setHealthSatisfaction(Math.min(100.0, hospitalCount * 200.0 / residentialCount));
+            pg.setSafetySatisfaction(Math.max(0.0, 100.0 - state.getPollution()));
+        }
+
         // 1. Calcolo base della crescita
         double happinessEffect = (state.getHappiness() - NEUTRAL_POINT) * HAPPINESS_WEIGHT;
         double healthEffect = (state.getHealth() - NEUTRAL_POINT) * HEALTH_WEIGHT;
