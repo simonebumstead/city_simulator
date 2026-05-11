@@ -170,7 +170,7 @@ public class DashboardView extends Application implements StateObserver {
         happinessLabel  = makeMetricLabel(String.format("Happiness: %.1f",  controller.getState().getHappiness()),  FontAwesomeSolid.SMILE,       "#fb923c");
         healthLabel     = makeMetricLabel(String.format("Health: %.1f",     controller.getState().getHealth()),     FontAwesomeSolid.HEART,       "#f472b6");
         pollutionLabel  = makeMetricLabel(String.format("Pollution: %.1f",  controller.getState().getPollution()),  FontAwesomeSolid.SMOG,        "#4ade80");
-        //wasteLabel      = makeMetricLabel("Waste: " +                       controller.getState().getWasteLevel(),  FontAwesomeSolid.TRASH,       "#8b949e");
+        wasteLabel      = makeMetricLabel("Waste: " +                        controller.getState().getWasteLevel(),  FontAwesomeSolid.TRASH,       "#8b949e");
 
         boolean powered = controller.hasPower();
         FontIcon boltIcon = new FontIcon(FontAwesomeSolid.BOLT);
@@ -188,7 +188,7 @@ public class DashboardView extends Application implements StateObserver {
         VBox vbox = new VBox(10,
             metricsTitle,
             budgetLabel, populationLabel, happinessLabel,
-            healthLabel, pollutionLabel, //wasteLabel,
+            healthLabel, pollutionLabel, wasteLabel,
             new Separator(),
             energyLabel,
             new Separator(),
@@ -212,6 +212,7 @@ public class DashboardView extends Application implements StateObserver {
         Button ppBtn    = buildToolButton("Power Plant", "POWER_PLANT", FontAwesomeSolid.BOLT,     colorForType(StructureType.POWER_PLANT));
         Button parkBtn  = buildToolButton("Park",        "PARK",        FontAwesomeSolid.TREE,     colorForType(StructureType.PARK));
         Button hospBtn  = buildToolButton("Hospital",    "HOSPITAL",    FontAwesomeSolid.HOSPITAL, colorForType(StructureType.HOSPITAL));
+        Button wasteBtn = buildToolButton("Waste Center","WASTE_CENTER",FontAwesomeSolid.TRASH,    colorForType(StructureType.WASTE_CENTER));
         Button roadBtn  = buildToolButton("Road",        "ROAD",        FontAwesomeSolid.ROAD,     colorForType(StructureType.ROAD));
         Button repairBtn = buildToolButton("Repair",      "REPAIR",      FontAwesomeSolid.WRENCH,   Color.web("#a3e635"));
         Button demolBtn = buildToolButton("Demolish",    "DEMOLISH",    FontAwesomeSolid.HAMMER,   Color.web("#f38ba8"));
@@ -228,7 +229,7 @@ public class DashboardView extends Application implements StateObserver {
 
         VBox vbox = new VBox(8,
             buildTitle,
-            resBtn, indBtn, comBtn, ppBtn, parkBtn, hospBtn, roadBtn, 
+            resBtn, indBtn, comBtn, ppBtn, parkBtn, hospBtn, wasteBtn, roadBtn,
             new Separator(), repairBtn, repairAllBtn, demolBtn
         );
         vbox.setPadding(new Insets(14));
@@ -377,7 +378,7 @@ public class DashboardView extends Application implements StateObserver {
         happinessLabel.setText(String.format("Happiness: %.1f", s.getHappiness()));
         healthLabel.setText(String.format("Health: %.1f",    s.getHealth()));
         pollutionLabel.setText(String.format("Pollution: %.1f", s.getPollution()));
-        //wasteLabel.setText("Waste: " +                       s.getWasteLevel());
+        wasteLabel.setText("Waste: " +                        s.getWasteLevel());
         boolean powered = controller.hasPower();
         energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
         energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-size: 14px; -fx-font-weight: bold;");
@@ -455,10 +456,11 @@ public class DashboardView extends Application implements StateObserver {
                     }
 
                     // Indicatore mancanza di corrente per QUALSIASI edificio che la richiede
-                    boolean requiresPower = (s.getType() == StructureType.RESIDENTIAL || 
-                                             s.getType() == StructureType.COMMERCIAL || 
+                    boolean requiresPower = (s.getType() == StructureType.RESIDENTIAL ||
+                                             s.getType() == StructureType.COMMERCIAL ||
                                              s.getType() == StructureType.INDUSTRIAL ||
-                                             s.getType() == StructureType.HOSPITAL);
+                                             s.getType() == StructureType.HOSPITAL ||
+                                             s.getType() == StructureType.WASTE_CENTER);
 
                     if (requiresPower && !isPowered(x, y)) {
                         FontIcon warn = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
@@ -481,7 +483,8 @@ public class DashboardView extends Application implements StateObserver {
             case POWER_PLANT -> FontAwesomeSolid.BOLT;
             case PARK        -> FontAwesomeSolid.TREE;
             case ROAD        -> FontAwesomeSolid.ROAD;
-            case HOSPITAL    -> FontAwesomeSolid.HOSPITAL;
+            case HOSPITAL     -> FontAwesomeSolid.HOSPITAL;
+            case WASTE_CENTER -> FontAwesomeSolid.TRASH;
         };
     }
 
@@ -493,7 +496,8 @@ public class DashboardView extends Application implements StateObserver {
             case POWER_PLANT -> Color.web("#f472b6");
             case PARK        -> Color.web("#4ade80");
             case ROAD        -> Color.web("#94a3b8");
-            case HOSPITAL    -> Color.web("#f87171");
+            case HOSPITAL     -> Color.web("#f87171");
+            case WASTE_CENTER -> Color.web("#a78bfa");
         };
     }
 
@@ -746,7 +750,7 @@ public class DashboardView extends Application implements StateObserver {
             happinessLabel.setText(String.format("Happiness: %.1f", state.getHappiness()));
             healthLabel.setText(String.format("Health: %.1f",     state.getHealth()));
             pollutionLabel.setText(String.format("Pollution: %.1f", state.getPollution()));
-            //wasteLabel.setText("Waste: " +                        state.getWasteLevel());
+            wasteLabel.setText("Waste: " +                         state.getWasteLevel());
 
             boolean powered = controller.hasPower();
             energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");

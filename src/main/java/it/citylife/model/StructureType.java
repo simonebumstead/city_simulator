@@ -7,5 +7,6 @@ public enum StructureType {
     POWER_PLANT,
     PARK,
     ROAD,
-    HOSPITAL
+    HOSPITAL,
+    WASTE_CENTER
 }

@@ -7,6 +7,7 @@ package it.citylife.model;
 public class CityState {
     
     private static final int INITIAL_POPULATION = 10;
+    private static final double WASTE_POLLUTION_THRESHOLD = 50.0;
     private static final double INITIAL_BUDGET = 5000.0;
     private static final double INITIAL_HAPPINESS = 67.0; 
     private static final double MAX_VAL = 100.0;
@@ -64,6 +65,7 @@ public class CityState {
     public void updateHappiness(double amount) { this.deltaHappiness += amount; }
     public void updateHealth(double amount) { this.deltaHealth += amount; }
     public void updatePollution(double amount) { this.deltaPollution += amount; }
+    public void updateWaste(double amount) { this.deltaWaste += amount; }
     
     // --- RISOLUZIONE DEL TURNO (Applica Moltiplicatori e Additivi Fissi) ---
     public void resolveTick(PolicyModifiers modifiers) {
@@ -88,6 +90,13 @@ public class CityState {
             finalDeltaHealth -= (penalty * 1.5);
         }
         
+        // Se i rifiuti superano la soglia, aumentano l'inquinamento e riducono la felicità
+        if (this.wasteLevel > WASTE_POLLUTION_THRESHOLD) {
+            double wastePenalty = (this.wasteLevel - WASTE_POLLUTION_THRESHOLD) * 0.10;
+            finalDeltaPollution += wastePenalty;
+            finalDeltaHappiness -= (wastePenalty * 0.5);
+        }
+
         // L'inquinamento decade sempre un pochino naturalmente
         finalDeltaPollution -= 2.0;
 

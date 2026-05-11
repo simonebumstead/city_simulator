@@ -53,7 +53,7 @@ public class SaveLoadManager {
         s.setHappiness(data.happiness);
         s.setHealth(data.health);
         s.setPollution(data.pollution);
-        //s.setWasteLevel(data.wasteLevel);
+        s.setWasteLevel(data.wasteLevel);
 
         for (BuildingEntry entry : data.buildings) {
             Structure building = BuildingFactory.createBuilding(entry.type);
@@ -81,7 +81,7 @@ public class SaveLoadManager {
         data.pollution  = s.getPollution();
         data.happiness  = s.getHappiness();
         data.health     = s.getHealth();
-        //data.wasteLevel = s.getWasteLevel();
+        data.wasteLevel = s.getWasteLevel();
 
         Grid grid = city.getGrid();
         data.buildings = new ArrayList<>();

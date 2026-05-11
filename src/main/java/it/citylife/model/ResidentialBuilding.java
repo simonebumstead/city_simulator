@@ -13,8 +13,9 @@ public class ResidentialBuilding extends Structure {
             return;
         }
 
-        state.updateBudget(2); // I cittadini pagano le tasse
+        state.updateBudget(2);
         state.updateHappiness(0.2);
+        state.updateWaste(1.0);
         power.addConsumption(5);
     }
 
