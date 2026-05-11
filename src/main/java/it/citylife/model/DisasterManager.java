@@ -3,6 +3,10 @@ package it.citylife.model;
 import java.util.Random;
 
 public class DisasterManager {
+
+    /** AC-14.1: probabilità di terremoto per tick (configurabile qui). */
+    public static final double EARTHQUAKE_PROBABILITY = 0.01;
+
     private final Random random = new Random();
 
     /**
@@ -35,13 +39,13 @@ public class DisasterManager {
         int collapsedBuildings = 0;
 
         // 5. Itera su tutta la griglia e applica il danno a ogni edificio
-        for (int x = 0; x < grid.getHeight(); x++) {
-            for (int y = 0; y < grid.getWidth(); y++) {
+        for (int x = 0; x < grid.getWidth(); x++) {
+            for (int y = 0; y < grid.getHeight(); y++) {
                 Cell targetCell = grid.getCell(x, y);
 
                 if (targetCell != null && targetCell.getStructure() instanceof Structure building) {
-                    int remainingHp = building.takeDamage(damageToInflict);
-                    if (remainingHp <= 0) {
+                    building.onEarthquake(damageToInflict);
+                    if (building.isDestroyed()) {
                         targetCell.setStructure(null);
                         collapsedBuildings++;
                     }

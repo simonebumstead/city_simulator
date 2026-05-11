@@ -136,7 +136,7 @@ public class City {
         new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity);
 
         // Evento casuale: terremoto con probabilità 1%
-        if (random.nextDouble() < 0.01) {
+        if (random.nextDouble() < DisasterManager.EARTHQUAKE_PROBABILITY) {
             disasterManager.triggerEarthquake(grid, state);
             state.setEarthquakeOccurred(true);
         }

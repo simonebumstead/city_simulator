@@ -56,6 +56,11 @@ public abstract class Structure implements Placeable {
     public boolean isPowered() { return powered; }
     public void setPowered(boolean powered) { this.powered = powered; }
 
+    /** AC-14.2: punto di notifica per eventi terremoto. Delega a takeDamage(). */
+    public void onEarthquake(int damage) {
+        takeDamage(damage);
+    }
+
     public abstract void applyEffects(CityState state, PowerNetwork power);
 
     public abstract StructureType getType();
