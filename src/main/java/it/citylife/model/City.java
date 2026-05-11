@@ -19,6 +19,9 @@ public class City {
     private final DisasterManager disasterManager = new DisasterManager();
     private final Random random = new Random();
 
+    private static final int    PARK_HAPPINESS_RADIUS = 3;
+    private static final double PARK_HAPPINESS_BONUS  = 2.0;
+
     public City() {
         this.grid = new Grid();
         this.state = new CityState();
@@ -109,6 +112,8 @@ public class City {
             }
         }
 
+        applyParkAdjacencyBonus();
+
         PolicyModifiers mod = activePolicy.getModifiers();
         state.resolveTick(mod);
 
@@ -177,6 +182,25 @@ public class City {
 
     private boolean isRevenueBuilding(Structure s) {
         return s instanceof CommercialBuilding || s instanceof IndustrialBuilding;
+    }
+
+    private void applyParkAdjacencyBonus() {
+        for (int px = 0; px < grid.getWidth(); px++) {
+            for (int py = 0; py < grid.getHeight(); py++) {
+                Cell parkCell = grid.getCell(px, py);
+                if (parkCell == null || !(parkCell.getStructure() instanceof Park)) continue;
+
+                for (int rx = 0; rx < grid.getWidth(); rx++) {
+                    for (int ry = 0; ry < grid.getHeight(); ry++) {
+                        Cell resCell = grid.getCell(rx, ry);
+                        if (resCell == null || !(resCell.getStructure() instanceof ResidentialBuilding)) continue;
+                        if (Math.max(Math.abs(px - rx), Math.abs(py - ry)) <= PARK_HAPPINESS_RADIUS) {
+                            state.updateHappiness(PARK_HAPPINESS_BONUS);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void addObserver(StateObserver observer) { this.observers.add(observer); }
