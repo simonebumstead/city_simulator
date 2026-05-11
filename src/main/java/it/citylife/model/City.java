@@ -19,8 +19,9 @@ public class City {
     private final DisasterManager disasterManager = new DisasterManager();
     private final Random random = new Random();
 
-    private static final int    PARK_HAPPINESS_RADIUS = 3;
-    private static final double PARK_HAPPINESS_BONUS  = 2.0;
+    private static final int    PARK_HAPPINESS_RADIUS    = 3;
+    private static final double PARK_HAPPINESS_BONUS     = 2.0;
+    private static final double PARK_POLLUTION_REDUCTION = 3.0;
 
     public City() {
         this.grid = new Grid();
@@ -112,7 +113,7 @@ public class City {
             }
         }
 
-        applyParkAdjacencyBonus();
+        applyParkEffects();
 
         PolicyModifiers mod = activePolicy.getModifiers();
         state.resolveTick(mod);
@@ -184,12 +185,16 @@ public class City {
         return s instanceof CommercialBuilding || s instanceof IndustrialBuilding;
     }
 
-    private void applyParkAdjacencyBonus() {
+    private void applyParkEffects() {
         for (int px = 0; px < grid.getWidth(); px++) {
             for (int py = 0; py < grid.getHeight(); py++) {
                 Cell parkCell = grid.getCell(px, py);
                 if (parkCell == null || !(parkCell.getStructure() instanceof Park)) continue;
 
+                // AC-05.4: ogni Park riduce l'inquinamento globale
+                state.updatePollution(-PARK_POLLUTION_REDUCTION);
+
+                // AC-05.3: bonus happiness per ogni Residential entro raggio
                 for (int rx = 0; rx < grid.getWidth(); rx++) {
                     for (int ry = 0; ry < grid.getHeight(); ry++) {
                         Cell resCell = grid.getCell(rx, ry);
