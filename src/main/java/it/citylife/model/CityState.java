@@ -18,6 +18,7 @@ public class CityState {
     private double happiness;
     private double health;
     private int wasteLevel;
+    private int criticalBuildingCount = 0;
     private boolean earthquakeOccurred = false;
 
     // --- VARIABILI PER IL TRACCIAMENTO DEI DELTA (Generazione per turno) ---
@@ -43,6 +44,9 @@ public class CityState {
     public double getHappiness() { return happiness; }
     public double getHealth() { return health; }
     public int getWasteLevel() { return wasteLevel; }
+    public int getCriticalBuildingCount() { return criticalBuildingCount; }
+    public void incrementCriticalBuildings() { criticalBuildingCount++; }
+    public void resetCriticalBuildings() { criticalBuildingCount = 0; }
     public boolean isEarthquakeOccurred() { return earthquakeOccurred; }
     public void setEarthquakeOccurred(boolean v) { this.earthquakeOccurred = v; }
 

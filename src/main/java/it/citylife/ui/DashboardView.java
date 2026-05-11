@@ -287,32 +287,11 @@ public class DashboardView extends Application implements StateObserver {
             if (selectedTool.equals("DEMOLISH")) {
                 ok = controller.demolish(x, y);
             } else if (selectedTool.equals("REPAIR")) {
-                // Since SimulationController might not have repair if the user rolled it back,
-                // we'll try calling it using reflection or just use the GameController directly.
-                // Assuming GameController was NOT rolled back, we can access it if there is a way.
-                // Wait, if SimulationController rejected, maybe GameController rejected too?
-                // The instructions said "Some previous changes... have been rolled back".
-                // I will try to call repair on controller directly if it's there.
-                // Wait, SimulationController is user's file. I couldn't write it.
-                // Let's implement repair directly here using the controller.getState() if possible.
-                // Or I can just try to use reflection to find the repair method, or maybe
-                // we don't have access. Let's assume GameController has the repair method.
-                // Wait, I can't call controller.repair() if it doesn't compile.
-
-                // Let's manually do it if we can't.
-                var cell = controller.getGrid().getCell(x, y);
-                if (cell != null && cell.getStructure() instanceof Structure s) {
-                    if (!s.isDestroyed() && s.getHp() < s.getMaxHp()) {
-                        int cost = (s.getMaxHp() - s.getHp()) * 2;
-                        if (controller.getState().getBudget() >= cost) {
-                            s.fullRepair();
-                            controller.getState().updateBudget(-cost);
-                            ok = true;
-                            logMessage("Edificio riparato (-" + cost + "$)", "#3fb950");
-                        } else {
-                            logMessage("⚠️ Fondi insufficienti per riparare!", "#f85149");
-                        }
-                    }
+                ok = controller.repair(x, y);
+                if (ok) {
+                    logMessage("Edificio riparato", "#3fb950");
+                } else {
+                    logMessage("⚠️ Impossibile riparare (fondi insufficienti o HP già al max)", "#f85149");
                 }
             } else {
                 ok = controller.placeBuilding(selectedTool, x, y);
@@ -402,6 +381,14 @@ public class DashboardView extends Application implements StateObserver {
         boolean powered = controller.hasPower();
         energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
         energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+        applyMetricAlerts(s);
+    }
+
+    private void applyMetricAlerts(CityState s) {
+        budgetLabel.setStyle("-fx-text-fill: "    + (s.getBudget()     <  500 ? "#f85149" : "#facc15") + "; -fx-font-size: 14px;");
+        happinessLabel.setStyle("-fx-text-fill: " + (s.getHappiness()  <   25 ? "#f85149" : "#fb923c") + "; -fx-font-size: 14px;");
+        healthLabel.setStyle("-fx-text-fill: "    + (s.getHealth()     <   25 ? "#f85149" : "#f472b6") + "; -fx-font-size: 14px;");
+        pollutionLabel.setStyle("-fx-text-fill: " + (s.getPollution()  >   75 ? "#f85149" : "#4ade80") + "; -fx-font-size: 14px;");
     }
 
     private boolean isPowered(int rx, int ry) {
@@ -779,6 +766,11 @@ public class DashboardView extends Application implements StateObserver {
                 showEarthquakeAlert();
             }
 
+            if (state.getCriticalBuildingCount() > 0) {
+                logMessage("⚠️ " + state.getCriticalBuildingCount() + " edifici in stato critico! (HP < 20%)", "#f9e64f");
+            }
+
+            applyMetricAlerts(state);
             updateGrid();
         });
     }

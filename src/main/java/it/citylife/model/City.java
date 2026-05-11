@@ -67,8 +67,9 @@ public class City {
     }
 
     private void updateState() {
-        // 0. Reset flag earthquake
+        // 0. Reset flag per-tick
         state.setEarthquakeOccurred(false);
+        state.resetCriticalBuildings();
 
         // 1. Reset della rete elettrica
         powerNet.reset();
@@ -81,6 +82,17 @@ public class City {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
                 if (cell != null && cell.getStructure() instanceof Structure s) {
+
+                    // AC-15.1: ogni struttura decade di HP_DECAY_PER_TICK ogni tick
+                    s.decayTick();
+
+                    // AC-15.2: conta edifici in stato critico (HP < 20% maxHp)
+                    if (s.getHp() > 0 && s.getHp() < s.getMaxHp() * 0.20) {
+                        state.incrementCriticalBuildings();
+                    }
+
+                    // AC-15.4: edifici distrutti non applicano effetti
+                    if (s.isDestroyed()) continue;
 
                     // 2. Edifici non alimentati non applicano effetti
                     boolean powered = isPowered(x, y);

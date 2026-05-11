@@ -9,9 +9,17 @@ public abstract class Structure implements Placeable {
     protected boolean connectedToRoad = true;
     protected boolean powered = true;
 
+    private static final int HP_DECAY_PER_TICK = 2;
+
     public Structure(int maxHp) {
         this.maxHp = maxHp;
         this.hp = maxHp;
+    }
+
+    public void decayTick() {
+        if (hp > 0) {
+            takeDamage(HP_DECAY_PER_TICK);
+        }
     }
 
     public int takeDamage(int amount) {

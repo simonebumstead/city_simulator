@@ -40,6 +40,10 @@ public class SimulationController {
         return controller.demolish(x, y);
     }
 
+    public boolean repair(int x, int y) {
+        return controller.repair(x, y);
+    }
+
     public it.citylife.model.Grid getGrid() {
         return controller.getGrid();
     }
