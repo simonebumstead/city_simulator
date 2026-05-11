@@ -44,6 +44,10 @@ public class SimulationController {
         return controller.repair(x, y);
     }
 
+    public boolean upgrade(int x, int y, String upgradeType) {
+        return controller.upgradeBuilding(x, y, upgradeType);
+    }
+
     public it.citylife.model.Grid getGrid() {
         return controller.getGrid();
     }

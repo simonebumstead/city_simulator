@@ -150,6 +150,44 @@ public class GameController {
         return false;
     }
 
+    public boolean upgradeBuilding(int x, int y, String upgradeType) {
+        Cell cell = city.getGrid().getCell(x, y);
+        if (cell == null || cell.isEmpty()) return false;
+        if (!(cell.getStructure() instanceof Structure base)) return false;
+
+        // AC-16.3: max 3 upgrade annidati
+        int currentLevel = (base instanceof StructureDecorator d) ? d.getUpgradeLevel() : 0;
+        if (currentLevel >= 3) {
+            System.out.println("[UPGRADE] Livello massimo upgrade raggiunto.");
+            return false;
+        }
+
+        int cost = switch (upgradeType) {
+            case "SEISMIC"       -> SeismicUpgrade.COST;
+            case "WASTE_THERMAL" -> WasteThermalUpgrade.COST;
+            default -> { System.out.println("[UPGRADE] Tipo sconosciuto: " + upgradeType); yield -1; }
+        };
+        if (cost < 0) return false;
+
+        if (city.getState().getBudget() < cost) {
+            System.out.println("[UPGRADE] Budget insufficiente. Costo: " + cost);
+            return false;
+        }
+
+        Structure upgraded = switch (upgradeType) {
+            case "SEISMIC"       -> new SeismicUpgrade(base);
+            case "WASTE_THERMAL" -> new WasteThermalUpgrade(base);
+            default -> null;
+        };
+        if (upgraded == null) return false;
+
+        city.getState().setBudget(city.getState().getBudget() - cost);
+        cell.setStructure(upgraded);
+        System.out.println("[UPGRADE] Applicato " + upgradeType + " in (" + x + "," + y + ") | Costo: " + cost);
+        city.notifyObserversPublic();
+        return true;
+    }
+
     public Path saveGame(int tick) throws IOException {
         return ioManager.saveAuto(city, tick);
     }

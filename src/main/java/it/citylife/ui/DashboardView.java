@@ -6,6 +6,7 @@ import it.citylife.model.FossilFuelPolicy;
 import it.citylife.model.GreenPolicy;
 import it.citylife.model.StateObserver;
 import it.citylife.model.Structure;
+import it.citylife.model.StructureDecorator;
 import it.citylife.model.StructureType;
 
 import javafx.animation.KeyFrame;
@@ -227,10 +228,19 @@ public class DashboardView extends Application implements StateObserver {
         repairAllBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px;");
         repairAllBtn.setOnAction(e -> showRepairAllPreview());
 
+        Label upgradeTitle = new Label("UPGRADE");
+        upgradeTitle.setStyle("-fx-text-fill: #8b949e; -fx-font-size: 10px; -fx-font-weight: bold;");
+
+        Button seismicBtn = buildToolButton("Seismic (500)", "UPGRADE_SEISMIC",
+                FontAwesomeSolid.SHIELD_ALT, Color.web("#38bdf8"));
+        Button wasteThermalBtn = buildToolButton("Waste Thermal (700)", "UPGRADE_WASTE_THERMAL",
+                FontAwesomeSolid.FIRE, Color.web("#f97316"));
+
         VBox vbox = new VBox(8,
             buildTitle,
             resBtn, indBtn, comBtn, ppBtn, parkBtn, hospBtn, wasteBtn, roadBtn,
-            new Separator(), repairBtn, repairAllBtn, demolBtn
+            new Separator(), repairBtn, repairAllBtn, demolBtn,
+            new Separator(), upgradeTitle, seismicBtn, wasteThermalBtn
         );
         vbox.setPadding(new Insets(14));
         vbox.setMinWidth(160);
@@ -294,6 +304,20 @@ public class DashboardView extends Application implements StateObserver {
                 } else {
                     logMessage("⚠️ Impossibile riparare (fondi insufficienti o HP già al max)", "#f85149");
                 }
+            } else if (selectedTool.equals("UPGRADE_SEISMIC")) {
+                ok = controller.upgrade(x, y, "SEISMIC");
+                if (ok) {
+                    logMessage("Seismic Upgrade applicato (-500$)", "#38bdf8");
+                } else {
+                    logMessage("⚠️ Upgrade fallito (livello max, fondi insufficienti o cella vuota)", "#f85149");
+                }
+            } else if (selectedTool.equals("UPGRADE_WASTE_THERMAL")) {
+                ok = controller.upgrade(x, y, "WASTE_THERMAL");
+                if (ok) {
+                    logMessage("Waste Thermal Upgrade applicato (-700$)", "#f97316");
+                } else {
+                    logMessage("⚠️ Upgrade fallito (livello max, fondi insufficienti o cella vuota)", "#f85149");
+                }
             } else {
                 ok = controller.placeBuilding(selectedTool, x, y);
             }
@@ -301,7 +325,10 @@ public class DashboardView extends Application implements StateObserver {
             ok = false;
         }
 
-        if (!ok && !selectedTool.equals("REPAIR")) {
+        boolean upgradeOrRepair = selectedTool.equals("REPAIR")
+                || selectedTool.equals("UPGRADE_SEISMIC")
+                || selectedTool.equals("UPGRADE_WASTE_THERMAL");
+        if (!ok && !upgradeOrRepair) {
             logMessage("⚠️ Impossibile eseguire l'azione!", "#f9e64f");
         }
         
@@ -432,6 +459,17 @@ public class DashboardView extends Application implements StateObserver {
                     icon.setIconSize(16);
                     icon.setIconColor(bg);
                     cell.getChildren().add(icon);
+
+                    // Badge upgrade level (stellina in alto a sinistra)
+                    if (s instanceof StructureDecorator dec) {
+                        FontIcon upgIcon = new FontIcon(FontAwesomeSolid.STAR);
+                        upgIcon.setIconSize(8);
+                        upgIcon.setIconColor(Color.web("#fde047"));
+                        Label upgLabel = new Label("" + dec.getUpgradeLevel(), upgIcon);
+                        upgLabel.setStyle("-fx-text-fill: #fde047; -fx-font-size: 8px;");
+                        StackPane.setAlignment(upgLabel, javafx.geometry.Pos.TOP_LEFT);
+                        cell.getChildren().add(upgLabel);
+                    }
 
                     // Indicatore di danno (barra HP visibile solo on hover)
                     if (s.getHp() < s.getMaxHp() && s.getHp() > 0) {

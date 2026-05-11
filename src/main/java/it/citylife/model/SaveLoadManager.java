@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -57,6 +58,11 @@ public class SaveLoadManager {
 
         for (BuildingEntry entry : data.buildings) {
             Structure building = BuildingFactory.createBuilding(entry.type);
+            if (entry.upgrades != null) {
+                for (String upgrade : entry.upgrades) {
+                    building = BuildingFactory.applyUpgrade(building, upgrade);
+                }
+            }
             grid.placeStructure(building, entry.x, entry.y);
         }
 
@@ -90,9 +96,17 @@ public class SaveLoadManager {
                 Cell cell = grid.getCell(x, y);
                 if (!cell.isEmpty() && cell.getStructure() instanceof Structure st) {
                     BuildingEntry entry = new BuildingEntry();
-                    entry.type = st.getType().name();
                     entry.x = x;
                     entry.y = y;
+                    if (st instanceof StructureDecorator dec) {
+                        entry.upgrades = dec.collectUpgrades();
+                        Structure base = st;
+                        while (base instanceof StructureDecorator dd) base = dd.wrapped;
+                        entry.type = base.getType().name();
+                    } else {
+                        entry.type = st.getType().name();
+                        entry.upgrades = Collections.emptyList();
+                    }
                     data.buildings.add(entry);
                 }
             }
@@ -118,5 +132,6 @@ public class SaveLoadManager {
         public String type;
         public int x;
         public int y;
+        public List<String> upgrades = new ArrayList<>();
     }
 }

@@ -14,4 +14,12 @@ public class BuildingFactory {
             default -> throw new IllegalArgumentException("Unknown building type: " + type);
         };
     }
+
+    public static Structure applyUpgrade(Structure base, String upgradeName) {
+        return switch (upgradeName.toUpperCase()) {
+            case "SEISMIC"       -> new SeismicUpgrade(base);
+            case "WASTE_THERMAL" -> new WasteThermalUpgrade(base);
+            default -> base;
+        };
+    }
 }
