@@ -53,6 +53,7 @@ public class DashboardView extends Application implements StateObserver {
     private Timeline timeline;
     private int tickCount = 0;
     private static final int AUTOSAVE_EVERY_TICKS = 5;
+    private boolean budgetWasNegative = false;
 
     // Labels
     private Label budgetLabel;
@@ -853,6 +854,13 @@ public class DashboardView extends Application implements StateObserver {
 
             if (state.getCriticalBuildingCount() > 0) {
                 logMessage("⚠️ " + state.getCriticalBuildingCount() + " edifici in stato critico! (HP < 20%)", "#f9e64f");
+            }
+
+            if (state.getBudget() < 0 && !budgetWasNegative) {
+                logMessage("🔴 BILANCIO NEGATIVO! La città è in deficit.", "#f85149");
+                budgetWasNegative = true;
+            } else if (state.getBudget() >= 0) {
+                budgetWasNegative = false;
             }
 
             applyMetricAlerts(state);

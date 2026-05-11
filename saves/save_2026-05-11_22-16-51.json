@@ -1,0 +1,51 @@
+{
+  "tick" : 55,
+  "activePolicy" : "GreenPolicy",
+  "budget" : 12392.0,
+  "population" : 233,
+  "pollution" : 0.0,
+  "happiness" : 52.280000000000115,
+  "health" : 97.5,
+  "wasteLevel" : 0,
+  "buildings" : [ {
+    "type" : "POWER_PLANT",
+    "x" : 6,
+    "y" : 6,
+    "upgrades" : [ ]
+  }, {
+    "type" : "RESIDENTIAL",
+    "x" : 7,
+    "y" : 5,
+    "upgrades" : [ ]
+  }, {
+    "type" : "ROAD",
+    "x" : 7,
+    "y" : 6,
+    "upgrades" : [ ]
+  }, {
+    "type" : "WASTE_CENTER",
+    "x" : 7,
+    "y" : 7,
+    "upgrades" : [ "WASTE_THERMAL" ]
+  }, {
+    "type" : "PARK",
+    "x" : 8,
+    "y" : 5,
+    "upgrades" : [ ]
+  }, {
+    "type" : "ROAD",
+    "x" : 8,
+    "y" : 6,
+    "upgrades" : [ ]
+  }, {
+    "type" : "HOSPITAL",
+    "x" : 8,
+    "y" : 7,
+    "upgrades" : [ ]
+  }, {
+    "type" : "ROAD",
+    "x" : 9,
+    "y" : 6,
+    "upgrades" : [ ]
+  } ]
+}

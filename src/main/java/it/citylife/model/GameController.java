@@ -92,7 +92,6 @@ public class GameController {
     }
 
     public void changePolicy(PolicyStrategy policy) {
-        city.setPolicy(policy);
         if (policy == null) {
             city.setPolicy(new DefaultPolicy());
             System.out.println("[POLICY] Policy deselezionata. Ripristinata DefaultPolicy neutrale.");

@@ -32,9 +32,9 @@ public class DisasterManager {
         System.out.println(String.format("Each building will suffer %d damage.", damageToInflict));
         System.out.println(String.format("Citizens' happiness dropped by %d points and health by %d.", happinessMalus, healthMalus));
 
-        // 4. Applica il malus a Felicità e Salute (non farli scendere sotto zero)
-        state.updateHappiness(-happinessMalus);
-        state.updateHealth(-healthMalus);
+        // 4. Applica il malus a Felicità e Salute direttamente (bypassa delta e moltiplicatori policy)
+        state.setHappiness(Math.max(0, state.getHappiness() - happinessMalus));
+        state.setHealth(Math.max(0, state.getHealth() - healthMalus));
 
         int collapsedBuildings = 0;
 

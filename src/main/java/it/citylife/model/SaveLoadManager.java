@@ -69,7 +69,8 @@ public class SaveLoadManager {
         PolicyStrategy policy = switch (data.activePolicy) {
             case "AusterityPolicy"  -> new AusterityPolicy();
             case "FossilFuelPolicy" -> new FossilFuelPolicy();
-            default                 -> new GreenPolicy();
+            case "GreenPolicy"      -> new GreenPolicy();
+            default                 -> new DefaultPolicy();
         };
         city.setPolicy(policy);
 
