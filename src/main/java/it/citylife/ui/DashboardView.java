@@ -48,6 +48,7 @@ public class DashboardView extends Application implements StateObserver {
     private SimulationController controller;
     private Timeline timeline;
     private int tickCount = 0;
+    private static final int AUTOSAVE_EVERY_TICKS = 5;
 
     // Labels
     private Label budgetLabel;
@@ -122,6 +123,18 @@ public class DashboardView extends Application implements StateObserver {
         } catch (Exception e) { /* fallback */ }
 
         primaryStage.show();
+
+        // AC-12.3: ripristino automatico dell'ultimo salvataggio all'avvio
+        try {
+            List<Path> saves = controller.listSaves();
+            if (!saves.isEmpty()) {
+                Path latest = saves.get(saves.size() - 1);
+                tickCount = controller.load(latest);
+                logMessage("💾 Partita ripristinata: " + latest.getFileName(), "#58a6ff");
+            }
+        } catch (IOException ex) {
+            // nessun salvataggio disponibile, si parte da zero
+        }
     }
 
     // ── Tab 1: City Map ──────────────────────────────────────────────────────
@@ -554,6 +567,14 @@ public class DashboardView extends Application implements StateObserver {
         timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             tickCount++;
             controller.tick();
+            if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
+                try {
+                    controller.save(tickCount);
+                    logMessage("💾 Autosave (tick " + tickCount + ")", "#58a6ff");
+                } catch (IOException ex) {
+                    logMessage("⚠️ Autosave fallito!", "#f85149");
+                }
+            }
         }));
         timeline.setCycleCount(Timeline.INDEFINITE);
 

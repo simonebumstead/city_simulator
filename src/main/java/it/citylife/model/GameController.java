@@ -111,10 +111,14 @@ public class GameController {
         if (cell == null || cell.isEmpty()) return false;
 
         if (cell.getStructure() instanceof Structure s) {
+            int demolitionCost = s.getConstructionCost() / 10;
+            if (city.getState().getBudget() < demolitionCost) {
+                System.out.println("[DEMOLISH] Budget insufficiente per demolire! Costo: " + demolitionCost);
+                return false;
+            }
             int refund = s.getConstructionCost() / 2;
-            // Usa setBudget per rimborsi immediati
-            city.getState().setBudget(city.getState().getBudget() + refund);
-            System.out.println("[DEMOLISH] Rimborsati " + refund + " | Budget: " + city.getState().getBudget());
+            city.getState().setBudget(city.getState().getBudget() + refund - demolitionCost);
+            System.out.println("[DEMOLISH] Costo rimozione: " + demolitionCost + " | Rimborso: " + refund + " | Budget: " + city.getState().getBudget());
         }
 
         city.getGrid().removeStructure(x, y);
