@@ -20,6 +20,8 @@ public class PolicyModifiers {
     private double fixedPollutionChange = 0.0;
     private int fixedBudgetChange = 0;
 
+    private double wasteGenerationMultiplier = 1.0;
+
     // --- Moltiplicatori vecchi (per retrocompatibilità se ci sono test) ---
     private double industrialBudgetMultiplier = 1.0;
     private double industrialPollutionMultiplier = 1.0;
@@ -54,6 +56,6 @@ public class PolicyModifiers {
     public PolicyModifiers setIndustrialPollutionMultiplier(double value) { this.industrialPollutionMultiplier = value; return this; }
 
 
-    // PROVVISORIO - DOBBIAMO GESTIRE I RIFIUTI
-    public double getWasteGenerationMultiplier() {return 1.0;}
+    public double getWasteGenerationMultiplier() { return wasteGenerationMultiplier; }
+    public PolicyModifiers setWasteGenerationMultiplier(double value) { this.wasteGenerationMultiplier = value; return this; }
 }

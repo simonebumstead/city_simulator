@@ -25,6 +25,7 @@ public class CityState {
 
     // --- VARIABILI PER IL TRACCIAMENTO DEI DELTA (Generazione per turno) ---
     private double deltaBudget = 0.0;
+    private double deltaIndustrialBudget = 0.0;
     private double deltaHappiness = 0.0;
     private double deltaHealth = 0.0;
     private double deltaPollution = 0.0;
@@ -77,7 +78,8 @@ public class CityState {
         double finalDeltaHealth = (this.deltaHealth * modifiers.getHealthGenerationMultiplier());
         double finalDeltaPollution = (this.deltaPollution * modifiers.getPollutionGenerationMultiplier());
         double finalDeltaWaste = (this.deltaWaste * modifiers.getWasteGenerationMultiplier());
-        double finalDeltaBudget = this.deltaBudget; // Nessun moltiplicatore globale sul budget
+        double nonIndustrialBudget = this.deltaBudget - this.deltaIndustrialBudget;
+        double finalDeltaBudget = nonIndustrialBudget + this.deltaIndustrialBudget * modifiers.getIndustrialBudgetMultiplier();
 
         // 2. Somma gli additivi fissi della policy
         finalDeltaHappiness += modifiers.getFixedHappinessChange();
@@ -118,6 +120,7 @@ public class CityState {
 
         // 5. Azzera i delta per il turno successivo
         this.deltaBudget = 0;
+        this.deltaIndustrialBudget = 0;
         this.deltaHappiness = 0;
         this.deltaHealth = 0;
         this.deltaPollution = 0;
@@ -126,10 +129,9 @@ public class CityState {
 
     public double getDeltaBudget() { return deltaBudget;}
 
-    // Retrocompatibilità per evitare altri errori
-    public void resetIndustrialDeltas() {}
-    public void addIndustrialBudgetDelta(double v) {}
+    public void addIndustrialBudgetDelta(double v) { this.deltaIndustrialBudget += v; }
+    public void resetIndustrialDeltas() { this.deltaIndustrialBudget = 0; }
     public void addIndustrialPollutionDelta(double v) {}
-    public double getLastIndustrialBudgetDelta() { return 0; }
+    public double getLastIndustrialBudgetDelta() { return deltaIndustrialBudget; }
     public double getLastIndustrialPollutionDelta() { return 0; }
 }

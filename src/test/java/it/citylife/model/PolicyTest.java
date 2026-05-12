@@ -90,7 +90,7 @@ class PolicyTest {
     @Test
     @DisplayName("FossilFuelPolicy: pollution generata raddoppiata rispetto a DefaultPolicy")
     void testFossilFuelPolicyIncreasesPollution() {
-        // Fossil: finalDeltaPollution = 10 * 2.0 + 0 - 2.0 = 18.0
+        // Fossil: finalDeltaPollution = 10 * 2.0 + 3.0 - 2.0 = 21.0
         // Default: finalDeltaPollution = 10 * 1.0 + 0 - 2.0 = 8.0
         CityState fossilState   = new CityState();
         CityState defaultState  = new CityState();
@@ -99,6 +99,34 @@ class PolicyTest {
         fossilState.resolveTick(new FossilFuelPolicy().getModifiers());
         defaultState.resolveTick(new DefaultPolicy().getModifiers());
         assertTrue(fossilState.getPollution() > defaultState.getPollution());
+    }
+
+    @Test
+    @DisplayName("FossilFuelPolicy: fixedPollutionChange = 3.0 (emissioni base senza industria)")
+    void testFossilFuelPolicyHasFixedPollutionChange() {
+        assertEquals(3.0, new FossilFuelPolicy().getModifiers().getFixedPollutionChange(), 0.001);
+    }
+
+    @Test
+    @DisplayName("FossilFuelPolicy: industrialBudgetMultiplier amplifica i ricavi industriali (1.5x)")
+    void testFossilFuelIndustrialBudgetMultiplier() {
+        // Scenario: un edificio industriale genera 30 budget/tick
+        // FossilFuel:  (30 - 30) + 30 * 1.5 + 300 (flat) = 345  → budget = 5000 + 345 = 5345
+        // Default:     (30 - 30) + 30 * 1.0 + 0          = 30   → budget = 5000 + 30  = 5030
+        CityState fossilState  = new CityState();
+        CityState defaultState = new CityState();
+
+        fossilState.updateBudget(30.0);
+        fossilState.addIndustrialBudgetDelta(30.0);
+        defaultState.updateBudget(30.0);
+        defaultState.addIndustrialBudgetDelta(30.0);
+
+        fossilState.resolveTick(new FossilFuelPolicy().getModifiers());
+        defaultState.resolveTick(new DefaultPolicy().getModifiers());
+
+        assertEquals(5345.0, fossilState.getBudget(), 0.001);
+        assertEquals(5030.0, defaultState.getBudget(), 0.001);
+        assertTrue(fossilState.getBudget() > defaultState.getBudget());
     }
 
     @Test
@@ -112,11 +140,11 @@ class PolicyTest {
     // ── AusterityPolicy ──────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("AusterityPolicy: budget aumenta di 2000 per tick (tasse elevate)")
+    @DisplayName("AusterityPolicy: budget aumenta di 500 per tick (tasse elevate)")
     void testAusterityPolicyIncreasesBudget() {
         state.resolveTick(new AusterityPolicy().getModifiers());
-        // budget = 5000 + 0 + 2000 = 7000
-        assertEquals(7000.0, state.getBudget(), 0.001);
+        // budget = 5000 + 0 + 500 = 5500
+        assertEquals(5500.0, state.getBudget(), 0.001);
     }
 
     @Test
@@ -133,5 +161,25 @@ class PolicyTest {
         state.resolveTick(new AusterityPolicy().getModifiers());
         // health = 100 + 0 + (-2.0) = 98.0
         assertEquals(98.0, state.getHealth(), 0.001);
+    }
+
+    // ── wasteGenerationMultiplier ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("GreenPolicy: wasteGenerationMultiplier = 0.8 (meno rifiuti)")
+    void testGreenPolicyWasteMultiplier() {
+        assertEquals(0.8, new GreenPolicy().getModifiers().getWasteGenerationMultiplier(), 0.001);
+    }
+
+    @Test
+    @DisplayName("FossilFuelPolicy: wasteGenerationMultiplier = 1.2 (più rifiuti)")
+    void testFossilFuelPolicyWasteMultiplier() {
+        assertEquals(1.2, new FossilFuelPolicy().getModifiers().getWasteGenerationMultiplier(), 0.001);
+    }
+
+    @Test
+    @DisplayName("DefaultPolicy: wasteGenerationMultiplier = 1.0 (neutro)")
+    void testDefaultPolicyWasteMultiplier() {
+        assertEquals(1.0, new DefaultPolicy().getModifiers().getWasteGenerationMultiplier(), 0.001);
     }
 }

@@ -58,7 +58,7 @@ public class PopulationManager {
             state.setHappiness(state.getHappiness() - 2.0);
             state.setHealth(state.getHealth() - 1.0);
             
-            System.out.println("⚠️ SOVRAPPOPOLAZIONE: Malus applicati a Felicità e Salute.");
+            System.out.println("⚠️ OVERPOPULATION: Penalties applied to Happiness and Health.");
         }
 
         // 4. Applica la variazione di popolazione
@@ -66,9 +66,9 @@ public class PopulationManager {
         state.setPopulation(newPop);
 
         if (deltaPop > 0) {
-            System.out.println(String.format("Popolazione aumentata di %d unità. Totale: %d (Capacità: %d)", deltaPop, newPop, maxCapacity));
+            System.out.println(String.format("Population increased by %d. Total: %d (Capacity: %d)", deltaPop, newPop, maxCapacity));
         } else {
-            System.out.println(String.format("Popolazione diminuita di %d unità. Totale: %d (Capacità: %d)", -deltaPop, newPop, maxCapacity));
+            System.out.println(String.format("Population decreased by %d. Total: %d (Capacity: %d)", -deltaPop, newPop, maxCapacity));
         }
     }
 }

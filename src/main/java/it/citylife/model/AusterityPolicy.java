@@ -15,6 +15,6 @@ public class AusterityPolicy implements PolicyStrategy {
                 .setFixedHealthChange(-2.0)
                 
                 // Tasse elevate
-                .setFixedBudgetChange(2000);
+                .setFixedBudgetChange(500);
     }
 }

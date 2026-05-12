@@ -29,6 +29,9 @@ public class GreenPolicy implements PolicyStrategy {
                 .setFixedHealthChange(2.0)
                 
                 // Costo fisso di mantenimento
-                .setFixedBudgetChange(-200);
+                .setFixedBudgetChange(-200)
+
+                // Meno rifiuti prodotti (gestione verde dei consumi)
+                .setWasteGenerationMultiplier(0.8);
     }
 }

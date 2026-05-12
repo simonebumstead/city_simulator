@@ -231,7 +231,7 @@ public class City {
     public void addObserver(StateObserver observer) { this.observers.add(observer); }
     private void notifyObservers() { for (StateObserver obs : observers) { obs.onStateChanged(this.state); } }
     public void notifyObserversPublic() { notifyObservers(); }
-    public void setPolicy(PolicyStrategy policy) { this.activePolicy = policy; System.out.println("[POLICY] Cambiata a: " + policy.getClass().getSimpleName()); }
+    public void setPolicy(PolicyStrategy policy) { this.activePolicy = policy; System.out.println("[POLICY] Changed to: " + policy.getClass().getSimpleName()); }
     public PolicyStrategy getActivePolicy() { return activePolicy; }
     public CityState getState() { return state; }
     public Grid getGrid() { return grid; }

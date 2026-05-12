@@ -23,27 +23,12 @@ public class GameController {
                 Cell cell = grid.getCell(x, y);
                 if (cell != null && cell.getStructure() instanceof Structure s) {
                     s.setConnectedToRoad(hasAdjacentRoad(x, y));
-                    s.setPowered(isPowered(x, y));
+                    s.setPowered(city.isPowered(x, y));
                 }
             }
         }
         
         city.advanceTick();
-    }
-
-    private boolean isPowered(int x, int y) {
-        Grid grid = city.getGrid();
-        for (int px = 0; px < grid.getWidth(); px++) {
-            for (int py = 0; py < grid.getHeight(); py++) {
-                Cell pc = grid.getCell(px, py);
-                if (pc != null && pc.getStructure() instanceof PowerPlant) {
-                    if (Math.max(Math.abs(px - x), Math.abs(py - y)) <= 5) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     private boolean hasAdjacentRoad(int x, int y) {
@@ -67,18 +52,18 @@ public class GameController {
         Cell cell = city.getGrid().getCell(x, y);
 
         if (cell == null || !cell.isEmpty()) {
-            System.out.println("Cella occupata o non valida.");
+            System.out.println("Cell occupied or invalid.");
             return false;
         }
-        
+
         // 1. Blocco placement residenziale senza road
         if (building.getType() == StructureType.RESIDENTIAL && !hasAdjacentRoad(x, y)) {
-            System.out.println("Devi costruire vicino a una strada!");
+            System.out.println("Must build next to a road!");
             return false;
         }
 
         if (city.getState().getBudget() < building.getConstructionCost()) {
-            System.out.println("Budget insufficiente per costruire: " + type);
+            System.out.println("Insufficient budget to build: " + type);
             return false;
         }
 
@@ -86,7 +71,7 @@ public class GameController {
         // Usa setBudget invece di updateBudget per modifiche immediate (non a fine turno)
         city.getState().setBudget(city.getState().getBudget() - building.getConstructionCost());
         
-        System.out.println("[BUILD] Piazzato " + type + " in (" + x + "," + y + ") | Costo: " + building.getConstructionCost() + " | Budget rimasto: " + city.getState().getBudget());
+        System.out.println("[BUILD] Placed " + type + " at (" + x + "," + y + ") | Cost: " + building.getConstructionCost() + " | Budget left: " + city.getState().getBudget());
         city.notifyObserversPublic();
         return true;
     }
@@ -94,7 +79,7 @@ public class GameController {
     public void changePolicy(PolicyStrategy policy) {
         if (policy == null) {
             city.setPolicy(new DefaultPolicy());
-            System.out.println("[POLICY] Policy deselezionata. Ripristinata DefaultPolicy neutrale.");
+            System.out.println("[POLICY] Policy deselected. Restored neutral DefaultPolicy.");
         } else {
             city.setPolicy(policy);
             System.out.println("[POLICY] Policy cambiata in: " + policy.getClass().getSimpleName());
@@ -112,12 +97,12 @@ public class GameController {
         if (cell.getStructure() instanceof Structure s) {
             int demolitionCost = s.getConstructionCost() / 10;
             if (city.getState().getBudget() < demolitionCost) {
-                System.out.println("[DEMOLISH] Budget insufficiente per demolire! Costo: " + demolitionCost);
+                System.out.println("[DEMOLISH] Insufficient budget to demolish! Cost: " + demolitionCost);
                 return false;
             }
             int refund = s.getConstructionCost() / 2;
             city.getState().setBudget(city.getState().getBudget() + refund - demolitionCost);
-            System.out.println("[DEMOLISH] Costo rimozione: " + demolitionCost + " | Rimborso: " + refund + " | Budget: " + city.getState().getBudget());
+            System.out.println("[DEMOLISH] Removal cost: " + demolitionCost + " | Refund: " + refund + " | Budget: " + city.getState().getBudget());
         }
 
         city.getGrid().removeStructure(x, y);
@@ -134,7 +119,7 @@ public class GameController {
             
             int repairCost = (s.getMaxHp() - s.getHp()) * 2; 
             if (city.getState().getBudget() < repairCost) {
-                System.out.println("Budget insufficiente per riparare!");
+                System.out.println("Insufficient budget to repair!");
                 return false;
             }
             
@@ -142,7 +127,7 @@ public class GameController {
             // Usa setBudget per pagamenti immediati
             city.getState().setBudget(city.getState().getBudget() - repairCost);
 
-            System.out.println("[REPAIR] Riparato per " + repairCost + " | Budget: " + city.getState().getBudget());
+            System.out.println("[REPAIR] Repaired for " + repairCost + " | Budget: " + city.getState().getBudget());
             city.notifyObserversPublic();
             return true;
         }
@@ -157,19 +142,19 @@ public class GameController {
         // AC-16.3: max 3 upgrade annidati
         int currentLevel = (base instanceof StructureDecorator d) ? d.getUpgradeLevel() : 0;
         if (currentLevel >= 3) {
-            System.out.println("[UPGRADE] Livello massimo upgrade raggiunto.");
+            System.out.println("[UPGRADE] Maximum upgrade level reached.");
             return false;
         }
 
         int cost = switch (upgradeType) {
             case "SEISMIC"       -> SeismicUpgrade.COST;
             case "WASTE_THERMAL" -> WasteThermalUpgrade.COST;
-            default -> { System.out.println("[UPGRADE] Tipo sconosciuto: " + upgradeType); yield -1; }
+            default -> { System.out.println("[UPGRADE] Unknown upgrade type: " + upgradeType); yield -1; }
         };
         if (cost < 0) return false;
 
         if (city.getState().getBudget() < cost) {
-            System.out.println("[UPGRADE] Budget insufficiente. Costo: " + cost);
+            System.out.println("[UPGRADE] Insufficient budget. Cost: " + cost);
             return false;
         }
 
@@ -182,7 +167,7 @@ public class GameController {
 
         city.getState().setBudget(city.getState().getBudget() - cost);
         cell.setStructure(upgraded);
-        System.out.println("[UPGRADE] Applicato " + upgradeType + " in (" + x + "," + y + ") | Costo: " + cost);
+        System.out.println("[UPGRADE] Applied " + upgradeType + " at (" + x + "," + y + ") | Cost: " + cost);
         city.notifyObserversPublic();
         return true;
     }
