@@ -98,6 +98,7 @@ public class DashboardView extends Application implements StateObserver {
     private XYChart.Series<Number, Number> healthSeries;
     private XYChart.Series<Number, Number> pollutionSeries;
     private double populationDivisor = 10.0;
+    private Label earthquakeNotifLabel;
 
     @Override
     public void start(Stage primaryStage) {
@@ -308,21 +309,21 @@ public class DashboardView extends Application implements StateObserver {
                 if (ok) {
                     logMessage("Building repaired", "#3fb950");
                 } else {
-                    logMessage("⚠️ Cannot repair (insufficient funds or HP already at max)", "#f85149");
+                    logMessage("Cannot repair (insufficient funds or HP already at max)", "#f85149");
                 }
             } else if (selectedTool.equals("UPGRADE_SEISMIC")) {
                 ok = controller.upgrade(x, y, "SEISMIC");
                 if (ok) {
                     logMessage("Seismic Upgrade applied (-500$)", "#38bdf8");
                 } else {
-                    logMessage("⚠️ Upgrade failed (max level, insufficient funds, or empty cell)", "#f85149");
+                    logMessage("Upgrade failed (max level, insufficient funds, or empty cell)", "#f85149");
                 }
             } else if (selectedTool.equals("UPGRADE_WASTE_THERMAL")) {
                 ok = controller.upgrade(x, y, "WASTE_THERMAL");
                 if (ok) {
                     logMessage("Waste Thermal Upgrade applied (-700$)", "#f97316");
                 } else {
-                    logMessage("⚠️ Upgrade failed (max level, insufficient funds, or empty cell)", "#f85149");
+                    logMessage("Upgrade failed (max level, insufficient funds, or empty cell)", "#f85149");
                 }
             } else {
                 ok = controller.placeBuilding(selectedTool, x, y);
@@ -335,7 +336,7 @@ public class DashboardView extends Application implements StateObserver {
                 || selectedTool.equals("UPGRADE_SEISMIC")
                 || selectedTool.equals("UPGRADE_WASTE_THERMAL");
         if (!ok && !upgradeOrRepair) {
-            logMessage("⚠️ Cannot perform this action!", "#f9e64f");
+            logMessage("Cannot perform this action!", "#f9e64f");
         }
         
         updateGrid();
@@ -349,8 +350,7 @@ public class DashboardView extends Application implements StateObserver {
         msg.setWrapText(true);
         logPanel.getChildren().add(0, msg);
         
-        // Rimuove il messaggio dopo 4 secondi
-        new Timeline(new KeyFrame(Duration.seconds(4), e -> logPanel.getChildren().remove(msg))).play();
+        new Timeline(new KeyFrame(Duration.seconds(10), e -> logPanel.getChildren().remove(msg))).play();
     }
 
     private void showRepairAllPreview() {
@@ -609,6 +609,7 @@ public class DashboardView extends Application implements StateObserver {
         chart.setTitle("City Trends");
         chart.setCreateSymbols(false);
         chart.setAnimated(false);
+        chart.setLegendVisible(false);
 
         populationSeries = new XYChart.Series<>(); populationSeries.setName("Population (×10)");
         happinessSeries  = new XYChart.Series<>(); happinessSeries.setName("Happiness");
@@ -622,7 +623,11 @@ public class DashboardView extends Application implements StateObserver {
         dashHealthLabel = makeDashStat("Health: 100.0",   FontAwesomeSolid.HEART, "#57b757");
         dashPollLabel   = makeDashStat("Pollution: 0.0",  FontAwesomeSolid.SMOG,  "#41a9c9");
 
-        HBox statsBar = new HBox(40, dashPopLabel, dashHapLabel, dashHealthLabel, dashPollLabel);
+        earthquakeNotifLabel = new Label();
+        earthquakeNotifLabel.setStyle("-fx-text-fill: #f85149; -fx-font-size: 13px; -fx-font-weight: bold;");
+        earthquakeNotifLabel.setVisible(false);
+
+        HBox statsBar = new HBox(40, dashPopLabel, dashHapLabel, dashHealthLabel, dashPollLabel, earthquakeNotifLabel);
         statsBar.setAlignment(javafx.geometry.Pos.CENTER);
         statsBar.setPadding(new Insets(10, 0, 10, 0));
         statsBar.setStyle("-fx-background-color: #0d1117; -fx-border-color: #30363d; -fx-border-width: 0 0 1 0;");
@@ -651,9 +656,9 @@ public class DashboardView extends Application implements StateObserver {
             if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
                 try {
                     controller.save(tickCount);
-                    logMessage("💾 Autosave (tick " + tickCount + ")", "#58a6ff");
+                    logMessage("Autosave (tick " + tickCount + ")", "#58a6ff");
                 } catch (IOException ex) {
-                    logMessage("⚠️ Autosave failed!", "#f85149");
+                    logMessage("Autosave failed!", "#f85149");
                 }
             }
         }));
@@ -693,9 +698,9 @@ public class DashboardView extends Application implements StateObserver {
             if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
                 try {
                     controller.save(tickCount);
-                    logMessage("💾 Autosave (tick " + tickCount + ")", "#58a6ff");
+                    logMessage("Autosave (tick " + tickCount + ")", "#58a6ff");
                 } catch (IOException ex) {
-                    logMessage("⚠️ Autosave failed!", "#f85149");
+                    logMessage("Autosave failed!", "#f85149");
                 }
             }
         });
@@ -792,12 +797,22 @@ public class DashboardView extends Application implements StateObserver {
 
     private void showEarthquakeAlert() {
         XYChart.Series<Number, Number> markerSeries = new XYChart.Series<>();
-        markerSeries.setName("🌍 Earthquake");
         markerSeries.getData().add(new XYChart.Data<>(tickCount, 0));
         markerSeries.getData().add(new XYChart.Data<>(tickCount, 110));
         chart.getData().add(markerSeries);
 
-        logMessage("⚠️ EARTHQUAKE!", "#f38ba8");
+        // Colora la linea in rosso dopo che JavaFX l'ha aggiunta al grafico
+        Platform.runLater(() -> {
+            if (markerSeries.getNode() != null)
+                markerSeries.getNode().setStyle("-fx-stroke: #f85149; -fx-stroke-width: 2px;");
+        });
+
+        // Mostra la scritta rossa sopra al grafico per 6 secondi
+        earthquakeNotifLabel.setText("🌍 EARTHQUAKE at tick " + tickCount + "!");
+        earthquakeNotifLabel.setVisible(true);
+        new Timeline(new KeyFrame(Duration.seconds(6), e -> earthquakeNotifLabel.setVisible(false))).play();
+
+        logMessage("EARTHQUAKE!", "#f38ba8");
     }
 
     private Button buildBarButton(String label) {
@@ -855,11 +870,12 @@ public class DashboardView extends Application implements StateObserver {
             applyDarkTheme(welcome);
             welcome.setOnShown(evt -> Platform.runLater(() -> {
                 javafx.scene.control.DialogPane dp = welcome.getDialogPane();
+                dp.setPrefWidth(380);
                 javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
                 if (headerLabel != null)
                     headerLabel.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-weight: bold;");
                 Button b = (Button) dp.lookupButton(startType);
-                if (b != null) b.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;");
+                if (b != null) { b.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;"); b.setMinWidth(80); }
             }));
             welcome.showAndWait();
             return;
@@ -880,14 +896,15 @@ public class DashboardView extends Application implements StateObserver {
         applyDarkTheme(dialog);
         dialog.setOnShown(evt -> Platform.runLater(() -> {
             javafx.scene.control.DialogPane dp = dialog.getDialogPane();
+            dp.setPrefWidth(420);
             javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
             if (headerLabel != null)
                 headerLabel.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-weight: bold;");
             String btnStyle = "-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;";
             Button b1 = (Button) dp.lookupButton(newGameType);
             Button b2 = (Button) dp.lookupButton(loadGameType);
-            if (b1 != null) b1.setStyle(btnStyle);
-            if (b2 != null) b2.setStyle(btnStyle);
+            if (b1 != null) { b1.setStyle(btnStyle); b1.setMinWidth(110); }
+            if (b2 != null) { b2.setStyle(btnStyle); b2.setMinWidth(110); }
         }));
 
         Optional<ButtonType> result = dialog.showAndWait();
@@ -896,9 +913,9 @@ public class DashboardView extends Application implements StateObserver {
 
         try {
             tickCount = controller.load(latest);
-            logMessage("💾 Game restored: " + latest.getFileName(), "#58a6ff");
+            logMessage("Game restored: " + latest.getFileName(), "#58a6ff");
         } catch (IOException ex) {
-            showErrorAlert("Errore durante il caricamento", ex.getMessage());
+            showErrorAlert("Load error", ex.getMessage());
         }
     }
 
@@ -954,11 +971,11 @@ public class DashboardView extends Application implements StateObserver {
             }
 
             if (state.getCriticalBuildingCount() > 0) {
-                logMessage("⚠️ " + state.getCriticalBuildingCount() + " building(s) in critical condition! (HP < 20%)", "#f9e64f");
+                logMessage(state.getCriticalBuildingCount() + " building(s) in critical condition! (HP < 20%)", "#f9e64f");
             }
 
             if (state.getBudget() < 0 && !budgetWasNegative) {
-                logMessage("🔴 NEGATIVE BUDGET! The city is in deficit.", "#f85149");
+                logMessage("NEGATIVE BUDGET! The city is in deficit.", "#f85149");
                 budgetWasNegative = true;
             } else if (state.getBudget() >= 0) {
                 budgetWasNegative = false;
