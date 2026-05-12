@@ -82,7 +82,7 @@ public class GameController {
             System.out.println("[POLICY] Policy deselected. Restored neutral DefaultPolicy.");
         } else {
             city.setPolicy(policy);
-            System.out.println("[POLICY] Policy cambiata in: " + policy.getClass().getSimpleName());
+            System.out.println("[POLICY] Policy changed to: " + policy.getClass().getSimpleName());
         }
     }
 

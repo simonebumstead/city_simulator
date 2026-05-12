@@ -13,7 +13,7 @@ public class Hospital extends Structure {
         }
 
         // L'ospedale aumenta sensibilmente la salute e un po' la felicità
-        state.updateHealth(2.0);
+        state.updateHealth(5.0);
         state.updateHappiness(0.5);
         
         // Costa un bel po' per essere mantenuto e consuma energia

@@ -115,6 +115,21 @@ class PopulationManagerTest {
         assertEquals(0.0, state.getPopulationGroup().getSafetySatisfaction(), 0.001);
     }
 
+    @Test
+    @DisplayName("Health critica (< 20): happiness non compensa, popolazione declina comunque")
+    void testPopulationDeclinesWhenHealthCriticalDespiteHighHappiness() {
+        state.setPopulation(50);
+        state.setHappiness(100.0); // happiness massima
+        state.setHealth(0.0);      // salute critica
+        state.setPollution(90.0);
+        // effectiveHappiness = 0 (health < 20 → azzerato)
+        // healthEffect    = (0-50)*0.10  = -5.0
+        // pollutionEffect = (90-50)*(-0.10) = -4.0
+        // deltaPop = clamp(1 + 0 - 5 - 4) = -8
+        manager.updateDemographics(state, true, 1000, 0, 0, 0, 1);
+        assertTrue(state.getPopulation() < 50);
+    }
+
     // ── Caso residentialCount == 0 (AC-19.3 bug fix) ─────────────────────────
 
     @Test

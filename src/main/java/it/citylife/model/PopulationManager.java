@@ -37,8 +37,11 @@ public class PopulationManager {
         double pollutionEffect = (state.getPollution() - NEUTRAL_POINT) * POLLUTION_WEIGHT;
         //double wasteEffect = (state.getWasteLevel() - NEUTRAL_POINT) * WASTE_WEIGHT;
 
+        // Se la salute è critica la felicità non può compensare il declino
+        double effectiveHappinessEffect = (state.getHealth() < 20.0) ? 0.0 : happinessEffect;
+
         int deltaPop = (int) Math.min(MAX_GROWTH, Math.max(MAX_DECLINE,
-            BASE_GROWTH + happinessEffect + healthEffect + pollutionEffect));
+            BASE_GROWTH + effectiveHappinessEffect + healthEffect + pollutionEffect));
 
         // 2. Assenza di corrente (crescita bloccata)
         if (!hasPowerNearby) {

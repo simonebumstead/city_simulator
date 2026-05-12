@@ -154,7 +154,7 @@ class BuildingTest {
         state.resolveTick(defaultMod);
 
         assertEquals(4975.0, state.getBudget(),    0.001); // 5000 - 25
-        // health: 100 + 2.0 = 102 → clamped a 100
+        // health: 100 + 5.0 = 105 → clamped a 100
         assertEquals(100.0,  state.getHealth(),    0.001);
         assertEquals(67.5,   state.getHappiness(), 0.001); // 67 + 0.5
         assertEquals(15,     power.getTotalConsumption());
