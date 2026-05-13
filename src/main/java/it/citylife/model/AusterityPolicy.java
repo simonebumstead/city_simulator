@@ -1,20 +1,33 @@
 package it.citylife.model;
 
 /**
- * L'Austerity Policy impone una tassazione elevata e tagli alla spesa pubblica.
- * Risolleva rapidamente le casse della città, ma causa un forte malcontento
- * e un lento degrado della salute pubblica. 
+ * Politica di austerità fiscale: impone tagli alla spesa pubblica e tassazione elevata.
+ * Risolleva rapidamente il budget ma causa malcontento e degrado della salute pubblica.
+ *
+ * Effetti per tick: budget +500, felicità −5, salute −2.
+ *
+ * @see PolicyStrategy
+ * @see PolicyModifiers
+ * @see CityState#resolveTick(PolicyModifiers)
  */
 public class AusterityPolicy implements PolicyStrategy {
 
+    /**
+     * Restituisce i modificatori flat applicati ogni tick dalla politica di austerità.
+     * I valori vengono sommati ai delta accumulati prima del commit in CityState.
+     *
+     * @return PolicyModifiers con budget +500, felicità −5, salute −2
+     */
     @Override
     public PolicyModifiers getModifiers() {
         return new PolicyModifiers()
-                // Malus FLAT sulla felicità e sulla salute! (-10 felicità fissa a turno)
+                // Entrate straordinarie da tassazione elevata e tagli alla spesa
+                .setFixedBudgetChange(500)
+
+                // Malcontento generalizzato causato dai tagli ai servizi
                 .setFixedHappinessChange(-5.0)
-                .setFixedHealthChange(-2.0)
-                
-                // Tasse elevate
-                .setFixedBudgetChange(500);
+
+                // Degrado della sanità pubblica per riduzione dei fondi
+                .setFixedHealthChange(-2.0);
     }
 }

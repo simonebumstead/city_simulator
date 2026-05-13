@@ -1,17 +1,29 @@
 package it.citylife.model;
 
 /**
- * StateObserver è l'interfaccia alla base dell'Observer Pattern per questo progetto.
- * Funziona come un "contratto": qualsiasi componente (es. la UI JavaFX)
- * che vuole ricevere aggiornamenti dalla simulazione DEVE implementare questa interfaccia.
+ * Interfaccia del Pattern Observer per la ricezione degli aggiornamenti di stato della città.
+ *
+ * Qualsiasi componente che vuole essere notificato al termine di ogni tick
+ * deve implementare questa interfaccia e registrarsi tramite
+ * {@link City#addObserver(StateObserver)} (o equivalentemente tramite
+ * {@link GameController#addObserver(StateObserver)}).
+ *
+ * Attualmente l'unico osservatore registrato è {@code DashboardView} (la UI JavaFX),
+ * ma l'interfaccia permette di aggiungere futuri osservatori (es. logger, AI avversaria)
+ * senza modificare il codice del motore di simulazione.
+ *
+ * @see City#notifyObservers()
+ * @see CityState
  */
 public interface StateObserver {
-    
+
     /**
-     * Questo metodo viene invocato automaticamente dalla classe City 
-     * alla fine di ogni turno (tick).
-     * 
-     * @param newState Una copia o il riferimento allo stato attuale della città (budget, felicità, ecc.)
+     * Invocato da {@link City} al termine di ogni tick con lo stato aggiornato della città.
+     *
+     * L'implementazione deve limitarsi a leggere i dati da {@code newState} e aggiornare
+     * la propria visualizzazione; non deve modificare lo stato della città.
+     *
+     * @param newState lo stato corrente della città dopo la risoluzione del tick
      */
     void onStateChanged(CityState newState);
 }
