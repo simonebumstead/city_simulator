@@ -3,7 +3,6 @@ package it.citylife.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Arrays;
 
 /**
  * Nucleo del motore di simulazione della città.
@@ -278,6 +277,36 @@ public class City {
             }
         }
         return false;
+    }
+
+    /**
+     * Aggiorna i flag di connessione stradale per tutte le strade presenti sulla griglia.
+     * Una strada si connette a qualsiasi struttura adiacente (altre strade o edifici).
+     */
+    public void updateRoadConnections() {
+        for (int x = 0; x < grid.getWidth(); x++) {
+            for (int y = 0; y < grid.getHeight(); y++) {
+                Cell cell = grid.getCell(x, y);
+                if (cell != null && cell.getStructure() instanceof Structure s) {
+                    // Aggiorna istantaneamente i flag per i Tooltip della UI
+                    s.setConnectedToRoad(hasAdjacentRoad(x, y));
+                    s.setPowered(isPowered(x, y));
+
+                    if (s.getBaseStructure() instanceof Road road) {
+                        road.setConnectedNorth(canConnectRoad(x, y - 1));
+                        road.setConnectedSouth(canConnectRoad(x, y + 1));
+                        road.setConnectedEast(canConnectRoad(x + 1, y));
+                        road.setConnectedWest(canConnectRoad(x - 1, y));
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean canConnectRoad(int x, int y) {
+        if (x < 0 || x >= grid.getWidth() || y < 0 || y >= grid.getHeight()) return false;
+        Cell c = grid.getCell(x, y);
+        return c != null && !c.isEmpty();
     }
 
     /**

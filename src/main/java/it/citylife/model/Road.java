@@ -25,6 +25,11 @@ package it.citylife.model;
  */
 public class Road extends Structure {
 
+    private boolean connectedNorth = false;
+    private boolean connectedSouth = false;
+    private boolean connectedEast = false;
+    private boolean connectedWest = false;
+
     /**
      * Crea una strada con 250 HP massimi.
      */
@@ -52,4 +57,16 @@ public class Road extends Structure {
     /** Costo di costruzione in budget: 100. */
     @Override
     public int getConstructionCost() { return 100; }
+
+    public boolean isConnectedNorth() { return connectedNorth; }
+    public void setConnectedNorth(boolean connectedNorth) { this.connectedNorth = connectedNorth; }
+
+    public boolean isConnectedSouth() { return connectedSouth; }
+    public void setConnectedSouth(boolean connectedSouth) { this.connectedSouth = connectedSouth; }
+
+    public boolean isConnectedEast() { return connectedEast; }
+    public void setConnectedEast(boolean connectedEast) { this.connectedEast = connectedEast; }
+
+    public boolean isConnectedWest() { return connectedWest; }
+    public void setConnectedWest(boolean connectedWest) { this.connectedWest = connectedWest; }
 }

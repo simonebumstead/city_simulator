@@ -114,6 +114,15 @@ public abstract class Structure implements Placeable {
     public void setPowered(boolean powered) { this.powered = powered; }
 
     /**
+     * Restituisce la struttura base originaria (scarta eventuali Decorator).
+     * 
+     * @return la struttura originaria.
+     */
+    public Structure getBaseStructure() {
+        return this;
+    }
+
+    /**
      * Punto di notifica per gli eventi sismici (AC-14.2).
      *
      * Chiama takeDamage() invece di accedere direttamente agli HP, garantendo

@@ -63,6 +63,8 @@ public abstract class StructureDecorator extends Structure {
     @Override public StructureType getType()        { return wrapped.getType(); }
     @Override public int getConstructionCost()      { return wrapped.getConstructionCost(); }
 
+    @Override public Structure getBaseStructure()   { return wrapped.getBaseStructure(); }
+
     /**
      * Restituisce il livello di annidamento del Decorator (1-based).
      * Una struttura senza Decorator ha livello 0; il massimo consentito è 3 (AC-16.3).

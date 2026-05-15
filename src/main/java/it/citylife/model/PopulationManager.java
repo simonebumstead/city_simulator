@@ -12,6 +12,7 @@ package it.citylife.model;
  *   - jobSatisfaction:    (industrial + commercial) / residential × 100
  *   - healthSatisfaction: hospital / residential × 200
  *   - safetySatisfaction: 100 − pollution
+ *   - safetySatisfaction: 100 − (criticalBuildings × 5) − malus disoccupazione
  *
  * Se la popolazione supera la capacità massima (residentialCount × 200),
  * si applica un malus diretto a happiness e health per sovrappopolazione.

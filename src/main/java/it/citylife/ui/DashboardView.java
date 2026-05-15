@@ -1,5 +1,13 @@
 package it.citylife.ui;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
+
 import it.citylife.model.AusterityPolicy;
 import it.citylife.model.CityState;
 import it.citylife.model.FossilFuelPolicy;
@@ -9,7 +17,6 @@ import it.citylife.model.StateObserver;
 import it.citylife.model.Structure;
 import it.citylife.model.StructureDecorator;
 import it.citylife.model.StructureType;
-
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
@@ -25,28 +32,21 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Tab;
-import javafx.scene.control.Tooltip;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
-import org.kordamp.ikonli.javafx.FontIcon;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
  * Vista principale dell'applicazione CityLogic (JavaFX Application).
@@ -87,6 +87,14 @@ public class DashboardView extends Application implements StateObserver {
 
     // Flag per evitare notifiche ripetute di budget negativo ogni tick
     private boolean budgetWasNegative = false;
+
+    // Variabili per la selezione trascinamento (Drag & Build / Demolish)
+    private boolean isDragging = false;
+    private int dragStartX = -1;
+    private int dragStartY = -1;
+    private int dragEndX = -1;
+    private int dragEndY = -1;
+    private boolean justFinishedDrag = false;
 
     // --- Label del pannello metriche (destra) ---
     private Label budgetLabel;
@@ -206,7 +214,7 @@ public class DashboardView extends Application implements StateObserver {
         mapPane.setLeft(leftPanel);
 
         StackPane gridWrapper = new StackPane(buildGridPane());
-        gridWrapper.setStyle("-fx-background-color: #0d1117;");
+        gridWrapper.setStyle("-fx-background-color: #101f13;");
         gridWrapper.setAlignment(javafx.geometry.Pos.CENTER);
         mapPane.setCenter(gridWrapper);
 
@@ -267,6 +275,13 @@ public class DashboardView extends Application implements StateObserver {
         logPanel = new VBox(5);
         logPanel.setPadding(new Insets(5, 0, 0, 0));
 
+        ScrollPane logScroll = new ScrollPane(logPanel);
+        logScroll.setFitToWidth(true);
+        logScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        logScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        logScroll.setStyle("-fx-background: #161b22; -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0;");
+        VBox.setVgrow(logScroll, javafx.scene.layout.Priority.ALWAYS);
+
         VBox vbox = new VBox(10,
             metricsTitle,
             budgetLabel, populationLabel, happinessLabel,
@@ -276,7 +291,7 @@ public class DashboardView extends Application implements StateObserver {
             energyLabel,
             new Separator(),
             logTitle,
-            logPanel
+            logScroll
         );
         vbox.setPadding(new Insets(14));
         vbox.setMinWidth(200);
@@ -314,7 +329,13 @@ public class DashboardView extends Application implements StateObserver {
         Button repairAllBtn = new Button("Repair All", raIcon);
         repairAllBtn.setMaxWidth(Double.MAX_VALUE);
         repairAllBtn.setMinHeight(32);
-        repairAllBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px;");
+        repairAllBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: transparent; -fx-border-width: 2px;");
+        
+        Tooltip raTt = new Tooltip("🔧 Repair All\nAutomatically calculates and pays\nthe cost to repair every building.");
+        raTt.setStyle("-fx-background-color: #161b22; -fx-text-fill: #e6edf3; -fx-font-size: 13px; -fx-padding: 10px; -fx-border-color: #30363d; -fx-border-width: 1px; -fx-border-radius: 4px; -fx-background-radius: 4px;");
+        raTt.setShowDelay(Duration.millis(200));
+        repairAllBtn.setTooltip(raTt);
+        
         repairAllBtn.setOnAction(e -> showRepairAllPreview());
 
         Label upgradeTitle = new Label("UPGRADE");
@@ -355,16 +376,86 @@ public class DashboardView extends Application implements StateObserver {
         Button btn = new Button(label, fi);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setMinHeight(32);
-        btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px;");
+        btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: transparent; -fx-border-width: 2px;");
+        
+        Tooltip tt = buildToolTooltip(tool);
+        if (tt != null) btn.setTooltip(tt);
+        
         btn.setOnAction(e -> {
             // Rimuove l'evidenziazione dal pulsante precedentemente attivo
             if (activeBuildBtn != null)
-                activeBuildBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px;");
+                activeBuildBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: transparent; -fx-border-width: 2px;");
             activeBuildBtn = btn;
-            btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
+            btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
             selectedTool = tool;
         });
         return btn;
+    }
+
+    private Tooltip buildToolTooltip(String tool) {
+        if (tool == null) return null;
+        StringBuilder sb = new StringBuilder();
+        switch (tool) {
+            case "RESIDENTIAL" -> {
+                sb.append("🏠 Residential\nCost: 500 $ | Max HP: 300\n");
+                sb.append("Effects: +2 Budget, +0.2 Happiness, +1 Waste\n");
+                sb.append("Consumes: 5 Power\nRequires: Power, Adjacent Road");
+            }
+            case "INDUSTRIAL" -> {
+                sb.append("🏭 Industrial\nCost: 1000 $ | Max HP: 400\n");
+                sb.append("Effects: +30 Budget, +2.5 Pollution, -1 Happiness, -0.8 Health\n");
+                sb.append("Consumes: 25 Power\nRequires: Power, Adjacent Road");
+            }
+            case "COMMERCIAL" -> {
+                sb.append("🏬 Commercial\nCost: 750 $ | Max HP: 300\n");
+                sb.append("Effects: +15 Budget, +0.3 Pollution, +1 Happiness\n");
+                sb.append("Consumes: 10 Power\nRequires: Power, Adjacent Road");
+            }
+            case "POWER_PLANT" -> {
+                sb.append("⚡ Power Plant\nCost: 2000 $ | Max HP: 500\n");
+                sb.append("Produces: 250 Power (radius 5)\n");
+                sb.append("Effects: -20 Budget, +3.5 Pollution, -1 Happiness, -1 Health");
+            }
+            case "PARK" -> {
+                sb.append("🌳 Park\nCost: 300 $ | Max HP: 200\n");
+                sb.append("Effects: -10 Budget, -0.5 Pollution, +1.5 Happiness, +1 Health\n");
+                sb.append("Radius: +2 Happiness (radius 3), -3 Global Pollution");
+            }
+            case "HOSPITAL" -> {
+                sb.append("🏥 Hospital\nCost: 1200 $ | Max HP: 350\n");
+                sb.append("Effects: -25 Budget, +5 Health, +0.5 Happiness\n");
+                sb.append("Consumes: 15 Power\nRequires: Power");
+            }
+            case "WASTE_CENTER" -> {
+                sb.append("🗑️ Waste Center\nCost: 900 $ | Max HP: 350\n");
+                sb.append("Effects: -20 Budget, -10 Waste\n");
+                sb.append("Consumes: 10 Power\nRequires: Power");
+            }
+            case "ROAD" -> {
+                sb.append("🛣️ Road\nCost: 100 $ | Max HP: 250\n");
+                sb.append("Effects: +0.1 Pollution");
+            }
+            case "REPAIR" -> sb.append("🔧 Repair\nClick or drag to repair damaged structures.");
+            case "DEMOLISH" -> sb.append("🔨 Demolish\nClick or drag to destroy structures.");
+            case "UPGRADE_SEISMIC" -> {
+                sb.append("🛡️ SEISMIC UPGRADE\n");
+                sb.append("💵 Cost: 500 $\n");
+                sb.append("✨ Effect: Halves earthquake damage\n");
+                sb.append("📌 Max level: 3 per building");
+            }
+            case "UPGRADE_WASTE_THERMAL" -> {
+                sb.append("🔥 WASTE THERMAL UPGRADE\n");
+                sb.append("💵 Cost: 700 $\n");
+                sb.append("✨ Effect: -15 Waste, +50 Budget\n");
+                sb.append("⚡ Requires: Power\n");
+                sb.append("📌 Max level: 3 per building");
+            }
+            default -> { return null; }
+        }
+        Tooltip tt = new Tooltip(sb.toString());
+        tt.setStyle("-fx-background-color: #161b22; -fx-text-fill: #e6edf3; -fx-font-size: 13px; -fx-padding: 10px; -fx-border-color: #30363d; -fx-border-width: 1px; -fx-border-radius: 4px; -fx-background-radius: 4px;");
+        tt.setShowDelay(Duration.millis(150));
+        return tt;
     }
 
     /**
@@ -379,20 +470,70 @@ public class DashboardView extends Application implements StateObserver {
         grid.setHgap(1);
         grid.setVgap(1);
         grid.setPadding(new Insets(10));
-        grid.setStyle("-fx-background-color: #0d1117;");
+        grid.setStyle("-fx-background-color: #101f13;"); // Sfondo verde erba scuro
         grid.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
 
         for (int x = 0; x < 20; x++) {
             for (int y = 0; y < 20; y++) {
                 StackPane cell = new StackPane();
-                cell.setPrefSize(33, 33);
-                cell.setStyle("-fx-background-color: #0d1117; -fx-border-color: #21262d; -fx-border-width: 0.5;");
+                cell.setPrefSize(35, 35);
+                String emptyBgColor = ((x + y) % 2 == 0) ? "#1a3320" : "#152b1a";
+                cell.setStyle("-fx-background-color: " + emptyBgColor + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
                 final int fx = x, fy = y;
-                cell.setOnMouseClicked(e -> onCellClick(fx, fy));
+
+                cell.setOnMouseClicked(e -> {
+                    if (!justFinishedDrag && !isDragging) {
+                        onCellClick(fx, fy);
+                    }
+                });
+
+                cell.setOnDragDetected(e -> {
+                    if ("ROAD".equals(selectedTool) || "DEMOLISH".equals(selectedTool) || "REPAIR".equals(selectedTool)) {
+                        cell.startFullDrag();
+                        isDragging = true;
+                        dragStartX = fx;
+                        dragStartY = fy;
+                        dragEndX = fx;
+                        dragEndY = fy;
+                        updateGrid();
+                    }
+                });
+                cell.setOnMouseDragEntered(e -> {
+                    if (isDragging && ("ROAD".equals(selectedTool) || "DEMOLISH".equals(selectedTool) || "REPAIR".equals(selectedTool))) {
+                        dragEndX = fx;
+                        dragEndY = fy;
+                        updateGrid();
+                    }
+                });
+                cell.setOnMouseDragReleased(e -> {
+                    if (isDragging) {
+                        finishDrag();
+                        justFinishedDrag = true;
+                        Platform.runLater(() -> justFinishedDrag = false);
+                    }
+                });
+
                 cells[x][y] = cell;
                 grid.add(cell, x, y);
             }
         }
+
+        // Assicura che il drag termini correttamente anche se si rilascia il mouse fuori dalle celle
+        grid.setOnMouseReleased(e -> {
+            if (isDragging) {
+                finishDrag();
+                justFinishedDrag = true;
+                Platform.runLater(() -> justFinishedDrag = false);
+            }
+        });
+        grid.setOnMouseDragReleased(e -> {
+            if (isDragging) {
+                finishDrag();
+                justFinishedDrag = true;
+                Platform.runLater(() -> justFinishedDrag = false);
+            }
+        });
+
         updateGrid();
         return grid;
     }
@@ -416,25 +557,13 @@ public class DashboardView extends Application implements StateObserver {
                 ok = controller.demolish(x, y);
             } else if (selectedTool.equals("REPAIR")) {
                 ok = controller.repair(x, y);
-                if (ok) {
-                    logMessage("Building repaired", "#3fb950");
-                } else {
-                    logMessage("Cannot repair (insufficient funds or HP already at max)", "#f85149");
-                }
+                    if (ok) logMessage("Building repaired", "#3fb950");
             } else if (selectedTool.equals("UPGRADE_SEISMIC")) {
                 ok = controller.upgrade(x, y, "SEISMIC");
-                if (ok) {
-                    logMessage("Seismic Upgrade applied (-500$)", "#38bdf8");
-                } else {
-                    logMessage("Upgrade failed (max level, insufficient funds, or empty cell)", "#f85149");
-                }
+                    if (ok) logMessage("Seismic Upgrade applied (-500$)", "#38bdf8");
             } else if (selectedTool.equals("UPGRADE_WASTE_THERMAL")) {
                 ok = controller.upgrade(x, y, "WASTE_THERMAL");
-                if (ok) {
-                    logMessage("Waste Thermal Upgrade applied (-700$)", "#f97316");
-                } else {
-                    logMessage("Upgrade failed (max level, insufficient funds, or empty cell)", "#f85149");
-                }
+                    if (ok) logMessage("Waste Thermal Upgrade applied (-700$)", "#f97316");
             } else {
                 ok = controller.placeBuilding(selectedTool, x, y);
             }
@@ -442,14 +571,125 @@ public class DashboardView extends Application implements StateObserver {
             ok = false;
         }
 
-        // Mostra errore generico solo per azioni di piazzamento/demolizione (non per repair/upgrade che gestiscono i propri messaggi)
-        boolean upgradeOrRepair = selectedTool.equals("REPAIR")
-                || selectedTool.equals("UPGRADE_SEISMIC")
-                || selectedTool.equals("UPGRADE_WASTE_THERMAL");
-        if (!ok && !upgradeOrRepair) {
-            logMessage("Cannot perform this action!", "#f9e64f");
+        if (!ok) {
+            String error = controller.getLastError();
+            if (error != null && !error.isEmpty()) {
+                logMessage(error, "#f85149");
+            } else {
+                logMessage("Cannot perform this action!", "#f9e64f");
+            }
         }
 
+        updateGrid();
+        refreshMetricsDisplay();
+    }
+
+    /**
+     * Termina l'operazione di trascinamento (costruzione strade o demolizione ad area),
+     * calcola l'area selezionata, chiede eventuale conferma e la processa.
+     */
+    private void finishDrag() {
+        isDragging = false;
+
+        int minX = Math.min(dragStartX, dragEndX);
+        int maxX = Math.max(dragStartX, dragEndX);
+        int minY = Math.min(dragStartY, dragEndY);
+        int maxY = Math.max(dragStartY, dragEndY);
+
+        if ("ROAD".equals(selectedTool)) {
+            // Costruzione strade professionale: vincola a una linea retta
+            if (maxX - minX > maxY - minY) {
+                minY = dragStartY;
+                maxY = dragStartY;
+            } else {
+                minX = dragStartX;
+                maxX = dragStartX;
+            }
+        }
+
+        int structuresToDemolish = 0;
+        int estimatedRefund = 0;
+        int structuresToRepair = 0;
+        int estimatedRepairCost = 0;
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                var cell = controller.getGrid().getCell(x, y);
+                if (cell != null && !cell.isEmpty() && cell.getStructure() instanceof Structure s) {
+                    if ("DEMOLISH".equals(selectedTool)) {
+                        structuresToDemolish++;
+                        estimatedRefund += (int)(s.getConstructionCost() * 0.4);
+                    } else if ("REPAIR".equals(selectedTool)) {
+                        if (!s.isDestroyed() && s.getHp() < s.getMaxHp()) {
+                            structuresToRepair++;
+                            estimatedRepairCost += (s.getMaxHp() - s.getHp()) * 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (structuresToDemolish > 1 && "DEMOLISH".equals(selectedTool)) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("🔨 Demolish Area");
+            alert.setHeaderText(null); // Rimuove l'header ingombrante di default
+            alert.setContentText("⚠️ WARNING: You are about to demolish " + structuresToDemolish + " structures.\nEstimated refund: +" + estimatedRefund + " $\nThis action cannot be undone. Proceed?");
+            applyDarkTheme(alert);
+
+            // Stile da videogioco per il popup di conferma
+            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+            dialogPane.setStyle("-fx-background-color: #161b22; -fx-border-color: #f85149; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+            javafx.scene.Node content = dialogPane.lookup(".content.label");
+            if (content != null) {
+                content.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 15px; -fx-font-weight: bold;");
+            }
+
+            Optional<ButtonType> res = alert.showAndWait();
+            if (res.isEmpty() || res.get() != ButtonType.OK) {
+                dragStartX = dragStartY = dragEndX = dragEndY = -1;
+                updateGrid(); // Rimuove il rettangolo rosso
+                return;
+            }
+        }
+
+        if (structuresToRepair > 1 && "REPAIR".equals(selectedTool)) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("🔧 Repair Area");
+            alert.setHeaderText(null); 
+            alert.setContentText("You are about to repair " + structuresToRepair + " structures.\nEstimated total cost: -" + estimatedRepairCost + " $\nProceed?");
+            applyDarkTheme(alert);
+
+            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+            dialogPane.setStyle("-fx-background-color: #161b22; -fx-border-color: #a3e635; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+            javafx.scene.Node content = dialogPane.lookup(".content.label");
+            if (content != null) {
+                content.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 15px; -fx-font-weight: bold;");
+            }
+
+            Optional<ButtonType> res = alert.showAndWait();
+            if (res.isEmpty() || res.get() != ButtonType.OK) {
+                dragStartX = dragStartY = dragEndX = dragEndY = -1;
+                updateGrid();
+                return;
+            }
+        }
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                if ("DEMOLISH".equals(selectedTool)) {
+                    controller.demolish(x, y);
+                } else if ("ROAD".equals(selectedTool)) {
+                    var cell = controller.getGrid().getCell(x, y);
+                    if (cell != null && cell.isEmpty()) {
+                        controller.placeBuilding("ROAD", x, y);
+                    }
+                } else if ("REPAIR".equals(selectedTool)) {
+                    controller.repair(x, y);
+                }
+            }
+        }
+
+        dragStartX = dragStartY = dragEndX = dragEndY = -1;
         updateGrid();
         refreshMetricsDisplay();
     }
@@ -467,6 +707,11 @@ public class DashboardView extends Application implements StateObserver {
         msg.setStyle("-fx-text-fill: " + color + "; -fx-font-weight: bold; -fx-font-size: 11px;");
         msg.setWrapText(true);
         logPanel.getChildren().add(0, msg);
+
+        // Limita il numero massimo di notifiche per evitare sovraccarichi alla UI
+        if (logPanel.getChildren().size() > 15) {
+            logPanel.getChildren().remove(15, logPanel.getChildren().size());
+        }
 
         // Rimozione automatica dopo 10 secondi tramite Timeline
         new Timeline(new KeyFrame(Duration.seconds(10), e -> logPanel.getChildren().remove(msg))).play();
@@ -504,10 +749,17 @@ public class DashboardView extends Application implements StateObserver {
 
         // Chiede conferma prima di procedere con la riparazione globale
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Repair All");
-        alert.setHeaderText("Estimated cost: " + totalCost + " $");
-        alert.setContentText("Proceed with repairing all damaged buildings?");
+        alert.setTitle("🔧 Repair All");
+        alert.setHeaderText(null);
+        alert.setContentText("Estimated total cost: -" + totalCost + " $\nProceed with repairing all damaged buildings?");
         applyDarkTheme(alert);
+
+        javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.setStyle("-fx-background-color: #161b22; -fx-border-color: #a3e635; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
+        javafx.scene.Node content = dialogPane.lookup(".content.label");
+        if (content != null) {
+            content.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 15px; -fx-font-weight: bold;");
+        }
 
         Optional<javafx.scene.control.ButtonType> res = alert.showAndWait();
         if (res.isPresent() && res.get() == javafx.scene.control.ButtonType.OK) {
@@ -606,6 +858,25 @@ public class DashboardView extends Application implements StateObserver {
      *   - Triangolo giallo e bordo rosso se l'edificio richiede corrente ma non è alimentato (AC-04.4)
      */
     private void updateGrid() {
+        boolean showSelection = isDragging && ("ROAD".equals(selectedTool) || "DEMOLISH".equals(selectedTool) || "REPAIR".equals(selectedTool));
+        int selMinX = 0, selMaxX = 0, selMinY = 0, selMaxY = 0;
+        if (showSelection) {
+            selMinX = Math.min(dragStartX, dragEndX);
+            selMaxX = Math.max(dragStartX, dragEndX);
+            selMinY = Math.min(dragStartY, dragEndY);
+            selMaxY = Math.max(dragStartY, dragEndY);
+            
+            if ("ROAD".equals(selectedTool)) {
+                if (selMaxX - selMinX > selMaxY - selMinY) {
+                    selMinY = dragStartY;
+                    selMaxY = dragStartY;
+                } else {
+                    selMinX = dragStartX;
+                    selMaxX = dragStartX;
+                }
+            }
+        }
+
         for (int x = 0; x < 20; x++) {
             for (int y = 0; y < 20; y++) {
                 StackPane cell = cells[x][y];
@@ -621,8 +892,9 @@ public class DashboardView extends Application implements StateObserver {
                 cell.setOnMouseExited(null);
 
                 var gridCell = controller.getGrid().getCell(x, y);
+                String emptyBgColor = ((x + y) % 2 == 0) ? "#1a3320" : "#152b1a";
                 if (gridCell == null || gridCell.isEmpty()) {
-                    cell.setStyle("-fx-background-color: #0d1117; -fx-border-color: #21262d; -fx-border-width: 0.5;");
+                    cell.setStyle("-fx-background-color: " + emptyBgColor + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
                 } else if (gridCell.getStructure() instanceof Structure s) {
                     Color bg = colorForType(s.getType());
                     String hex = String.format("#%02x%02x%02x",
@@ -630,11 +902,109 @@ public class DashboardView extends Application implements StateObserver {
                         (int)(bg.getGreen()*255),
                         (int)(bg.getBlue()*255));
 
-                    cell.setStyle("-fx-background-color: " + hex + "55; -fx-border-color: " + hex + "; -fx-border-width: 1;");
-                    FontIcon icon = new FontIcon(iconForType(s.getType()));
-                    icon.setIconSize(16);
-                    icon.setIconColor(bg);
-                    cell.getChildren().add(icon);
+                    Structure base = s.getBaseStructure();
+                    if (base instanceof it.citylife.model.Road road) {
+                        cell.setStyle("-fx-background-color: " + emptyBgColor + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
+                        
+                        double thickness = 16;
+                        double length = 10.0;
+                        Color roadBg = Color.web("#334155"); // Asfalto scuro
+                        Color markingColor = Color.web("#facc15"); // Strisce gialle
+                        
+                        Rectangle center = new Rectangle(thickness, thickness, roadBg);
+                        cell.getChildren().add(center);
+                        
+                        if (road.isConnectedNorth()) {
+                            Rectangle r = new Rectangle(thickness, length, roadBg);
+                            StackPane.setAlignment(r, javafx.geometry.Pos.TOP_CENTER);
+                            cell.getChildren().add(r);
+                            
+                            javafx.scene.shape.Line line = new javafx.scene.shape.Line(0, 0, 0, length);
+                            line.setStroke(markingColor);
+                            line.setStrokeWidth(1.5);
+                            line.getStrokeDashArray().addAll(4d, 4d);
+                            StackPane.setAlignment(line, javafx.geometry.Pos.TOP_CENTER);
+                            cell.getChildren().add(line);
+                        }
+                        if (road.isConnectedSouth()) {
+                            Rectangle r = new Rectangle(thickness, length, roadBg);
+                            StackPane.setAlignment(r, javafx.geometry.Pos.BOTTOM_CENTER);
+                            cell.getChildren().add(r);
+                            
+                            javafx.scene.shape.Line line = new javafx.scene.shape.Line(0, 0, 0, length);
+                            line.setStroke(markingColor);
+                            line.setStrokeWidth(1.5);
+                            line.getStrokeDashArray().addAll(4d, 4d);
+                            StackPane.setAlignment(line, javafx.geometry.Pos.BOTTOM_CENTER);
+                            cell.getChildren().add(line);
+                        }
+                        if (road.isConnectedWest()) {
+                            Rectangle r = new Rectangle(length, thickness, roadBg);
+                            StackPane.setAlignment(r, javafx.geometry.Pos.CENTER_LEFT);
+                            cell.getChildren().add(r);
+                            
+                            javafx.scene.shape.Line line = new javafx.scene.shape.Line(0, 0, length, 0);
+                            line.setStroke(markingColor);
+                            line.setStrokeWidth(1.5);
+                            line.getStrokeDashArray().addAll(4d, 4d);
+                            StackPane.setAlignment(line, javafx.geometry.Pos.CENTER_LEFT);
+                            cell.getChildren().add(line);
+                        }
+                        if (road.isConnectedEast()) {
+                            Rectangle r = new Rectangle(length, thickness, roadBg);
+                            StackPane.setAlignment(r, javafx.geometry.Pos.CENTER_RIGHT);
+                            cell.getChildren().add(r);
+                            
+                            javafx.scene.shape.Line line = new javafx.scene.shape.Line(0, 0, length, 0);
+                            line.setStroke(markingColor);
+                            line.setStrokeWidth(1.5);
+                            line.getStrokeDashArray().addAll(4d, 4d);
+                            StackPane.setAlignment(line, javafx.geometry.Pos.CENTER_RIGHT);
+                            cell.getChildren().add(line);
+                        }
+
+                        // Dettagli centrali della strada
+                        boolean isVertical = (road.isConnectedNorth() || road.isConnectedSouth()) && !road.isConnectedWest() && !road.isConnectedEast();
+                        boolean isHorizontal = (road.isConnectedWest() || road.isConnectedEast()) && !road.isConnectedNorth() && !road.isConnectedSouth();
+                        boolean isIntersection = (road.isConnectedNorth() || road.isConnectedSouth()) && (road.isConnectedWest() || road.isConnectedEast());
+
+                        if (isIntersection) {
+                            Rectangle centerSquare = new Rectangle(6, 6, Color.TRANSPARENT);
+                            centerSquare.setStroke(markingColor);
+                            centerSquare.setStrokeWidth(1.5);
+                            cell.getChildren().add(centerSquare);
+                        } else if (isVertical) {
+                            javafx.scene.shape.Line cLine = new javafx.scene.shape.Line(0, 0, 0, thickness);
+                            cLine.setStroke(markingColor);
+                            cLine.setStrokeWidth(1.5);
+                            cLine.getStrokeDashArray().addAll(4d, 4d);
+                            cell.getChildren().add(cLine);
+                        } else if (isHorizontal) {
+                            javafx.scene.shape.Line cLine = new javafx.scene.shape.Line(0, 0, thickness, 0);
+                            cLine.setStroke(markingColor);
+                            cLine.setStrokeWidth(1.5);
+                            cLine.getStrokeDashArray().addAll(4d, 4d);
+                            cell.getChildren().add(cLine);
+                        } else {
+                            // Strada isolata (singolo quadretto)
+                            Rectangle centerDot = new Rectangle(4, 4, markingColor);
+                            cell.getChildren().add(centerDot);
+                        }
+                    } else {
+                        // Stile edifici con bordo leggermente arrotondato e ombreggiatura sull'icona
+                        cell.setStyle("-fx-background-color: " + hex + "44; -fx-border-color: " + hex + "aa; -fx-border-width: 1.5; -fx-background-radius: 6px; -fx-border-radius: 6px;");
+                        FontIcon icon = new FontIcon(iconForType(s.getType()));
+                        icon.setIconSize(18);
+                        icon.setIconColor(bg);
+                        
+                        javafx.scene.effect.DropShadow shadow = new javafx.scene.effect.DropShadow();
+                        shadow.setColor(Color.web("#00000088"));
+                        shadow.setRadius(3.0);
+                        shadow.setSpread(0.1);
+                        icon.setEffect(shadow);
+                        
+                        cell.getChildren().add(icon);
+                    }
 
                     // Badge upgrade: stellina gialla in alto a sinistra con il numero di livelli
                     if (s instanceof StructureDecorator dec) {
@@ -642,7 +1012,7 @@ public class DashboardView extends Application implements StateObserver {
                         upgIcon.setIconSize(8);
                         upgIcon.setIconColor(Color.web("#fde047"));
                         Label upgLabel = new Label("" + dec.getUpgradeLevel(), upgIcon);
-                        upgLabel.setStyle("-fx-text-fill: #fde047; -fx-font-size: 8px;");
+                        upgLabel.setStyle("-fx-text-fill: #fde047; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-color: #000000aa; -fx-padding: 0 3px; -fx-background-radius: 3px;");
                         StackPane.setAlignment(upgLabel, javafx.geometry.Pos.TOP_LEFT);
                         cell.getChildren().add(upgLabel);
                     }
@@ -657,19 +1027,20 @@ public class DashboardView extends Application implements StateObserver {
                         cell.getChildren().add(hpContainer);
                     }
 
-                    // Tooltip con dettagli della struttura al passaggio del mouse
-                    Tooltip tt = buildCellTooltip(s);
-                    Tooltip.install(cell, tt);
-                    cell.getProperties().put("cellTooltip", tt);
-
                     // Triangolo di avviso e bordo rosso per edifici non alimentati (AC-04.4)
                     boolean requiresPower = (s.getType() == StructureType.RESIDENTIAL ||
                                              s.getType() == StructureType.COMMERCIAL ||
                                              s.getType() == StructureType.INDUSTRIAL ||
                                              s.getType() == StructureType.HOSPITAL ||
                                              s.getType() == StructureType.WASTE_CENTER);
+                    boolean hasPowerWarning = requiresPower && !isPowered(x, y);
 
-                    if (requiresPower && !isPowered(x, y)) {
+                    // Tooltip con dettagli della struttura al passaggio del mouse
+                    Tooltip tt = buildCellTooltip(s, hasPowerWarning);
+                    Tooltip.install(cell, tt);
+                    cell.getProperties().put("cellTooltip", tt);
+
+                    if (hasPowerWarning) {
                         FontIcon warn = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
                         warn.setIconSize(10);
                         warn.setIconColor(Color.web("#facc15"));
@@ -677,6 +1048,16 @@ public class DashboardView extends Application implements StateObserver {
                         cell.getChildren().add(warn);
                         cell.setStyle("-fx-background-color: " + hex + "22; -fx-border-color: #f85149; -fx-border-width: 1;");
                     }
+                }
+
+                if (showSelection && x >= selMinX && x <= selMaxX && y >= selMinY && y <= selMaxY) {
+                    String selColor = "#94a3b8"; // Colore default (Strada)
+                    if ("DEMOLISH".equals(selectedTool)) selColor = "#f85149";
+                    else if ("REPAIR".equals(selectedTool)) selColor = "#a3e635";
+                    
+                    Rectangle overlay = new Rectangle(35, 35, Color.web(selColor + "88"));
+                    overlay.setMouseTransparent(true);
+                    cell.getChildren().add(overlay);
                 }
             }
         }
@@ -745,15 +1126,20 @@ public class DashboardView extends Application implements StateObserver {
      * Include tipo, HP, stato di alimentazione, connessione stradale e lista upgrade.
      *
      * @param s la struttura della cella
+     * @param hasPowerWarning true se la struttura richiede corrente ma non è alimentata
      * @return il Tooltip configurato con stile scuro
      */
-    private Tooltip buildCellTooltip(Structure s) {
+    private Tooltip buildCellTooltip(Structure s, boolean hasPowerWarning) {
         StringBuilder sb = new StringBuilder();
         sb.append(labelForType(s.getType())).append("\n");
         sb.append("HP: ").append(s.getHp()).append(" / ").append(s.getMaxHp());
         if (s.isDestroyed()) sb.append("  [DESTROYED]");
         sb.append("\n");
-        sb.append("Powered: ").append(s.isPowered() ? "Yes" : "No").append("\n");
+        if (hasPowerWarning) {
+            sb.append("⚠️ WARNING: Not powered!\n");
+        } else {
+            sb.append("Powered: ").append(s.isPowered() ? "Yes" : "No").append("\n");
+        }
         sb.append("Adjacent road: ").append(s.isConnectedToRoad() ? "Yes" : "No").append("\n");
         if (s instanceof StructureDecorator dec) {
             List<String> upgrades = dec.collectUpgrades();
@@ -1090,14 +1476,14 @@ public class DashboardView extends Application implements StateObserver {
         dp.getStylesheets().add(css);
         dp.setStyle(
             "-fx-background-color: #161b22;" +
-            "-fx-border-color: #30363d; -fx-border-width: 1px;"
+            "-fx-border-color: #30363d; -fx-border-width: 2px; -fx-background-radius: 8px; -fx-border-radius: 8px;"
         );
         if (dp.lookup(".header-panel") != null)
-            dp.lookup(".header-panel").setStyle("-fx-background-color: #0d1117;");
+            dp.lookup(".header-panel").setStyle("-fx-background-color: transparent;");
         dp.lookupAll(".label").forEach(n ->
             n.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
         dp.lookupAll(".button").forEach(n ->
-            n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
+            n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px; -fx-border-color: #30363d; -fx-border-width: 1px; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-padding: 6px 12px; -fx-cursor: hand;"));
         dp.lookupAll(".combo-box").forEach(n ->
             n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3;"));
     }
@@ -1121,9 +1507,10 @@ public class DashboardView extends Application implements StateObserver {
             // Prima partita: nessun salvataggio disponibile
             ButtonType startType = new ButtonType("Start", ButtonBar.ButtonData.OK_DONE);
             Alert welcome = new Alert(Alert.AlertType.INFORMATION);
+            welcome.initStyle(javafx.stage.StageStyle.UNDECORATED); // Rimuove la barra nativa di Windows/Mac
             welcome.setTitle("CityLogic");
-            welcome.setHeaderText("Welcome to CityLogic!");
-            welcome.setContentText("No saves found. Press Start to begin!");
+            welcome.setHeaderText("🎮 Welcome to CityLogic!");
+            welcome.setContentText("No saves found. Press Start to begin your journey!");
             welcome.getButtonTypes().setAll(startType);
             welcome.setGraphic(null);
             welcome.initOwner(this.primaryStage);
@@ -1131,11 +1518,15 @@ public class DashboardView extends Application implements StateObserver {
             welcome.setOnShown(evt -> Platform.runLater(() -> {
                 javafx.scene.control.DialogPane dp = welcome.getDialogPane();
                 dp.setPrefWidth(380);
+                dp.setStyle("-fx-background-color: linear-gradient(to bottom, #1e293b, #0f172a); -fx-border-color: #38bdf8; -fx-border-width: 3px; -fx-border-radius: 12px; -fx-background-radius: 12px;");
                 javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
                 if (headerLabel != null)
-                    headerLabel.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-weight: bold;");
+                    headerLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 18px; -fx-font-weight: bold;");
+                javafx.scene.Node contentLabel = dp.lookup(".content.label");
+                if (contentLabel != null)
+                    contentLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 14px;");
                 Button b = (Button) dp.lookupButton(startType);
-                if (b != null) { b.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;"); b.setMinWidth(80); }
+                if (b != null) { b.setStyle("-fx-background-color: #38bdf8; -fx-text-fill: #0f172a; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"); b.setMinWidth(100); }
             }));
             welcome.showAndWait();
             return;
@@ -1148,9 +1539,10 @@ public class DashboardView extends Application implements StateObserver {
         ButtonType loadGameType = new ButtonType("Load Save",  ButtonBar.ButtonData.RIGHT);
 
         Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
+        dialog.initStyle(javafx.stage.StageStyle.UNDECORATED); // Rimuove la barra nativa di Windows/Mac
         dialog.setTitle("CityLogic");
-        dialog.setHeaderText("Welcome to CityLogic!");
-        dialog.setContentText("Start a new game or resume from the last save?");
+        dialog.setHeaderText("🎮 Welcome back to CityLogic!");
+        dialog.setContentText("Start a new city or resume your previous one?");
         dialog.getButtonTypes().setAll(newGameType, loadGameType);
         dialog.setGraphic(null);
         dialog.initOwner(this.primaryStage);
@@ -1158,14 +1550,20 @@ public class DashboardView extends Application implements StateObserver {
         dialog.setOnShown(evt -> Platform.runLater(() -> {
             javafx.scene.control.DialogPane dp = dialog.getDialogPane();
             dp.setPrefWidth(420);
+            dp.setStyle("-fx-background-color: linear-gradient(to bottom, #1e293b, #0f172a); -fx-border-color: #38bdf8; -fx-border-width: 3px; -fx-border-radius: 12px; -fx-background-radius: 12px;");
             javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
             if (headerLabel != null)
-                headerLabel.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-weight: bold;");
-            String btnStyle = "-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px;";
+                headerLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 18px; -fx-font-weight: bold;");
+            javafx.scene.Node contentLabel = dp.lookup(".content.label");
+            if (contentLabel != null)
+                contentLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 14px;");
+            
+            String btn1Style = "-fx-background-color: #334155; -fx-text-fill: #e2e8f0; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;";
+            String btn2Style = "-fx-background-color: #38bdf8; -fx-text-fill: #0f172a; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;";
             Button b1 = (Button) dp.lookupButton(newGameType);
             Button b2 = (Button) dp.lookupButton(loadGameType);
-            if (b1 != null) { b1.setStyle(btnStyle); b1.setMinWidth(110); }
-            if (b2 != null) { b2.setStyle(btnStyle); b2.setMinWidth(110); }
+            if (b1 != null) { b1.setStyle(btn1Style); b1.setMinWidth(110); }
+            if (b2 != null) { b2.setStyle(btn2Style); b2.setMinWidth(110); }
         }));
 
         Optional<ButtonType> result = dialog.showAndWait();

@@ -1,12 +1,12 @@
 package it.citylife.ui;
 
-import it.citylife.model.GameController;
-import it.citylife.model.PolicyStrategy;
-import it.citylife.model.StateObserver;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+
+import it.citylife.model.GameController;
+import it.citylife.model.PolicyStrategy;
+import it.citylife.model.StateObserver;
 
 /**
  * Facade leggero tra il layer UI e {@link GameController}.
@@ -172,5 +172,10 @@ public class SimulationController {
      */
     public int load(Path path) throws IOException {
         return controller.loadGame(path);
+    }
+
+    /** Restituisce l'ultimo errore di validazione generato dal dominio. */
+    public String getLastError() {
+        return controller.getLastError();
     }
 }

@@ -30,6 +30,8 @@ public class GameController {
     // Gestore della persistenza: salvataggio e caricamento su file JSON
     private final SaveLoadManager ioManager = new SaveLoadManager();
 
+    private String lastError = "";
+
     /**
      * Crea un nuovo GameController con una città vuota e una DefaultPolicy attiva.
      */
@@ -112,18 +114,21 @@ public class GameController {
 
         // Cella occupata o fuori griglia: impossibile piazzare
         if (cell == null || !cell.isEmpty()) {
+            lastError = "Cell occupied or invalid.";
             System.out.println("Cell occupied or invalid.");
             return false;
         }
 
         // I Residential richiedono strada adiacente: senza accesso i cittadini non possono abitarci
         if (building.getType() == StructureType.RESIDENTIAL && !hasAdjacentRoad(x, y)) {
+            lastError = "Residential buildings must be built next to a Road!";
             System.out.println("Must build next to a road!");
             return false;
         }
 
         // Budget insufficiente: la costruzione non può avvenire
         if (city.getState().getBudget() < building.getConstructionCost()) {
+            lastError = "Insufficient budget to build " + type + " (" + building.getConstructionCost() + "$).";
             System.out.println("Insufficient budget to build: " + type);
             return false;
         }
@@ -132,6 +137,7 @@ public class GameController {
         // setBudget per modifica immediata: il costo di costruzione non transita nel delta di fine tick
         city.getState().setBudget(city.getState().getBudget() - building.getConstructionCost());
 
+        city.updateRoadConnections();
         System.out.println("[BUILD] Placed " + type + " at (" + x + "," + y + ") | Cost: " + building.getConstructionCost() + " | Budget left: " + city.getState().getBudget());
         city.notifyObserversPublic();
         return true;
@@ -178,12 +184,16 @@ public class GameController {
      */
     public boolean demolish(int x, int y) {
         Cell cell = city.getGrid().getCell(x, y);
-        if (cell == null || cell.isEmpty()) return false;
+        if (cell == null || cell.isEmpty()) {
+            lastError = "Nothing to demolish here.";
+            return false;
+        }
 
         if (cell.getStructure() instanceof Structure s) {
             // Costo demolizione = 10% del valore di costruzione (AC-07.3)
             int demolitionCost = s.getConstructionCost() / 10;
             if (city.getState().getBudget() < demolitionCost) {
+                lastError = "Insufficient budget to demolish! Cost: " + demolitionCost + "$";
                 System.out.println("[DEMOLISH] Insufficient budget to demolish! Cost: " + demolitionCost);
                 return false;
             }
@@ -194,6 +204,7 @@ public class GameController {
         }
 
         city.getGrid().removeStructure(x, y);
+        city.updateRoadConnections();
         city.notifyObserversPublic();
         return true;
     }
@@ -211,15 +222,26 @@ public class GameController {
      */
     public boolean repair(int x, int y) {
         Cell cell = city.getGrid().getCell(x, y);
-        if (cell == null || cell.isEmpty()) return false;
+        if (cell == null || cell.isEmpty()) {
+            lastError = "Nothing to repair here.";
+            return false;
+        }
 
         if (cell.getStructure() instanceof Structure s) {
             // Struttura distrutta o già a piena salute: niente da riparare
-            if (s.isDestroyed() || s.getHp() == s.getMaxHp()) return false;
+            if (s.isDestroyed()) {
+                lastError = "Building is totally destroyed and cannot be repaired.";
+                return false;
+            }
+            if (s.getHp() == s.getMaxHp()) {
+                lastError = "Building is already at maximum HP.";
+                return false;
+            }
 
             // Costo proporzionale ai danni subiti: più è danneggiata, più costa (AC-15.3)
             int repairCost = (s.getMaxHp() - s.getHp()) * 2;
             if (city.getState().getBudget() < repairCost) {
+                lastError = "Insufficient budget to repair! Cost: " + repairCost + "$";
                 System.out.println("Insufficient budget to repair!");
                 return false;
             }
@@ -254,12 +276,19 @@ public class GameController {
      */
     public boolean upgradeBuilding(int x, int y, String upgradeType) {
         Cell cell = city.getGrid().getCell(x, y);
-        if (cell == null || cell.isEmpty()) return false;
-        if (!(cell.getStructure() instanceof Structure base)) return false;
+        if (cell == null || cell.isEmpty()) {
+            lastError = "Nothing to upgrade here.";
+            return false;
+        }
+        if (!(cell.getStructure() instanceof Structure base)) {
+            lastError = "This cell does not contain a valid structure.";
+            return false;
+        }
 
         // AC-16.3: massimo 3 livelli di decorator annidati per struttura
         int currentLevel = (base instanceof StructureDecorator d) ? d.getUpgradeLevel() : 0;
         if (currentLevel >= 3) {
+            lastError = "Maximum upgrade level (3) reached for this building.";
             System.out.println("[UPGRADE] Maximum upgrade level reached.");
             return false;
         }
@@ -268,11 +297,16 @@ public class GameController {
         int cost = switch (upgradeType) {
             case "SEISMIC"       -> SeismicUpgrade.COST;
             case "WASTE_THERMAL" -> WasteThermalUpgrade.COST;
-            default -> { System.out.println("[UPGRADE] Unknown upgrade type: " + upgradeType); yield -1; }
+            default -> { 
+                lastError = "Unknown upgrade type: " + upgradeType;
+                System.out.println("[UPGRADE] Unknown upgrade type: " + upgradeType); 
+                yield -1; 
+            }
         };
         if (cost < 0) return false;
 
         if (city.getState().getBudget() < cost) {
+            lastError = "Insufficient budget to apply upgrade! Cost: " + cost + "$";
             System.out.println("[UPGRADE] Insufficient budget. Cost: " + cost);
             return false;
         }
@@ -335,4 +369,7 @@ public class GameController {
 
     /** Restituisce la rete elettrica corrente. */
     public PowerNetwork getPowerNet() { return city.getPowerNet(); }
+
+    /** Restituisce l'ultimo messaggio d'errore di validazione registrato. */
+    public String getLastError() { return lastError; }
 }
