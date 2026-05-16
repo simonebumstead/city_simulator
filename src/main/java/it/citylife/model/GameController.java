@@ -159,6 +159,7 @@ public class GameController {
         }
     }
 
+    
     /**
      * Registra un osservatore da notificare al termine di ogni tick.
      * Delega a City.addObserver().

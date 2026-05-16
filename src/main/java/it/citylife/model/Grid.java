@@ -27,6 +27,7 @@ public class Grid {
     // Numero di righe della griglia (asse Y)
     private static final int HEIGHT = 20;
 
+    
     /**
      * Inizializza la griglia allocando e istanziando tutte le WIDTH × HEIGHT celle.
      * Ogni cella riceve le proprie coordinate (x, y) e parte vuota (structure = null).
