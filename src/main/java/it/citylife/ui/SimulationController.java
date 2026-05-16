@@ -6,7 +6,7 @@ import java.util.List;
 
 import it.citylife.model.GameController;
 import it.citylife.model.PolicyStrategy;
-import it.citylife.model.StateObserver;
+import it.citylife.model.StateObserver; 
 
 /**
  * Facade leggero tra il layer UI e {@link GameController}.

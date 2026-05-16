@@ -10,22 +10,23 @@ package it.citylife.model;
  * per supportare facilmente mappe rettangolari in futuro senza modificare il codice chiamante.
  *
  * La griglia non conosce la logica di gioco (budget, politiche, effetti):
- * è un puro contenitore spaziale interrogato da City e GameController.
+ * è un puro contenitore spaziale interrogato da City e GameController. 
  *
  * @see Cell
  * @see City
  * @see GameController
  */
-public class Grid {
+public class Grid { 
 
     // Matrice bidimensionale indicizzata come matrix[x][y] (colonna, riga)
-    private Cell[][] matrix;
+    private final Cell[][] matrix;
 
     // Numero di colonne della griglia (asse X)
     private static final int WIDTH = 20;
 
     // Numero di righe della griglia (asse Y)
     private static final int HEIGHT = 20;
+    
 
     /**
      * Inizializza la griglia allocando e istanziando tutte le WIDTH × HEIGHT celle.

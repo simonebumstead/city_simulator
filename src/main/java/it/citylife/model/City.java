@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Nucleo del motore di simulazione della città.
+ * Nucleo del motore di simulazione della città. 
  *
  * Coordina tutti i sottosistemi per tick: aggiornamento dello stato,
  * applicazione degli effetti degli edifici, gestione dei parchi, risoluzione

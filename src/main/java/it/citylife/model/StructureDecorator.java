@@ -92,7 +92,7 @@ public abstract class StructureDecorator extends Structure {
     public List<String> collectUpgrades() {
         List<String> list = (wrapped instanceof StructureDecorator d)
             ? new ArrayList<>(d.collectUpgrades()) : new ArrayList<>();
-        list.add(getUpgradeName());
+        list.add(getUpgradeName()); 
         return list;
     }
 }
