@@ -10,7 +10,7 @@ package it.citylife.model;
  * per supportare facilmente mappe rettangolari in futuro senza modificare il codice chiamante.
  *
  * La griglia non conosce la logica di gioco (budget, politiche, effetti):
- * è un puro contenitore spaziale interrogato da City e GameController.
+ * è un puro contenitore spaziale interrogato da City e GameController. 
  *
  * @see Cell
  * @see City
