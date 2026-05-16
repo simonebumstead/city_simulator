@@ -19,7 +19,7 @@ package it.citylife.model;
 public class Grid {
 
     // Matrice bidimensionale indicizzata come matrix[x][y] (colonna, riga)
-    private Cell[][] matrix;
+    private final Cell[][] matrix;
 
     // Numero di colonne della griglia (asse X)
     private static final int WIDTH = 20;
