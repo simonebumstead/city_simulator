@@ -16,7 +16,7 @@ package it.citylife.model;
  * @see City
  * @see GameController
  */
-public class Grid {
+public class Grid { 
 
     // Matrice bidimensionale indicizzata come matrix[x][y] (colonna, riga)
     private final Cell[][] matrix;
