@@ -23,7 +23,7 @@ package it.citylife.model;
  * @see City#hasAdjacentRoad(int, int)
  * @see GameController#hasAdjacentRoad(int, int)
  */
-public class Road extends Structure {
+public class Road extends Structure { 
 
     private boolean connectedNorth = false;
     private boolean connectedSouth = false;
