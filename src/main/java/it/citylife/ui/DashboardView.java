@@ -21,6 +21,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
@@ -70,6 +71,9 @@ import javafx.util.Duration;
  */
 public class DashboardView extends Application implements StateObserver {
 
+    // Font universale di sistema per un look da terminale/videogioco retro
+    private static final String APP_FONT = "monospace";
+
     // Controller facade verso il modello di dominio
     private SimulationController controller;
 
@@ -109,6 +113,12 @@ public class DashboardView extends Application implements StateObserver {
     private Label energyLabel;
     private Label tickLabel;
 
+    // Pulsanti delle politiche per aggiornamento visivo
+    private Button defaultBtn;
+    private Button greenBtn;
+    private Button austerityBtn;
+    private Button fossilBtn;
+
     // Pulsante della politica attiva (evidenziato con bordo blu)
     private Button activeBtn;
     private String activePolicyName = "Default";
@@ -127,6 +137,9 @@ public class DashboardView extends Application implements StateObserver {
 
     // Matrice di StackPane che rappresenta visivamente la griglia 20×20
     private StackPane[][] cells = new StackPane[20][20];
+
+    // Dimensione attuale delle celle, aggiornata in modo dinamico
+    private double currentCellSize = 35.0;
 
     // Grafico a linee nella tab Dashboard
     private LineChart<Number, Number> chart;
@@ -163,7 +176,8 @@ public class DashboardView extends Application implements StateObserver {
         controller.addObserver(this);
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #0d1117;");
+        // Imposta il font globale della UI
+        root.setStyle("-fx-background-color: #0d1117; -fx-font-family: " + APP_FONT + ";");
 
         // Header superiore con titolo e contatore tick
         FontIcon headerIcon = new FontIcon(FontAwesomeSolid.CITY);
@@ -181,7 +195,12 @@ public class DashboardView extends Application implements StateObserver {
         dashTab.setClosable(false);
         tabPane.getTabs().addAll(mapTab, dashTab);
         root.setCenter(tabPane);
-        root.setRight(buildMetricsPanel());
+        
+        // Rende il pannello delle metriche dinamico (si allarga assorbendo lo spazio vuoto, massimo 400px)
+        VBox metricsPanel = buildMetricsPanel();
+        metricsPanel.prefWidthProperty().bind(Bindings.min(root.widthProperty().multiply(0.22), 400));
+        root.setRight(metricsPanel);
+        
         root.setBottom(buildBottomBar());
 
         primaryStage.setTitle("CityLogic");
@@ -204,20 +223,50 @@ public class DashboardView extends Application implements StateObserver {
     // ── Tab 1: City Map ──────────────────────────────────────────────────────
 
     /**
-     * Costruisce la vista della mappa: pannello sinistro + griglia centrale.
+     * Costruisce la vista della mappa: pannello sinistro + griglia centrale scalabile.
      *
      * @return un BorderPane con il pannello strumenti a sinistra e la griglia al centro
      */
     private BorderPane buildMapView() {
         BorderPane mapPane = new BorderPane();
         leftPanel = buildLeftPanel();
+        
+        // Rende il pannello sinistro dinamico (si allarga assorbendo lo spazio vuoto, massimo 350px)
+        leftPanel.prefWidthProperty().bind(Bindings.min(mapPane.widthProperty().multiply(0.20), 350));
         mapPane.setLeft(leftPanel);
 
-        StackPane gridWrapper = new StackPane(buildGridPane());
+        StackPane gridWrapper = new StackPane();
         gridWrapper.setStyle("-fx-background-color: #101f13;");
         gridWrapper.setAlignment(javafx.geometry.Pos.CENTER);
-        mapPane.setCenter(gridWrapper);
 
+        GridPane grid = buildGridPane();
+        gridWrapper.getChildren().add(grid);
+
+        // Scala le celle in base alla dimensione dello schermo mantenendole quadrate
+        gridWrapper.layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> {
+            double w = newBounds.getWidth() - 20; // Padding
+            double h = newBounds.getHeight() - 20;
+            double min = Math.min(w, h);
+            if (min > 0) {
+                double cellSize = (min - 19) / 20.0; // 19px di gap totali
+                if (cellSize > 0 && Math.abs(currentCellSize - cellSize) > 0.5) {
+                    currentCellSize = cellSize;
+                    for (int x = 0; x < 20; x++) {
+                        for (int y = 0; y < 20; y++) {
+                            StackPane cell = cells[x][y];
+                            if (cell != null) {
+                                cell.setPrefSize(cellSize, cellSize);
+                                cell.setMinSize(0, 0); // Permette di rimpicciolire la griglia quando la finestra si restringe
+                                cell.setMaxSize(cellSize, cellSize);
+                            }
+                        }
+                    }
+                    updateGrid(); // Ridisegna in base alla nuova scala
+                }
+            }
+        });
+
+        mapPane.setCenter(gridWrapper);
         return mapPane;
     }
 
@@ -234,7 +283,7 @@ public class DashboardView extends Application implements StateObserver {
         fi.setIconSize(14);
         fi.setIconColor(Color.web(hexColor));
         Label lbl = new Label(text, fi);
-        lbl.setStyle("-fx-text-fill: " + hexColor + "; -fx-font-size: 14px;");
+        lbl.setStyle("-fx-text-fill: " + hexColor + ";");
         return lbl;
     }
 
@@ -257,9 +306,9 @@ public class DashboardView extends Application implements StateObserver {
         wasteLabel      = makeMetricLabel("Waste: " +                        controller.getState().getWasteLevel(),  FontAwesomeSolid.TRASH,       "#8b949e");
 
         // Label soddisfazioni demografiche (AC-19.5)
-        jobSatLabel    = makeMetricLabel("Job Sat.: 50%",    FontAwesomeSolid.BRIEFCASE,    "#60a5fa");
-        healthSatLabel = makeMetricLabel("Health Sat.: 50%", FontAwesomeSolid.NOTES_MEDICAL, "#34d399");
-        safetySatLabel = makeMetricLabel("Safety Sat.: 50%", FontAwesomeSolid.SHIELD_ALT,    "#a78bfa");
+        jobSatLabel    = makeMetricLabel("Job Satisfaction: 50%",    FontAwesomeSolid.BRIEFCASE,    "#60a5fa");
+        healthSatLabel = makeMetricLabel("Health Satisfaction: 50%", FontAwesomeSolid.NOTES_MEDICAL, "#34d399");
+        safetySatLabel = makeMetricLabel("Safety Satisfaction: 50%", FontAwesomeSolid.SHIELD_ALT,    "#a78bfa");
 
         // Indicatore rete elettrica: verde se OK, rosso se blackout
         boolean powered = controller.hasPower();
@@ -267,7 +316,7 @@ public class DashboardView extends Application implements StateObserver {
         boltIcon.setIconSize(14);
         boltIcon.setIconColor(Color.web(powered ? "#3fb950" : "#f85149"));
         energyLabel = new Label(powered ? "Power: OK" : "Power: BLACKOUT", boltIcon);
-        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-weight: bold;");
 
         Label logTitle = new Label("NOTIFICATIONS");
         logTitle.setStyle("-fx-text-fill: #8b949e; -fx-font-size: 10px; -fx-font-weight: bold;");
@@ -279,7 +328,7 @@ public class DashboardView extends Application implements StateObserver {
         logScroll.setFitToWidth(true);
         logScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         logScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        logScroll.setStyle("-fx-background: #161b22; -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0;");
+        logScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0;");
         VBox.setVgrow(logScroll, javafx.scene.layout.Priority.ALWAYS);
 
         VBox vbox = new VBox(10,
@@ -295,7 +344,7 @@ public class DashboardView extends Application implements StateObserver {
         );
         vbox.setPadding(new Insets(14));
         vbox.setMinWidth(200);
-        vbox.setMaxWidth(200);
+        // Rimosso setMaxWidth per permettere l'espansione dinamica
         vbox.setStyle("-fx-background-color: #161b22; -fx-border-color: #30363d; -fx-border-width: 0 0 0 1;");
         return vbox;
     }
@@ -329,13 +378,10 @@ public class DashboardView extends Application implements StateObserver {
         Button repairAllBtn = new Button("Repair All", raIcon);
         repairAllBtn.setMaxWidth(Double.MAX_VALUE);
         repairAllBtn.setMinHeight(32);
-        repairAllBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: transparent; -fx-border-width: 2px;");
         
         Tooltip raTt = new Tooltip("🔧 Repair All\nAutomatically calculates and pays\nthe cost to repair every building.");
-        raTt.setStyle("-fx-background-color: #161b22; -fx-text-fill: #e6edf3; -fx-font-size: 13px; -fx-padding: 10px; -fx-border-color: #30363d; -fx-border-width: 1px; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         raTt.setShowDelay(Duration.millis(200));
         repairAllBtn.setTooltip(raTt);
-        
         repairAllBtn.setOnAction(e -> showRepairAllPreview());
 
         Label upgradeTitle = new Label("UPGRADE");
@@ -354,7 +400,7 @@ public class DashboardView extends Application implements StateObserver {
         );
         vbox.setPadding(new Insets(14));
         vbox.setMinWidth(160);
-        vbox.setMaxWidth(160);
+        // Nessun setMaxWidth, permette l'adattamento fluido
         vbox.setStyle("-fx-background-color: #161b22; -fx-border-color: #30363d; -fx-border-width: 0 1 0 0;");
         return vbox;
     }
@@ -376,7 +422,6 @@ public class DashboardView extends Application implements StateObserver {
         Button btn = new Button(label, fi);
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setMinHeight(32);
-        btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: transparent; -fx-border-width: 2px;");
         
         Tooltip tt = buildToolTooltip(tool);
         if (tt != null) btn.setTooltip(tt);
@@ -384,9 +429,9 @@ public class DashboardView extends Application implements StateObserver {
         btn.setOnAction(e -> {
             // Rimuove l'evidenziazione dal pulsante precedentemente attivo
             if (activeBuildBtn != null)
-                activeBuildBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: transparent; -fx-border-width: 2px;");
+                activeBuildBtn.setStyle(""); // Reset alle classi CSS di base
             activeBuildBtn = btn;
-            btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 12px; -fx-background-radius: 6px; -fx-border-radius: 6px; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
+            btn.setStyle("-fx-border-color: #58a6ff; -fx-background-color: #161b22;"); // Active style override
             selectedTool = tool;
         });
         return btn;
@@ -453,7 +498,6 @@ public class DashboardView extends Application implements StateObserver {
             default -> { return null; }
         }
         Tooltip tt = new Tooltip(sb.toString());
-        tt.setStyle("-fx-background-color: #161b22; -fx-text-fill: #e6edf3; -fx-font-size: 13px; -fx-padding: 10px; -fx-border-color: #30363d; -fx-border-width: 1px; -fx-border-radius: 4px; -fx-background-radius: 4px;");
         tt.setShowDelay(Duration.millis(150));
         return tt;
     }
@@ -476,7 +520,7 @@ public class DashboardView extends Application implements StateObserver {
         for (int x = 0; x < 20; x++) {
             for (int y = 0; y < 20; y++) {
                 StackPane cell = new StackPane();
-                cell.setPrefSize(35, 35);
+                cell.setPrefSize(currentCellSize, currentCellSize);
                 String emptyBgColor = ((x + y) % 2 == 0) ? "#1a3320" : "#152b1a";
                 cell.setStyle("-fx-background-color: " + emptyBgColor + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
                 final int fx = x, fy = y;
@@ -631,18 +675,11 @@ public class DashboardView extends Application implements StateObserver {
 
         if (structuresToDemolish > 1 && "DEMOLISH".equals(selectedTool)) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setGraphic(null);
             alert.setTitle("🔨 Demolish Area");
-            alert.setHeaderText(null); // Rimuove l'header ingombrante di default
-            alert.setContentText("⚠️ WARNING: You are about to demolish " + structuresToDemolish + " structures.\nEstimated refund: +" + estimatedRefund + " $\nThis action cannot be undone. Proceed?");
-            applyDarkTheme(alert);
-
-            // Stile da videogioco per il popup di conferma
-            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
-            dialogPane.setStyle("-fx-background-color: #161b22; -fx-border-color: #f85149; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
-            javafx.scene.Node content = dialogPane.lookup(".content.label");
-            if (content != null) {
-                content.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 15px; -fx-font-weight: bold;");
-            }
+            alert.setHeaderText("⚠️ WARNING: You are about to demolish " + structuresToDemolish + " structures."); 
+            alert.setContentText("Estimated refund: +" + estimatedRefund + " $\nThis action cannot be undone. Proceed?");
+            styleDialog(alert, "dialog-error");
 
             Optional<ButtonType> res = alert.showAndWait();
             if (res.isEmpty() || res.get() != ButtonType.OK) {
@@ -654,17 +691,11 @@ public class DashboardView extends Application implements StateObserver {
 
         if (structuresToRepair > 1 && "REPAIR".equals(selectedTool)) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setGraphic(null);
             alert.setTitle("🔧 Repair Area");
-            alert.setHeaderText(null); 
-            alert.setContentText("You are about to repair " + structuresToRepair + " structures.\nEstimated total cost: -" + estimatedRepairCost + " $\nProceed?");
-            applyDarkTheme(alert);
-
-            javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
-            dialogPane.setStyle("-fx-background-color: #161b22; -fx-border-color: #a3e635; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
-            javafx.scene.Node content = dialogPane.lookup(".content.label");
-            if (content != null) {
-                content.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 15px; -fx-font-weight: bold;");
-            }
+            alert.setHeaderText("You are about to repair " + structuresToRepair + " structures."); 
+            alert.setContentText("Estimated total cost: -" + estimatedRepairCost + " $\nProceed?");
+            styleDialog(alert, "dialog-success");
 
             Optional<ButtonType> res = alert.showAndWait();
             if (res.isEmpty() || res.get() != ButtonType.OK) {
@@ -740,26 +771,23 @@ public class DashboardView extends Application implements StateObserver {
 
         // Nessun edificio danneggiato: informa il giocatore
         if (totalCost == 0) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "No buildings need repairs.");
-            alert.setHeaderText(null);
-            applyDarkTheme(alert);
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setGraphic(null);
+            alert.setTitle("🔧 Repair All");
+            alert.setHeaderText("No buildings need repairs.");
+            alert.setContentText("Your city is in perfect condition!");
+            styleDialog(alert, "dialog-info");
             alert.showAndWait();
             return;
         }
 
         // Chiede conferma prima di procedere con la riparazione globale
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setGraphic(null);
         alert.setTitle("🔧 Repair All");
-        alert.setHeaderText(null);
-        alert.setContentText("Estimated total cost: -" + totalCost + " $\nProceed with repairing all damaged buildings?");
-        applyDarkTheme(alert);
-
-        javafx.scene.control.DialogPane dialogPane = alert.getDialogPane();
-        dialogPane.setStyle("-fx-background-color: #161b22; -fx-border-color: #a3e635; -fx-border-width: 2px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
-        javafx.scene.Node content = dialogPane.lookup(".content.label");
-        if (content != null) {
-            content.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 15px; -fx-font-weight: bold;");
-        }
+        alert.setHeaderText("Proceed with repairing all damaged buildings?");
+        alert.setContentText("Estimated total cost: -" + totalCost + " $");
+        styleDialog(alert, "dialog-success");
 
         Optional<javafx.scene.control.ButtonType> res = alert.showAndWait();
         if (res.isPresent() && res.get() == javafx.scene.control.ButtonType.OK) {
@@ -802,7 +830,7 @@ public class DashboardView extends Application implements StateObserver {
         safetySatLabel.setText(String.format("Safety Sat.: %.0f%%", pg.getSafetySatisfaction()));
         boolean powered = controller.hasPower();
         energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
-        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-weight: bold;");
         applyMetricAlerts(s);
     }
 
@@ -816,10 +844,10 @@ public class DashboardView extends Application implements StateObserver {
      * @param s lo stato corrente della città
      */
     private void applyMetricAlerts(CityState s) {
-        budgetLabel.setStyle("-fx-text-fill: "    + (s.getBudget()     <  500 ? "#f85149" : "#facc15") + "; -fx-font-size: 14px;");
-        happinessLabel.setStyle("-fx-text-fill: " + (s.getHappiness()  <   25 ? "#f85149" : "#fb923c") + "; -fx-font-size: 14px;");
-        healthLabel.setStyle("-fx-text-fill: "    + (s.getHealth()     <   25 ? "#f85149" : "#f472b6") + "; -fx-font-size: 14px;");
-        pollutionLabel.setStyle("-fx-text-fill: " + (s.getPollution()  >   75 ? "#f85149" : "#4ade80") + "; -fx-font-size: 14px;");
+        budgetLabel.setStyle("-fx-text-fill: "    + (s.getBudget()     <  500 ? "#f85149" : "#facc15") + ";");
+        happinessLabel.setStyle("-fx-text-fill: " + (s.getHappiness()  <   25 ? "#f85149" : "#fb923c") + ";");
+        healthLabel.setStyle("-fx-text-fill: "    + (s.getHealth()     <   25 ? "#f85149" : "#f472b6") + ";");
+        pollutionLabel.setStyle("-fx-text-fill: " + (s.getPollution()  >   75 ? "#f85149" : "#4ade80") + ";");
     }
 
     /**
@@ -906,10 +934,10 @@ public class DashboardView extends Application implements StateObserver {
                     if (base instanceof it.citylife.model.Road road) {
                         cell.setStyle("-fx-background-color: " + emptyBgColor + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
                         
-                        double thickness = 16;
-                        double length = 10.0;
-                        Color roadBg = Color.web("#334155"); // Asfalto scuro
-                        Color markingColor = Color.web("#facc15"); // Strisce gialle
+                        double thickness = currentCellSize * 0.45;
+                        double length = currentCellSize * 0.28;
+                        Color roadBg = Color.web("#334155");
+                        Color markingColor = Color.web("#facc15");
                         
                         Rectangle center = new Rectangle(thickness, thickness, roadBg);
                         cell.getChildren().add(center);
@@ -969,7 +997,7 @@ public class DashboardView extends Application implements StateObserver {
                         boolean isIntersection = (road.isConnectedNorth() || road.isConnectedSouth()) && (road.isConnectedWest() || road.isConnectedEast());
 
                         if (isIntersection) {
-                            Rectangle centerSquare = new Rectangle(6, 6, Color.TRANSPARENT);
+                            Rectangle centerSquare = new Rectangle(currentCellSize * 0.17, currentCellSize * 0.17, Color.TRANSPARENT);
                             centerSquare.setStroke(markingColor);
                             centerSquare.setStrokeWidth(1.5);
                             cell.getChildren().add(centerSquare);
@@ -994,7 +1022,7 @@ public class DashboardView extends Application implements StateObserver {
                         // Stile edifici con bordo leggermente arrotondato e ombreggiatura sull'icona
                         cell.setStyle("-fx-background-color: " + hex + "44; -fx-border-color: " + hex + "aa; -fx-border-width: 1.5; -fx-background-radius: 6px; -fx-border-radius: 6px;");
                         FontIcon icon = new FontIcon(iconForType(s.getType()));
-                        icon.setIconSize(18);
+                        icon.setIconSize((int) (currentCellSize * 0.5));
                         icon.setIconColor(bg);
                         
                         javafx.scene.effect.DropShadow shadow = new javafx.scene.effect.DropShadow();
@@ -1012,15 +1040,16 @@ public class DashboardView extends Application implements StateObserver {
                         upgIcon.setIconSize(8);
                         upgIcon.setIconColor(Color.web("#fde047"));
                         Label upgLabel = new Label("" + dec.getUpgradeLevel(), upgIcon);
-                        upgLabel.setStyle("-fx-text-fill: #fde047; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-color: #000000aa; -fx-padding: 0 3px; -fx-background-radius: 3px;");
+                        upgLabel.setStyle("-fx-text-fill: #fde047; -fx-font-size: 9px; -fx-font-weight: bold; -fx-background-color: #000000aa; -fx-padding: 0 3px; -fx-background-radius: 3px;");
                         StackPane.setAlignment(upgLabel, javafx.geometry.Pos.TOP_LEFT);
                         cell.getChildren().add(upgLabel);
                     }
 
                     // Barra HP: visibile quando l'edificio è danneggiato ma non distrutto (AC-15.2)
                     if (s.getHp() < s.getMaxHp() && s.getHp() > 0) {
-                        Rectangle hpBarBg = new Rectangle(30, 4, Color.web("#f85149"));
-                        Rectangle hpBar = new Rectangle(30 * ((double)s.getHp() / s.getMaxHp()), 4, Color.web("#3fb950"));
+                        double barW = currentCellSize * 0.85;
+                        Rectangle hpBarBg = new Rectangle(barW, 4, Color.web("#f85149"));
+                        Rectangle hpBar = new Rectangle(barW * ((double)s.getHp() / s.getMaxHp()), 4, Color.web("#3fb950"));
                         VBox hpContainer = new VBox(new StackPane(hpBarBg, hpBar));
                         hpContainer.setAlignment(javafx.geometry.Pos.BOTTOM_CENTER);
                         hpContainer.setPadding(new Insets(0,0,2,0));
@@ -1055,7 +1084,7 @@ public class DashboardView extends Application implements StateObserver {
                     if ("DEMOLISH".equals(selectedTool)) selColor = "#f85149";
                     else if ("REPAIR".equals(selectedTool)) selColor = "#a3e635";
                     
-                    Rectangle overlay = new Rectangle(35, 35, Color.web(selColor + "88"));
+                    Rectangle overlay = new Rectangle(currentCellSize, currentCellSize, Color.web(selColor + "88"));
                     overlay.setMouseTransparent(true);
                     cell.getChildren().add(overlay);
                 }
@@ -1149,14 +1178,6 @@ public class DashboardView extends Application implements StateObserver {
         }
         sb.append("Build cost: ").append(s.getConstructionCost());
         Tooltip tt = new Tooltip(sb.toString());
-        tt.setStyle(
-            "-fx-background-color: #161b22;" +
-            "-fx-text-fill: #e6edf3;" +
-            "-fx-font-size: 12px;" +
-            "-fx-padding: 8px;" +
-            "-fx-border-color: #30363d;" +
-            "-fx-border-width: 1px;"
-        );
         tt.setShowDelay(Duration.millis(150));
         return tt;
     }
@@ -1176,7 +1197,7 @@ public class DashboardView extends Application implements StateObserver {
         fi.setIconSize(15);
         fi.setIconColor(Color.web(hexColor));
         Label lbl = new Label(text, fi);
-        lbl.setStyle("-fx-text-fill: " + hexColor + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+        lbl.setStyle("-fx-text-fill: " + hexColor + "; -fx-font-weight: bold;");
         return lbl;
     }
 
@@ -1213,7 +1234,7 @@ public class DashboardView extends Application implements StateObserver {
 
         // Label rossa del terremoto: visibile solo al tick in cui avviene l'evento
         earthquakeNotifLabel = new Label();
-        earthquakeNotifLabel.setStyle("-fx-text-fill: #f85149; -fx-font-size: 13px; -fx-font-weight: bold;");
+        earthquakeNotifLabel.setStyle("-fx-text-fill: #f85149; -fx-font-weight: bold;");
         earthquakeNotifLabel.setVisible(false);
 
         HBox statsBar = new HBox(40, dashPopLabel, dashHapLabel, dashHealthLabel, dashPollLabel, earthquakeNotifLabel);
@@ -1247,10 +1268,10 @@ public class DashboardView extends Application implements StateObserver {
         Button nextTickBtn  = buildBarButton("⏭ Tick");
         Button saveBtn      = buildBarButton("Save");
         Button loadBtn      = buildBarButton("Load");
-        Button defaultBtn   = buildBarButton("Default");
-        Button greenBtn     = buildBarButton("Green");
-        Button austerityBtn = buildBarButton("Austerity");
-        Button fossilBtn    = buildBarButton("Fossil Fuel");
+        defaultBtn   = buildBarButton("Default");
+        greenBtn     = buildBarButton("Green");
+        austerityBtn = buildBarButton("Austerity");
+        fossilBtn    = buildBarButton("Fossil Fuel");
 
         // Timeline: avanza un tick al secondo; autosave ogni AUTOSAVE_EVERY_TICKS tick (AC-12.1)
         timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
@@ -1322,10 +1343,10 @@ public class DashboardView extends Application implements StateObserver {
             try {
                 controller.save(tickCount);
                 saveBtn.setText("✓ Saved!");
-                saveBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #3fb950; -fx-font-size: 14px; -fx-border-color: #3fb950; -fx-border-width: 2px;");
+                saveBtn.setStyle("-fx-border-color: #3fb950;");
                 new Timeline(new KeyFrame(Duration.seconds(2.5), ev -> {
                     saveBtn.setText("Save");
-                    saveBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px;");
+                    saveBtn.setStyle(""); // reset
                 })).play();
             } catch (IOException ex) {
                 showErrorAlert("Save error", ex.getMessage());
@@ -1348,10 +1369,11 @@ public class DashboardView extends Application implements StateObserver {
                             .map(p -> p.getFileName().toString())
                             .toList();
                     ChoiceDialog<String> dialog = new ChoiceDialog<>(names.get(names.size() - 1), names);
+                    dialog.setGraphic(null);
                     dialog.setTitle("Load game");
                     dialog.setHeaderText("Choose a save file");
                     dialog.setContentText("File:");
-                    applyDarkTheme(dialog);
+                    styleDialog(dialog, "dialog-info");
                     Optional<String> result = dialog.showAndWait();
                     if (result.isEmpty()) return;
                     chosen = saves.stream()
@@ -1369,11 +1391,11 @@ public class DashboardView extends Application implements StateObserver {
                 pollutionSeries.getData().clear();
                 int loadedTick = controller.load(chosen);
                 tickCount = loadedTick;
-                // Rimuove l'evidenziazione del pulsante politica (verrà reimpostata al prossimo cambio)
-                if (activeBtn != null) {
-                    activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px;");
-                    activeBtn = null;
-                }
+                
+                // Aggiorna visivamente la UI in base al nuovo stato
+                updateGrid();
+                refreshMetricsDisplay();
+                syncPolicyButtonWithModel();
             } catch (IOException ex) {
                 showErrorAlert("Load error", ex.getMessage());
             }
@@ -1404,7 +1426,77 @@ public class DashboardView extends Application implements StateObserver {
         return bar;
     }
 
+    /**
+     * Sincronizza il bottone della policy con il modello
+     */
+    private void syncPolicyButtonWithModel() {
+        if (controller == null || controller.getActivePolicy() == null) return;
+        it.citylife.model.PolicyStrategy policy = controller.getActivePolicy();
+        Button target = defaultBtn;
+        String pName = "Default";
+        
+        if (policy instanceof GreenPolicy) { target = greenBtn; pName = "Green"; }
+        else if (policy instanceof AusterityPolicy) { target = austerityBtn; pName = "Austerity"; }
+        else if (policy instanceof FossilFuelPolicy) { target = fossilBtn; pName = "FossilFuel"; }
+
+        if (activeBtn != null) {
+            activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-family: " + APP_FONT + ";");
+        }
+        activeBtn = target;
+        if (activeBtn != null) {
+            activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-family: " + APP_FONT + "; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
+        }
+        activePolicyName = pName;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Applica uno stile scenografico e centralizzato per TUTTI i Dialog del gioco.
+     * Sostituisce i vecchi metodi duplicati e previene bug visivi (sfondi bianchi, bordi tagliati).
+     *
+     * @param dialog      il dialogo da personalizzare (Alert, ChoiceDialog, ecc.)
+     * @param styleClass il colore esadecimale da usare per il bordo e i bottoni principali
+     */
+    private void styleDialog(javafx.scene.control.Dialog<?> dialog, String styleClass) {
+        try { dialog.initStyle(javafx.stage.StageStyle.TRANSPARENT); } catch (Exception ignored) {}
+        
+        // Assicura che il dialog abbia la finestra principale come owner per ereditare l'icona
+        if (dialog.getOwner() == null && this.primaryStage != null) {
+            try { dialog.initOwner(this.primaryStage); } catch (Exception ignored) {}
+        }
+        
+        javafx.scene.control.DialogPane dp = dialog.getDialogPane();
+        
+        try {
+            String css = getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm();
+            if (!dp.getStylesheets().contains(css)) {
+                dp.getStylesheets().add(css);
+            }
+        } catch (Exception ignored) {}
+
+        if (dp.getScene() != null) {
+            dp.getScene().setFill(Color.TRANSPARENT);
+        } else {
+            dp.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) newScene.setFill(Color.TRANSPARENT);
+            });
+        }
+
+        // Assegna la classe CSS specifica per definire i colori dei bordi, testi e pulsanti
+        dp.getStyleClass().add(styleClass);
+
+        dialog.setOnShowing(evt -> Platform.runLater(() -> {
+            if (dp.getScene() != null) {
+                dp.getScene().setFill(Color.TRANSPARENT);
+            }
+
+            // Forza l'adattamento della finestra al contenuto (evita testi tagliati)
+            if (dp.getScene() != null && dp.getScene().getWindow() != null) {
+                dp.getScene().getWindow().sizeToScene();
+            }
+        }));
+    }
 
     /**
      * Mostra la notifica di terremoto sul grafico e nel pannello log.
@@ -1441,7 +1533,6 @@ public class DashboardView extends Application implements StateObserver {
      */
     private Button buildBarButton(String label) {
         Button btn = new Button(label);
-        btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px;");
         return btn;
     }
 
@@ -1455,41 +1546,13 @@ public class DashboardView extends Application implements StateObserver {
     private void setActivePolicy(Button btn, it.citylife.model.PolicyStrategy policy) {
         // Rimuove il bordo blu dal pulsante della politica precedente
         if (activeBtn != null)
-            activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px;");
+            activeBtn.setStyle("");
         activeBtn = btn;
-        btn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
+        btn.setStyle("-fx-border-color: #58a6ff; -fx-background-color: #161b22;");
         String newName = policy.getClass().getSimpleName().replace("Policy", "");
         logMessage("Policy " + activePolicyName + " deactivated — " + newName + " now active.", "#8b949e");
         activePolicyName = newName;
         controller.setPolicy(policy);
-    }
-
-    /**
-     * Applica il tema scuro a un dialogo JavaFX, allineando i colori con quelli della UI principale.
-     * Modifica sfondo, label, pulsanti e combo box del DialogPane.
-     *
-     * @param dialog il dialogo a cui applicare il tema scuro
-     */
-    private void applyDarkTheme(javafx.scene.control.Dialog<?> dialog) {
-        javafx.scene.control.DialogPane dp = dialog.getDialogPane();
-        String css = getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm();
-        dp.getStylesheets().add(css);
-        dp.setStyle(
-            "-fx-background-color: #161b22;" +
-            "-fx-border-color: #30363d; -fx-border-width: 2px; -fx-background-radius: 8px; -fx-border-radius: 8px;"
-        );
-        if (dp.lookup(".header-panel") != null)
-            dp.lookup(".header-panel").setStyle("-fx-background-color: transparent;");
-        
-        javafx.scene.Node buttonBar = dp.lookup(".button-bar");
-        if (buttonBar != null) buttonBar.setStyle("-fx-background-color: transparent;");
-        
-        dp.lookupAll(".label").forEach(n ->
-            n.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
-        dp.lookupAll(".button").forEach(n ->
-            n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 13px; -fx-border-color: #30363d; -fx-border-width: 1px; -fx-border-radius: 4px; -fx-background-radius: 4px; -fx-padding: 6px 12px; -fx-cursor: hand;"));
-        dp.lookupAll(".combo-box").forEach(n ->
-            n.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3;"));
     }
 
     /**
@@ -1511,45 +1574,14 @@ public class DashboardView extends Application implements StateObserver {
             // Prima partita: nessun salvataggio disponibile
             ButtonType startType = new ButtonType("Start", ButtonBar.ButtonData.OK_DONE);
             Alert welcome = new Alert(Alert.AlertType.INFORMATION);
-            welcome.initStyle(javafx.stage.StageStyle.TRANSPARENT); // Rimuove la barra nativa di Windows/Mac
+            welcome.setGraphic(null);
             welcome.setTitle("CityLogic");
             welcome.setHeaderText("🎮 Welcome to CityLogic!");
             welcome.setContentText("No saves found. Press Start to begin your journey!");
             welcome.getButtonTypes().setAll(startType);
-            welcome.setGraphic(null);
-            welcome.initOwner(this.primaryStage);
-            applyDarkTheme(welcome);
-            welcome.setOnShown(evt -> Platform.runLater(() -> {
-                javafx.scene.control.DialogPane dp = welcome.getDialogPane();
-                dp.getScene().setFill(Color.TRANSPARENT); // Rende trasparente lo sfondo della scena del Dialog
-                dp.setPrefWidth(380);
-                
-                // Original style desired by user
-                dp.setStyle("-fx-background-color: linear-gradient(to bottom, #1e293b, #0f172a); -fx-border-color: #38bdf8; -fx-border-width: 3px; -fx-border-radius: 12px; -fx-background-radius: 12px;");
-                
-                // Force drop shadow to prevent OS window clipping
-                dp.setEffect(new javafx.scene.effect.DropShadow(15, Color.color(0,0,0, 0.4)));
-                
-                // Ensure ButtonBar doesn't overlap the border
-                javafx.scene.Node bb = dp.lookup(".button-bar");
-                if (bb != null) bb.setStyle("-fx-background-color: transparent; -fx-padding: 10px;");
-                
-                // Increase bottom padding of DialogPane to guarantee space for the border
-                dp.setPadding(new Insets(10, 10, 15, 10));
-
-                javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
-                if (headerLabel != null)
-                    headerLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 18px; -fx-font-weight: bold;");
-                javafx.scene.Node contentLabel = dp.lookup(".content.label");
-                if (contentLabel != null)
-                    contentLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 14px;");
-                Button b = (Button) dp.lookupButton(startType);
-                if (b != null) { b.setStyle("-fx-background-color: #38bdf8; -fx-text-fill: #0f172a; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"); b.setMinWidth(100); }
-                
-                // Force size recalculation just in case
-                dp.getScene().getWindow().sizeToScene();
-            }));
+            styleDialog(welcome, "dialog-info");
             welcome.showAndWait();
+            syncPolicyButtonWithModel();
             return;
         }
 
@@ -1560,57 +1592,25 @@ public class DashboardView extends Application implements StateObserver {
         ButtonType loadGameType = new ButtonType("Load Save",  ButtonBar.ButtonData.RIGHT);
 
         Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
-        dialog.initStyle(javafx.stage.StageStyle.TRANSPARENT); // Rimuove la barra nativa di Windows/Mac
+        dialog.setGraphic(null);
         dialog.setTitle("CityLogic");
-        dialog.setHeaderText("🎮 Welcome to CityLogic!");
+        dialog.setHeaderText("🎮 Welcome back to CityLogic!");
         dialog.setContentText("Start a new city or resume your previous one?");
         dialog.getButtonTypes().setAll(newGameType, loadGameType);
-        dialog.setGraphic(null);
-        dialog.initOwner(this.primaryStage);
-        applyDarkTheme(dialog);
-        dialog.setOnShown(evt -> Platform.runLater(() -> {
-            javafx.scene.control.DialogPane dp = dialog.getDialogPane();
-            dp.getScene().setFill(Color.TRANSPARENT); // Rende trasparente lo sfondo della scena del Dialog
-            dp.setPrefWidth(420);
-            
-            // Original style desired by user
-            dp.setStyle("-fx-background-color: linear-gradient(to bottom, #1e293b, #0f172a); -fx-border-color: #38bdf8; -fx-border-width: 3px; -fx-border-radius: 12px; -fx-background-radius: 12px;");
-            
-            // Force drop shadow to prevent OS window clipping
-            dp.setEffect(new javafx.scene.effect.DropShadow(15, Color.color(0,0,0, 0.4)));
-            
-            // Ensure ButtonBar doesn't overlap the border
-            javafx.scene.Node bb = dp.lookup(".button-bar");
-            if (bb != null) bb.setStyle("-fx-background-color: transparent; -fx-padding: 10px;");
-            
-            // Increase bottom padding of DialogPane to guarantee space for the border
-            dp.setPadding(new Insets(10, 10, 15, 10));
-
-            javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
-            if (headerLabel != null)
-                headerLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 18px; -fx-font-weight: bold;");
-            javafx.scene.Node contentLabel = dp.lookup(".content.label");
-            if (contentLabel != null)
-                contentLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 14px;");
-            
-            String btn1Style = "-fx-background-color: #334155; -fx-text-fill: #e2e8f0; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;";
-            String btn2Style = "-fx-background-color: #38bdf8; -fx-text-fill: #0f172a; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;";
-            Button b1 = (Button) dp.lookupButton(newGameType);
-            Button b2 = (Button) dp.lookupButton(loadGameType);
-            if (b1 != null) { b1.setStyle(btn1Style); b1.setMinWidth(110); }
-            if (b2 != null) { b2.setStyle(btn2Style); b2.setMinWidth(110); }
-            
-            dp.getScene().getWindow().sizeToScene();
-        }));
+        styleDialog(dialog, "dialog-info");
 
         Optional<ButtonType> result = dialog.showAndWait();
 
         // Se l'utente sceglie "Load Save", carica automaticamente l'ultimo file
-        if (result.isEmpty() || result.get() != loadGameType) return;
+        if (result.isEmpty() || result.get() != loadGameType) {
+            syncPolicyButtonWithModel();
+            return;
+        }
 
         try {
             tickCount = controller.load(latest);
             logMessage("Game restored: " + latest.getFileName(), "#58a6ff");
+            syncPolicyButtonWithModel();
         } catch (IOException ex) {
             showErrorAlert("Load error", ex.getMessage());
         }
@@ -1624,10 +1624,11 @@ public class DashboardView extends Application implements StateObserver {
      */
     private void showErrorAlert(String header, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setGraphic(null);
         alert.setTitle("Error");
         alert.setHeaderText(header);
         alert.setContentText(content);
-        applyDarkTheme(alert);
+        styleDialog(alert, "dialog-error");
         alert.showAndWait();
     }
 
@@ -1665,7 +1666,11 @@ public class DashboardView extends Application implements StateObserver {
 
             boolean powered = controller.hasPower();
             energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
-            energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-size: 14px; -fx-font-weight: bold;");
+            if (!powered) {
+                energyLabel.setStyle("-fx-text-fill: #f85149;");
+            } else {
+                energyLabel.setStyle(""); // reset to default CSS
+            }
 
             dashPopLabel.setText("Population: "  + state.getPopulation());
             dashHapLabel.setText(String.format("Happiness: %.1f", state.getHappiness()));

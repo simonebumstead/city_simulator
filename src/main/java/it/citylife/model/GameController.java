@@ -18,7 +18,6 @@ import java.util.List;
  * edifici, upgrade delle strutture, cambio politica, salvataggio e caricamento.
  *
  * @see City
- * @see SimulationController
  * @see BuildingFactory
  * @see SaveLoadManager
  */
@@ -157,6 +156,14 @@ public class GameController {
             city.setPolicy(policy);
             System.out.println("[POLICY] Policy changed to: " + policy.getClass().getSimpleName());
         }
+    }
+
+    /**
+     * Restituisce la politica attualmente attiva.
+     * @return la politica attiva
+     */
+    public PolicyStrategy getActivePolicy() {
+        return city.getActivePolicy();
     }
 
     /**
@@ -357,6 +364,7 @@ public class GameController {
      */
     public int loadGame(Path path) throws IOException {
         int tick = ioManager.load(city, path);
+        city.updateRoadConnections(); // Aggiorna le connessioni delle strade dopo il caricamento
         city.notifyObserversPublic();
         return tick;
     }

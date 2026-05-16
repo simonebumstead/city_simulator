@@ -53,6 +53,14 @@ public class SimulationController {
     }
 
     /**
+     * Restituisce la politica attualmente attiva.
+     * @return la politica attiva
+     */
+    public PolicyStrategy getActivePolicy() {
+        return controller.getActivePolicy();
+    }
+
+    /**
      * Registra un osservatore da notificare al termine di ogni tick.
      * Delega a {@link GameController#addObserver(StateObserver)}.
      *
