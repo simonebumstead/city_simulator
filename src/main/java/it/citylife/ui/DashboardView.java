@@ -1480,6 +1480,10 @@ public class DashboardView extends Application implements StateObserver {
         );
         if (dp.lookup(".header-panel") != null)
             dp.lookup(".header-panel").setStyle("-fx-background-color: transparent;");
+        
+        javafx.scene.Node buttonBar = dp.lookup(".button-bar");
+        if (buttonBar != null) buttonBar.setStyle("-fx-background-color: transparent;");
+        
         dp.lookupAll(".label").forEach(n ->
             n.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 13px;"));
         dp.lookupAll(".button").forEach(n ->
@@ -1507,7 +1511,7 @@ public class DashboardView extends Application implements StateObserver {
             // Prima partita: nessun salvataggio disponibile
             ButtonType startType = new ButtonType("Start", ButtonBar.ButtonData.OK_DONE);
             Alert welcome = new Alert(Alert.AlertType.INFORMATION);
-            welcome.initStyle(javafx.stage.StageStyle.UNDECORATED); // Rimuove la barra nativa di Windows/Mac
+            welcome.initStyle(javafx.stage.StageStyle.TRANSPARENT); // Rimuove la barra nativa di Windows/Mac
             welcome.setTitle("CityLogic");
             welcome.setHeaderText("🎮 Welcome to CityLogic!");
             welcome.setContentText("No saves found. Press Start to begin your journey!");
@@ -1517,8 +1521,22 @@ public class DashboardView extends Application implements StateObserver {
             applyDarkTheme(welcome);
             welcome.setOnShown(evt -> Platform.runLater(() -> {
                 javafx.scene.control.DialogPane dp = welcome.getDialogPane();
+                dp.getScene().setFill(Color.TRANSPARENT); // Rende trasparente lo sfondo della scena del Dialog
                 dp.setPrefWidth(380);
+                
+                // Original style desired by user
                 dp.setStyle("-fx-background-color: linear-gradient(to bottom, #1e293b, #0f172a); -fx-border-color: #38bdf8; -fx-border-width: 3px; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+                
+                // Force drop shadow to prevent OS window clipping
+                dp.setEffect(new javafx.scene.effect.DropShadow(15, Color.color(0,0,0, 0.4)));
+                
+                // Ensure ButtonBar doesn't overlap the border
+                javafx.scene.Node bb = dp.lookup(".button-bar");
+                if (bb != null) bb.setStyle("-fx-background-color: transparent; -fx-padding: 10px;");
+                
+                // Increase bottom padding of DialogPane to guarantee space for the border
+                dp.setPadding(new Insets(10, 10, 15, 10));
+
                 javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
                 if (headerLabel != null)
                     headerLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 18px; -fx-font-weight: bold;");
@@ -1527,6 +1545,9 @@ public class DashboardView extends Application implements StateObserver {
                     contentLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 14px;");
                 Button b = (Button) dp.lookupButton(startType);
                 if (b != null) { b.setStyle("-fx-background-color: #38bdf8; -fx-text-fill: #0f172a; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"); b.setMinWidth(100); }
+                
+                // Force size recalculation just in case
+                dp.getScene().getWindow().sizeToScene();
             }));
             welcome.showAndWait();
             return;
@@ -1539,9 +1560,9 @@ public class DashboardView extends Application implements StateObserver {
         ButtonType loadGameType = new ButtonType("Load Save",  ButtonBar.ButtonData.RIGHT);
 
         Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
-        dialog.initStyle(javafx.stage.StageStyle.UNDECORATED); // Rimuove la barra nativa di Windows/Mac
+        dialog.initStyle(javafx.stage.StageStyle.TRANSPARENT); // Rimuove la barra nativa di Windows/Mac
         dialog.setTitle("CityLogic");
-        dialog.setHeaderText("🎮 Welcome back to CityLogic!");
+        dialog.setHeaderText("🎮 Welcome to CityLogic!");
         dialog.setContentText("Start a new city or resume your previous one?");
         dialog.getButtonTypes().setAll(newGameType, loadGameType);
         dialog.setGraphic(null);
@@ -1549,8 +1570,22 @@ public class DashboardView extends Application implements StateObserver {
         applyDarkTheme(dialog);
         dialog.setOnShown(evt -> Platform.runLater(() -> {
             javafx.scene.control.DialogPane dp = dialog.getDialogPane();
+            dp.getScene().setFill(Color.TRANSPARENT); // Rende trasparente lo sfondo della scena del Dialog
             dp.setPrefWidth(420);
+            
+            // Original style desired by user
             dp.setStyle("-fx-background-color: linear-gradient(to bottom, #1e293b, #0f172a); -fx-border-color: #38bdf8; -fx-border-width: 3px; -fx-border-radius: 12px; -fx-background-radius: 12px;");
+            
+            // Force drop shadow to prevent OS window clipping
+            dp.setEffect(new javafx.scene.effect.DropShadow(15, Color.color(0,0,0, 0.4)));
+            
+            // Ensure ButtonBar doesn't overlap the border
+            javafx.scene.Node bb = dp.lookup(".button-bar");
+            if (bb != null) bb.setStyle("-fx-background-color: transparent; -fx-padding: 10px;");
+            
+            // Increase bottom padding of DialogPane to guarantee space for the border
+            dp.setPadding(new Insets(10, 10, 15, 10));
+
             javafx.scene.Node headerLabel = dp.lookup(".header-panel .label");
             if (headerLabel != null)
                 headerLabel.setStyle("-fx-text-fill: #38bdf8; -fx-font-size: 18px; -fx-font-weight: bold;");
@@ -1564,6 +1599,8 @@ public class DashboardView extends Application implements StateObserver {
             Button b2 = (Button) dp.lookupButton(loadGameType);
             if (b1 != null) { b1.setStyle(btn1Style); b1.setMinWidth(110); }
             if (b2 != null) { b2.setStyle(btn2Style); b2.setMinWidth(110); }
+            
+            dp.getScene().getWindow().sizeToScene();
         }));
 
         Optional<ButtonType> result = dialog.showAndWait();
