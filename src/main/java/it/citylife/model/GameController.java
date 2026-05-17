@@ -55,40 +55,13 @@ public class GameController {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
                 if (cell != null && cell.getStructure() instanceof Structure s) {
-                    s.setConnectedToRoad(hasAdjacentRoad(x, y));
-                    s.setPowered(city.isPowered(x, y));
+                    s.setConnectedToRoad(GridQueries.hasAdjacentRoad(grid, x, y));
+                    s.setPowered(GridQueries.isPoweredAt(grid, x, y));
                 }
             }
         }
 
         city.advanceTick();
-    }
-
-    /**
-     * Verifica se la cella alle coordinate (x, y) ha almeno una Road
-     * nelle quattro direzioni cardinali.
-     *
-     * Duplica la logica di City.hasAdjacentRoad() per il pre-pass del tick;
-     * usato anche da placeBuilding() per validare il vincolo stradale sui Residential.
-     *
-     * @param x colonna della cella
-     * @param y riga della cella
-     * @return true se almeno una cella adiacente contiene una Road
-     */
-    private boolean hasAdjacentRoad(int x, int y) {
-        Grid grid = city.getGrid();
-        int[][] dirs = {{0,1}, {0,-1}, {1,0}, {-1,0}};
-        for (int[] d : dirs) {
-            int nx = x + d[0];
-            int ny = y + d[1];
-            if (nx >= 0 && nx < grid.getWidth() && ny >= 0 && ny < grid.getHeight()) {
-                Cell c = grid.getCell(nx, ny);
-                if (c != null && c.getStructure() != null && c.getStructure().getType() == StructureType.ROAD) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
@@ -119,7 +92,7 @@ public class GameController {
         }
 
         // I Residential richiedono strada adiacente: senza accesso i cittadini non possono abitarci
-        if (building.getType() == StructureType.RESIDENTIAL && !hasAdjacentRoad(x, y)) {
+        if (building.getType() == StructureType.RESIDENTIAL && !GridQueries.hasAdjacentRoad(city.getGrid(), x, y)) {
             lastError = "Residential buildings must be built next to a Road!";
             System.out.println("Must build next to a road!");
             return false;

@@ -137,67 +137,81 @@ public class CityState {
      * @see City#updateState()
      */
     public void resolveTick(PolicyModifiers modifiers) {
+        TickDeltas d = applyPolicyToDeltas(modifiers);
+        if (this.overpopulated) halveBonuses(d);
+        applyThresholdPenalties(d);
+        d.pollution -= 2.0; // decadimento naturale
+        commitDeltas(d);
+        resetAccumulators();
+    }
 
-        // 1. Applica i moltiplicatori di generazione ai delta accumulati dagli edifici
-        double finalDeltaHappiness = (this.deltaHappiness * modifiers.getHappinessGenerationMultiplier());
-        double finalDeltaHealth = (this.deltaHealth * modifiers.getHealthGenerationMultiplier());
-        double finalDeltaPollution = (this.deltaPollution * modifiers.getPollutionGenerationMultiplier());
-        double finalDeltaWaste = (this.deltaWaste * modifiers.getWasteGenerationMultiplier());
+    private TickDeltas applyPolicyToDeltas(PolicyModifiers m) {
+        TickDeltas d = new TickDeltas();
+        d.happiness = deltaHappiness * m.getHappinessGenerationMultiplier() + m.getFixedHappinessChange();
+        d.health    = deltaHealth    * m.getHealthGenerationMultiplier()    + m.getFixedHealthChange();
+        d.pollution = deltaPollution * m.getPollutionGenerationMultiplier() + m.getFixedPollutionChange();
+        d.waste     = deltaWaste     * m.getWasteGenerationMultiplier();
 
-        // Budget: la quota industrial è soggetta a un moltiplicatore separato (es. FossilFuelPolicy)
-        double nonIndustrialBudget = this.deltaBudget - this.deltaIndustrialBudget;
-        double finalDeltaBudget = nonIndustrialBudget + this.deltaIndustrialBudget * modifiers.getIndustrialBudgetMultiplier();
+        double nonIndustrial = deltaBudget - deltaIndustrialBudget;
+        d.budget = nonIndustrial + deltaIndustrialBudget * m.getIndustrialBudgetMultiplier()
+                 + m.getFixedBudgetChange();
+        return d;
+    }
 
-        // 2. Somma gli additivi fissi della policy
-        finalDeltaHappiness += modifiers.getFixedHappinessChange();
-        finalDeltaHealth += modifiers.getFixedHealthChange();
-        finalDeltaPollution += modifiers.getFixedPollutionChange();
-        finalDeltaBudget += modifiers.getFixedBudgetChange();
+    private static void halveBonuses(TickDeltas d) {
+        if (d.happiness > 0) d.happiness /= 2.0;
+        if (d.health > 0)    d.health    /= 2.0;
+    }
 
-        // Se c'è sovrappopolazione, i bonus a felicità e salute (da edifici o politiche) vengono dimezzati
-        if (this.overpopulated) {
-            if (finalDeltaHappiness > 0) finalDeltaHappiness /= 2.0;
-            if (finalDeltaHealth > 0) finalDeltaHealth /= 2.0;
-        }
-
-        // AC-19.4: ogni soddisfazione sotto 50 sottrae fino a 2.0 happiness/tick (max totale 6.0)
+    private void applyThresholdPenalties(TickDeltas d) {
+        // AC-19.4: malus da soddisfazioni demografiche basse
         double groupMalus = 0.0;
         if (populationGroup.getJobSatisfaction()    < 50.0) groupMalus += (50.0 - populationGroup.getJobSatisfaction())    * 0.04;
         if (populationGroup.getHealthSatisfaction() < 50.0) groupMalus += (50.0 - populationGroup.getHealthSatisfaction()) * 0.04;
         if (populationGroup.getSafetySatisfaction() < 50.0) groupMalus += (50.0 - populationGroup.getSafetySatisfaction()) * 0.04;
-        finalDeltaHappiness -= groupMalus;
+        d.happiness -= groupMalus;
 
-        // Penalità inquinamento: sopra 30, ogni punto extra sottrae happiness e health
-        if (this.pollution > 30.0) {
-            double penalty = (this.pollution - 30.0) * 0.15;
-            finalDeltaHappiness -= penalty;
-            finalDeltaHealth -= (penalty * 1.5);
+        if (pollution > 30.0) {
+            double penalty = (pollution - 30.0) * 0.15;
+            d.happiness -= penalty;
+            d.health    -= penalty * 1.5;
         }
 
-        // AC-18.2: rifiuti oltre soglia generano inquinamento extra e riducono la felicità
-        if (this.wasteLevel > WASTE_POLLUTION_THRESHOLD) {
-            double wastePenalty = (this.wasteLevel - WASTE_POLLUTION_THRESHOLD) * 0.10;
-            finalDeltaPollution += wastePenalty;
-            finalDeltaHappiness -= (wastePenalty * 0.5);
+        // AC-18.2: rifiuti oltre soglia generano inquinamento extra e riducono felicità
+        if (wasteLevel > WASTE_POLLUTION_THRESHOLD) {
+            double wastePenalty = (wasteLevel - WASTE_POLLUTION_THRESHOLD) * 0.10;
+            d.pollution += wastePenalty;
+            d.happiness -= wastePenalty * 0.5;
         }
+    }
 
-        // Decadimento naturale: l'inquinamento si riduce di 2 ogni tick anche senza parchi
-        finalDeltaPollution -= 2.0;
+    private void commitDeltas(TickDeltas d) {
+        budget    += d.budget;
+        happiness  = clamp(happiness + d.happiness);
+        health     = clamp(health    + d.health);
+        pollution  = clamp(pollution + d.pollution);
+        wasteLevel = (int) clamp(wasteLevel + d.waste);
+    }
 
-        // 7. Commit dei delta ai valori reali con clamping per le metriche bounded
-        this.budget += finalDeltaBudget;
-        this.happiness = Math.max(MIN_VAL, Math.min(MAX_VAL, this.happiness + finalDeltaHappiness));
-        this.health = Math.max(MIN_VAL, Math.min(MAX_VAL, this.health + finalDeltaHealth));
-        this.pollution = Math.max(MIN_VAL, Math.min(MAX_VAL, this.pollution + finalDeltaPollution));
-        this.wasteLevel = (int) Math.max(MIN_VAL, Math.min(MAX_VAL, this.wasteLevel + finalDeltaWaste));
+    private void resetAccumulators() {
+        deltaBudget = 0;
+        deltaIndustrialBudget = 0;
+        deltaHappiness = 0;
+        deltaHealth = 0;
+        deltaPollution = 0;
+        deltaWaste = 0;
+    }
 
-        // 8. Azzera i delta per il turno successivo
-        this.deltaBudget = 0;
-        this.deltaIndustrialBudget = 0;
-        this.deltaHappiness = 0;
-        this.deltaHealth = 0;
-        this.deltaPollution = 0;
-        this.deltaWaste = 0;
+    private static double clamp(double v) {
+        return Math.max(MIN_VAL, Math.min(MAX_VAL, v));
+    }
+
+    private static final class TickDeltas {
+        double budget;
+        double happiness;
+        double health;
+        double pollution;
+        double waste;
     }
 
     /** Restituisce il delta budget accumulato nel tick corrente (prima di resolveTick). */

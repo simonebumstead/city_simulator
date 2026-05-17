@@ -114,104 +114,104 @@ public class City {
     }
 
     private void updateState() {
-        // Reset dei flag per-tick: terremoto non ancora avvenuto, nessun edificio critico
+        tickResetPhase();
+        BuildingCounts counts = tickStructuresPhase();
+        applyParkEffects();
+        int maxCapacity = tickCapacityPhase(counts.residential);
+        state.resolveTick(activePolicy.getModifiers());
+        tickDisastersPhase();
+        tickDemographicsPhase(counts, maxCapacity);
+        logTickSummary(maxCapacity);
+    }
+
+    private void tickResetPhase() {
         state.setEarthquakeOccurred(false);
         state.resetCriticalBuildings();
         state.setOverpopulated(false);
-
-        // Reset della rete elettrica: produzione e consumo ripartono da zero ogni tick
         powerNet.reset();
+    }
 
-        // Contatori per il calcolo delle soddisfazioni demografiche (AC-19)
-        int residentialCount = 0;
-        int industrialCount  = 0;
-        int commercialCount  = 0;
-        int hospitalCount    = 0;
-
-        // Itera la griglia e applica gli effetti di ogni struttura
+    private BuildingCounts tickStructuresPhase() {
+        BuildingCounts c = new BuildingCounts();
         for (int x = 0; x < grid.getWidth(); x++) {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
-                if (cell != null && cell.getStructure() instanceof Structure s) {
-
-                    // AC-15.1: ogni struttura decade di HP_DECAY_PER_TICK ogni tick
-                    s.decayTick();
-
-                    // AC-15.2: struttura critica se HP > 0 e inferiore al 20% del massimo
-                    if (s.getHp() > 0 && s.getHp() < s.getMaxHp() * 0.20) {
-                        state.incrementCriticalBuildings();
-                    }
-
-                    // AC-15.4: edifici a 0 HP non applicano effetti né generano risorse
-                    if (s.isDestroyed()) continue;
-
-                    // Edifici che richiedono corrente ma non sono coperti da una PowerPlant
-                    // non applicano effetti; i Residential vengono comunque contati per la capacità
-                    boolean powered = isPowered(x, y);
-                    if (!powered && requiresPower(s)) {
-                        if (s.getType() == StructureType.RESIDENTIAL) residentialCount++;
-                        continue;
-                    }
-
-                    // Edifici senza strada adiacente non generano entrate di budget;
-                    // gli effetti vengono comunque applicati ma il delta positivo di budget viene annullato
-                    boolean isolated = !hasAdjacentRoad(x, y);
-                    if (isolated && isRevenueBuilding(s)) {
-                        double budgetBefore = state.getDeltaBudget();
-                        s.applyEffects(state, powerNet);
-                        double budgetAfter = state.getDeltaBudget();
-                        double budgetAdded = budgetAfter - budgetBefore;
-                        if (budgetAdded > 0) {
-                            state.updateBudget(-budgetAdded); // Annulla il guadagno
-                        }
-                    } else {
-                        s.applyEffects(state, powerNet);
-                    }
-
-                    // Conteggio per tipo usando getType() anziché instanceof,
-                    // in modo da funzionare correttamente anche con i Decorator
-                    switch (s.getType()) {
-                        case RESIDENTIAL -> residentialCount++;
-                        case INDUSTRIAL  -> industrialCount++;
-                        case COMMERCIAL  -> commercialCount++;
-                        case HOSPITAL    -> hospitalCount++;
-                        default -> {}
-                    }
-                }
+                if (cell == null || !(cell.getStructure() instanceof Structure s)) continue;
+                processStructure(s, x, y, c);
             }
         }
+        return c;
+    }
 
-        // Applica i bonus dei parchi (riduzione inquinamento + happiness ai Residential vicini)
-        applyParkEffects();
+    private void processStructure(Structure s, int x, int y, BuildingCounts c) {
+        // AC-15.1: ogni struttura decade di HP_DECAY_PER_TICK ogni tick
+        s.decayTick();
 
-        int maxCapacity = residentialCount * 200;
-        // Valuta la sovrappopolazione prima di resolveTick per poterne dimezzare i bonus
-        if (state.getPopulation() > maxCapacity) {
-            state.setOverpopulated(true);
+        // AC-15.2: struttura critica se HP > 0 e inferiore al 20% del massimo
+        if (s.getHp() > 0 && s.getHp() < s.getMaxHp() * 0.20) {
+            state.incrementCriticalBuildings();
         }
 
-        // Risolve i delta accumulati applicando i modificatori della politica attiva
-        PolicyModifiers mod = activePolicy.getModifiers();
-        state.resolveTick(mod);
+        // AC-15.4: edifici a 0 HP non applicano effetti né generano risorse
+        if (s.isDestroyed()) return;
 
-        // Terremoto con probabilità definita dalla costante in DisasterManager (AC-14.1)
+        // Edifici che richiedono corrente ma non sono coperti da una PowerPlant non applicano
+        // effetti; i Residential vengono comunque contati per la capacità
+        if (!isPowered(x, y) && requiresPower(s)) {
+            if (s.getType() == StructureType.RESIDENTIAL) c.residential++;
+            return;
+        }
+
+        // Edifici senza strada adiacente non generano entrate di budget
+        if (!hasAdjacentRoad(x, y) && isRevenueBuilding(s)) {
+            double budgetBefore = state.getDeltaBudget();
+            s.applyEffects(state, powerNet);
+            double budgetAdded = state.getDeltaBudget() - budgetBefore;
+            if (budgetAdded > 0) state.updateBudget(-budgetAdded);
+        } else {
+            s.applyEffects(state, powerNet);
+        }
+
+        // Conteggio per tipo usando getType() per funzionare anche con i Decorator
+        switch (s.getType()) {
+            case RESIDENTIAL -> c.residential++;
+            case INDUSTRIAL  -> c.industrial++;
+            case COMMERCIAL  -> c.commercial++;
+            case HOSPITAL    -> c.hospital++;
+            default -> {}
+        }
+    }
+
+    private int tickCapacityPhase(int residentialCount) {
+        int maxCapacity = residentialCount * 200;
+        if (state.getPopulation() > maxCapacity) state.setOverpopulated(true);
+        return maxCapacity;
+    }
+
+    private void tickDisastersPhase() {
         if (random.nextDouble() < DisasterManager.EARTHQUAKE_PROBABILITY) {
             disasterManager.triggerEarthquake(grid, state);
             state.setEarthquakeOccurred(true);
         }
+    }
 
-        // Crescita/decrescita demografica; la capacità massima è 200 abitanti per Residential
+    private void tickDemographicsPhase(BuildingCounts c, int maxCapacity) {
         boolean hasPowerNearby = anyResidentialHasPower();
         new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity,
-            industrialCount, commercialCount, hospitalCount, residentialCount);
+            c.industrial, c.commercial, c.hospital, c.residential);
+    }
 
-
+    private void logTickSummary(int maxCapacity) {
         System.out.println("=== TICK ===");
         System.out.printf("  Budget: %.0f | Pop: %d/%d | Happiness: %.1f | Health: %.1f | Pollution: %.1f | Waste: %d%n",
             state.getBudget(), state.getPopulation(), maxCapacity, state.getHappiness(),
             state.getHealth(), state.getPollution(), state.getWasteLevel());
         System.out.println("  Policy: " + activePolicy.getClass().getSimpleName());
         System.out.println("  Power: " + (powerNet.hasEnoughPower() ? "OK" : "BLACKOUT"));
+    }
+
+    private static final class BuildingCounts {
+        int residential, industrial, commercial, hospital;
     }
 
     /**
@@ -235,55 +235,15 @@ public class City {
     }
 
     /**
-     * Verifica se la cella alle coordinate (x, y) è coperta da almeno una PowerPlant.
-     *
-     * La copertura è calcolata con la distanza di Chebyshev (raggio 5 celle):
-     * una cella è alimentata se esiste una PowerPlant entro max(|dx|, |dy|) <= 5.
-     *
-     * Nota: questa logica è duplicata anche in GameController.isPowered() —
-     * consolidamento pendente.
-     *
-     * @param x colonna della cella da verificare
-     * @param y riga della cella da verificare
-     * @return true se la cella è coperta da una PowerPlant nel raggio di 5
+     * Verifica se la cella alle coordinate (x, y) è coperta da almeno una PowerPlant
+     * entro distanza di Chebyshev {@link GridQueries#POWER_RADIUS}.
      */
     public boolean isPowered(int x, int y) {
-        for (int px = 0; px < grid.getWidth(); px++) {
-            for (int py = 0; py < grid.getHeight(); py++) {
-                Cell pc = grid.getCell(px, py);
-                if (pc != null && pc.getStructure() instanceof PowerPlant) {
-                    if (Math.max(Math.abs(px - x), Math.abs(py - y)) <= 5)
-                        return true;
-                }
-            }
-        }
-        return false;
+        return GridQueries.isPoweredAt(grid, x, y);
     }
 
-    /**
-     * Verifica se la cella alle coordinate (x, y) ha almeno una Road nelle quattro
-     * direzioni cardinali (su, giù, sinistra, destra).
-     *
-     * Gli edifici senza strada adiacente non generano entrate di budget, anche se
-     * sono alimentati e funzionanti.
-     *
-     * @param x colonna della cella da verificare
-     * @param y riga della cella da verificare
-     * @return true se almeno una delle quattro celle adiacenti contiene una Road
-     */
     private boolean hasAdjacentRoad(int x, int y) {
-        int[][] dirs = {{0,1}, {0,-1}, {1,0}, {-1,0}};
-        for (int[] d : dirs) {
-            int nx = x + d[0];
-            int ny = y + d[1];
-            if (nx >= 0 && nx < grid.getWidth() && ny >= 0 && ny < grid.getHeight()) {
-                Cell c = grid.getCell(nx, ny);
-                if (c != null && c.getStructure() != null && c.getStructure().getType() == StructureType.ROAD) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return GridQueries.hasAdjacentRoad(grid, x, y);
     }
 
     /**

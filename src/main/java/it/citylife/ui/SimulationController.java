@@ -79,6 +79,11 @@ public class SimulationController {
         return controller.getPowerNet().hasEnoughPower();
     }
 
+    /** True se la cella (x, y) è coperta da una PowerPlant. */
+    public boolean isPowered(int x, int y) {
+        return it.citylife.model.GridQueries.isPoweredAt(controller.getGrid(), x, y);
+    }
+
     /**
      * Piazza una nuova struttura del tipo indicato nella cella (x, y).
      * Delega a {@link GameController#placeBuilding(String, int, int)}.
