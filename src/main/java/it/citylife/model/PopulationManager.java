@@ -4,15 +4,15 @@ package it.citylife.model;
  * Gestisce la crescita e il declino demografico della città ogni tick.
  *
  * La variazione di popolazione è calcolata come somma pesata degli effetti
- * di happiness, health e pollution rispetto a un punto neutro (50),
- * poi clampata in [MAX_DECLINE, MAX_GROWTH]. La crescita è bloccata
+ * di job, health e safety satisfaction, più gli indici generali di felicità
+ * e salute, rispetto a un punto neutro (50), poi clampata in
+ * [MAX_DECLINE, MAX_GROWTH]. La crescita è bloccata
  * se nessun edificio residenziale è alimentato.
  *
  * Ogni tick aggiorna anche le tre soddisfazioni del {@link PopulationGroup} (AC-19.2/19.3):
- *   - jobSatisfaction:    (industrial + commercial) / residential × 100
- *   - healthSatisfaction: hospital / residential × 200
- *   - safetySatisfaction: 100 − pollution
- *   - safetySatisfaction: 100 − (criticalBuildings × 5) − malus disoccupazione
+ *   - jobSatisfaction:    ((industrial × 200) + (commercial × 50)) / population × 100
+ *   - healthSatisfaction: (hospital × 400) / population × 100
+ *   - safetySatisfaction: 100 − pollution − (criticalBuildings × 5) − (terremoto ? 50 : 0)
  *
  * Se la popolazione supera la capacità massima (residentialCount × 200),
  * si applica un malus diretto a happiness e health per sovrappopolazione.
@@ -23,17 +23,14 @@ package it.citylife.model;
  */
 public class PopulationManager {
 
-    // Peso della felicità sulla variazione demografica per tick
-    private static final double HAPPINESS_WEIGHT = 0.15;
+    // Pesi delle soddisfazioni sulla variazione demografica per tick
+    private static final double JOB_SAT_WEIGHT    = 0.10;
+    private static final double HEALTH_SAT_WEIGHT = 0.10;
+    private static final double SAFETY_SAT_WEIGHT = 0.10;
 
-    // Peso della salute sulla variazione demografica per tick
-    private static final double HEALTH_WEIGHT    = 0.10;
-
-    // Peso dell'inquinamento sulla variazione demografica per tick (negativo: frena la crescita)
-    private static final double POLLUTION_WEIGHT = -0.10;
-
-    // Peso dei rifiuti sulla variazione demografica (definito ma attualmente commentato)
-    private static final double WASTE_WEIGHT     = -0.05;
+    // Pesi delle metriche generali sulla variazione demografica
+    private static final double HAPPINESS_WEIGHT  = 0.05;
+    private static final double HEALTH_WEIGHT     = 0.05;
 
     // Crescita minima garantita ogni tick in condizioni normali
     private static final int BASE_GROWTH         = 1;
@@ -71,45 +68,67 @@ public class PopulationManager {
 
         // AC-19.2/19.3: aggiorna le soddisfazioni del gruppo demografico
         PopulationGroup pg = state.getPopulationGroup();
-        if (residentialCount == 0) {
-            // Nessun residente: nessuna domanda insoddisfatta, tutte le soddisfazioni al massimo
+        int currentPop = state.getPopulation();
+        
+        if (currentPop == 0) {
+            // Nessuna popolazione: nessuna domanda insoddisfatta, tutte le soddisfazioni al massimo
             pg.setJobSatisfaction(100.0);
             pg.setHealthSatisfaction(100.0);
             pg.setSafetySatisfaction(100.0);
         } else {
-            // jobSat: ogni edificio produttivo copre un residente; oltre 100% si clampa
-            pg.setJobSatisfaction(Math.min(100.0, (industrialCount + commercialCount) * 100.0 / residentialCount));
-            // healthSat: ogni ospedale copre 200 residenti (coefficiente 200)
-            pg.setHealthSatisfaction(Math.min(100.0, hospitalCount * 200.0 / residentialCount));
-            // safetySat: più inquinamento, meno sicurezza percepita
-            pg.setSafetySatisfaction(Math.max(0.0, 100.0 - state.getPollution()));
+            // jobSat: ogni industria garantisce 200 posti, ogni commerciale 50. Diviso per popolazione corrente
+            double availableJobs = (industrialCount * 200.0) + (commercialCount * 50.0);
+            pg.setJobSatisfaction(Math.min(100.0, availableJobs * 100.0 / currentPop));
+            
+            // healthSat: ogni ospedale cura 400 persone. Diviso per popolazione corrente
+            double availableHealthCare = hospitalCount * 400.0;
+            pg.setHealthSatisfaction(Math.min(100.0, availableHealthCare * 100.0 / currentPop));
+            
+            // safetySat: penalizzata da inquinamento, edifici danneggiati ed eventuali terremoti in corso
+            double safetySat = 100.0 - (state.getPollution() / 4) - (state.getCriticalBuildingCount() * 5.0);
+            if (state.isEarthquakeOccurred()) {
+                safetySat -= 50.0;
+            }
+            pg.setSafetySatisfaction(Math.max(0.0, safetySat));
         }
 
-        // Calcolo del delta demografico: ogni metrica contribuisce in proporzione alla deviazione dal punto neutro
-        double happinessEffect = (state.getHappiness() - NEUTRAL_POINT) * HAPPINESS_WEIGHT;
-        double healthEffect    = (state.getHealth()    - NEUTRAL_POINT) * HEALTH_WEIGHT;
-        double pollutionEffect = (state.getPollution() - NEUTRAL_POINT) * POLLUTION_WEIGHT;
-
-        // Se la salute è critica (< 20) la felicità non può compensare il declino demografico
-        double effectiveHappinessEffect = (state.getHealth() < 20.0) ? 0.0 : happinessEffect;
+        // Calcolo del delta demografico: basato sulle soddisfazioni demografiche...
+        double jobEffect    = (pg.getJobSatisfaction()    - NEUTRAL_POINT) * JOB_SAT_WEIGHT;
+        double healthSatEffect = (pg.getHealthSatisfaction() - NEUTRAL_POINT) * HEALTH_SAT_WEIGHT;
+        double safetyEffect = (pg.getSafetySatisfaction() - NEUTRAL_POINT) * SAFETY_SAT_WEIGHT;
+        
+        // ...e sulle metriche generali di città
+        double generalHappinessEffect = (state.getHappiness() - NEUTRAL_POINT) * HAPPINESS_WEIGHT;
+        double generalHealthEffect    = (state.getHealth()    - NEUTRAL_POINT) * HEALTH_WEIGHT;
 
         int deltaPop = (int) Math.min(MAX_GROWTH, Math.max(MAX_DECLINE,
-            BASE_GROWTH + effectiveHappinessEffect + healthEffect + pollutionEffect));
+            BASE_GROWTH + jobEffect + healthSatEffect + safetyEffect + generalHappinessEffect + generalHealthEffect));
+
+        // Se anche solo un parametro vitale è critico, la popolazione non può crescere
+        boolean criticalConditions = state.getHappiness() < 25.0 || 
+                                     state.getHealth() < 25.0 || 
+                                     state.getPollution() > 75.0 ||
+                                     pg.getJobSatisfaction() < 25.0 ||
+                                     pg.getHealthSatisfaction() < 25.0 ||
+                                     pg.getSafetySatisfaction() < 25.0;
+
+        if (criticalConditions) {
+            deltaPop = Math.min(0, deltaPop);
+        }
 
         // Senza corrente nei Residential la popolazione non cresce (può solo calare o restare stabile)
         if (!hasPowerNearby) {
             deltaPop = Math.min(0, deltaPop);
         }
 
-        int currentPop = state.getPopulation();
-
         // Sovrappopolazione: la crescita è limitata a +1 e si applicano malus diretti su happiness e health
         if (currentPop > maxCapacity) {
             deltaPop = Math.min(1, deltaPop);
 
             // Setter diretti: il malus è istantaneo, fuori dal ciclo delta di fine tick
-            state.setHappiness(state.getHappiness() - 2.0);
-            state.setHealth(state.getHealth() - 1.0);
+            state.setHappiness(state.getHappiness() - 20.0);
+            state.setHealth(state.getHealth() - 10.0);
+            state.setOverpopulated(true);
 
             System.out.println("⚠️ OVERPOPULATION: Penalties applied to Happiness and Health.");
         }

@@ -48,7 +48,7 @@ public class Hospital extends Structure {
             return;
         }
 
-        state.updateHealth(5.0);     // Cure mediche e prevenzione migliorano sensibilmente la salute pubblica
+        state.updateHealth(10.0);     // Cure mediche e prevenzione migliorano sensibilmente la salute pubblica
         state.updateHappiness(0.5);  // La presenza di un ospedale rassicura i cittadini
         state.updateBudget(-25);     // Costi di personale, farmaci e manutenzione delle strutture
         power.addConsumption(15);    // Consumo elevato: apparecchiature mediche, illuminazione H24

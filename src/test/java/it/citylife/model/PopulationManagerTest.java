@@ -1,7 +1,10 @@
 package it.citylife.model;
 
-import org.junit.jupiter.api.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testa PopulationManager: crescita/decrescita popolazione e soddisfazioni del gruppo.
@@ -41,10 +44,8 @@ class PopulationManagerTest {
     void testPopulationGrowsWithHighHappiness() {
         state.setHappiness(80.0);
         state.setHealth(80.0);
-        // pollution = 0 (default)
-        // deltaPop = clamp(1 + (80-50)*0.15 + (80-50)*0.10 + (0-50)*(-0.10), -15, 8)
-        //          = clamp(1 + 4.5 + 3.0 + 5.0) = clamp(13.5) = 8
-        manager.updateDemographics(state, true, 1000, 0, 0, 0, 1);
+        // Assicuriamo che le soddisfazioni non siano critiche (almeno 1 industria e 1 ospedale)
+        manager.updateDemographics(state, true, 1000, 1, 0, 1, 1);
         assertTrue(state.getPopulation() > 10);
     }
 
@@ -55,9 +56,6 @@ class PopulationManagerTest {
         state.setHappiness(20.0);
         state.setHealth(20.0);
         state.setPollution(80.0);
-        // deltaPop = clamp(1 + (20-50)*0.15 + (20-50)*0.10 + (80-50)*(-0.10))
-        //          = clamp(1 - 4.5 - 3.0 - 3.0) = clamp(-9.5) = -9 (troncamento Java)
-        // newPop = max(10, 50 - 9) = 41
         manager.updateDemographics(state, true, 1000, 0, 0, 0, 1);
         assertTrue(state.getPopulation() < 50);
     }

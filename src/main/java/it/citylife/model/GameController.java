@@ -246,7 +246,7 @@ public class GameController {
             }
 
             // Costo proporzionale ai danni subiti: più è danneggiata, più costa (AC-15.3)
-            int repairCost = (s.getMaxHp() - s.getHp()) * 2;
+            int repairCost = (s.getMaxHp() - s.getHp()) / 2;  // Era *2, diminuito per rendere il decadimento degli edifici troppo invasivo
             if (city.getState().getBudget() < repairCost) {
                 lastError = "Insufficient budget to repair! Cost: " + repairCost + "$";
                 System.out.println("Insufficient budget to repair!");
@@ -315,6 +315,12 @@ public class GameController {
         if (city.getState().getBudget() < cost) {
             lastError = "Insufficient budget to apply upgrade! Cost: " + cost + "$";
             System.out.println("[UPGRADE] Insufficient budget. Cost: " + cost);
+            return false;
+        }
+
+        // Restrizione: l'upgrade termico dei rifiuti può essere applicato solo a un Waste Center
+        if ("WASTE_THERMAL".equals(upgradeType) && base.getType() != StructureType.WASTE_CENTER) {
+            lastError = "Waste Thermal Upgrade can only be applied to a Waste Center.";
             return false;
         }
 

@@ -117,6 +117,7 @@ public class City {
         // Reset dei flag per-tick: terremoto non ancora avvenuto, nessun edificio critico
         state.setEarthquakeOccurred(false);
         state.resetCriticalBuildings();
+        state.setOverpopulated(false);
 
         // Reset della rete elettrica: produzione e consumo ripartono da zero ogni tick
         powerNet.reset();
@@ -183,21 +184,27 @@ public class City {
         // Applica i bonus dei parchi (riduzione inquinamento + happiness ai Residential vicini)
         applyParkEffects();
 
+        int maxCapacity = residentialCount * 200;
+        // Valuta la sovrappopolazione prima di resolveTick per poterne dimezzare i bonus
+        if (state.getPopulation() > maxCapacity) {
+            state.setOverpopulated(true);
+        }
+
         // Risolve i delta accumulati applicando i modificatori della politica attiva
         PolicyModifiers mod = activePolicy.getModifiers();
         state.resolveTick(mod);
-
-        // Crescita/decrescita demografica; la capacità massima è 200 abitanti per Residential
-        boolean hasPowerNearby = anyResidentialHasPower();
-        int maxCapacity = residentialCount * 200;
-        new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity,
-            industrialCount, commercialCount, hospitalCount, residentialCount);
 
         // Terremoto con probabilità definita dalla costante in DisasterManager (AC-14.1)
         if (random.nextDouble() < DisasterManager.EARTHQUAKE_PROBABILITY) {
             disasterManager.triggerEarthquake(grid, state);
             state.setEarthquakeOccurred(true);
         }
+
+        // Crescita/decrescita demografica; la capacità massima è 200 abitanti per Residential
+        boolean hasPowerNearby = anyResidentialHasPower();
+        new PopulationManager().updateDemographics(state, hasPowerNearby, maxCapacity,
+            industrialCount, commercialCount, hospitalCount, residentialCount);
+
 
         System.out.println("=== TICK ===");
         System.out.printf("  Budget: %.0f | Pop: %d/%d | Happiness: %.1f | Health: %.1f | Pollution: %.1f | Waste: %d%n",

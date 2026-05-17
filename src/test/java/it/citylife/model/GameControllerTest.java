@@ -1,7 +1,11 @@
 package it.citylife.model;
 
-import org.junit.jupiter.api.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testa GameController: placeBuilding, demolish e repair.
@@ -163,5 +167,16 @@ class GameControllerTest {
         boolean result = controller.repair(0, 0);
         assertFalse(result);
         assertEquals(150, road.getHp()); // hp non cambiato
+    }
+
+    // ── upgradeBuilding ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Waste Thermal Upgrade non può essere applicato a un edificio diverso da Waste Center")
+    void testWasteThermalUpgradeOnlyOnWasteCenter() {
+        controller.placeBuilding("ROAD", 0, 0); // Piazziamo una strada
+        boolean result = controller.upgradeBuilding(0, 0, "WASTE_THERMAL");
+        assertFalse(result);
+        assertEquals("Waste Thermal Upgrade can only be applied to a Waste Center.", controller.getLastError());
     }
 }

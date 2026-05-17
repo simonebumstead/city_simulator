@@ -111,10 +111,27 @@ public class SaveLoadManager {
         s.setHealth(data.health);
         s.setPollution(data.pollution);
         s.setWasteLevel(data.wasteLevel);
+        
+        s.getPopulationGroup().setJobSatisfaction(data.jobSatisfaction);
+        s.getPopulationGroup().setHealthSatisfaction(data.healthSatisfaction);
+        s.getPopulationGroup().setSafetySatisfaction(data.safetySatisfaction);
+
+        city.getPowerNet().reset();
+        city.getPowerNet().addProduction(data.totalProduction);
+        city.getPowerNet().addConsumption(data.totalConsumption);
 
         // Ricostruisce ogni edificio e riapplica gli upgrade in ordine (più interno → esterno)
         for (BuildingEntry entry : data.buildings) {
             Structure building = BuildingFactory.createBuilding(entry.type);
+            
+            // Ripristina gli HP se presenti nel salvataggio, altrimenti lascia full HP (retrocompatibilità vecchi save)
+            if (entry.hp >= 0) {
+                int damageToInflict = building.getMaxHp() - entry.hp;
+                if (damageToInflict > 0) {
+                    building.takeDamage(damageToInflict);
+                }
+            }
+
             if (entry.upgrades != null) {
                 for (String upgrade : entry.upgrades) {
                     building = BuildingFactory.applyUpgrade(building, upgrade);
@@ -158,6 +175,12 @@ public class SaveLoadManager {
         data.health     = s.getHealth();
         data.wasteLevel = s.getWasteLevel();
 
+        data.jobSatisfaction    = s.getPopulationGroup().getJobSatisfaction();
+        data.healthSatisfaction = s.getPopulationGroup().getHealthSatisfaction();
+        data.safetySatisfaction = s.getPopulationGroup().getSafetySatisfaction();
+        data.totalProduction    = city.getPowerNet().getTotalProduction();
+        data.totalConsumption   = city.getPowerNet().getTotalConsumption();
+
         Grid grid = city.getGrid();
         data.buildings = new ArrayList<>();
         for (int x = 0; x < grid.getWidth(); x++) {
@@ -173,8 +196,10 @@ public class SaveLoadManager {
                         Structure base = st;
                         while (base instanceof StructureDecorator dd) base = dd.wrapped;
                         entry.type = base.getType().name();
+                        entry.hp   = st.getHp();
                     } else {
                         entry.type    = st.getType().name();
+                        entry.hp      = st.getHp();
                         entry.upgrades = Collections.emptyList();
                     }
                     data.buildings.add(entry);
@@ -199,6 +224,11 @@ public class SaveLoadManager {
         public double happiness;
         public double health;
         public int    wasteLevel;
+        public double jobSatisfaction = 50.0;
+        public double healthSatisfaction = 50.0;
+        public double safetySatisfaction = 50.0;
+        public int    totalProduction;
+        public int    totalConsumption;
         public List<BuildingEntry> buildings;
     }
 
@@ -210,6 +240,7 @@ public class SaveLoadManager {
         public String       type;
         public int          x;
         public int          y;
+        public int          hp = -1; // -1 indica che l'HP non era presente nel file JSON (vecchi save)
         public List<String> upgrades = new ArrayList<>();
     }
 }

@@ -91,6 +91,7 @@ public class DashboardView extends Application implements StateObserver {
 
     // Flag per evitare notifiche ripetute di budget negativo ogni tick
     private boolean budgetWasNegative = false;
+    private boolean wasOverpopulated = false;
 
     // Variabili per la selezione trascinamento (Drag & Build / Demolish)
     private boolean isDragging = false;
@@ -206,6 +207,15 @@ public class DashboardView extends Application implements StateObserver {
         primaryStage.setTitle("CityLogic");
         Scene scene = new Scene(root, 1300, 750);
         scene.getStylesheets().add(getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm());
+        
+        // Gestione pressione barra spaziatrice per avanzare di un tick
+        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.SPACE) {
+                performManualTick();
+                event.consume();
+            }
+        });
+
         primaryStage.setScene(scene);
 
         // Icona della finestra (fallback silenzioso se non trovata)
@@ -442,7 +452,7 @@ public class DashboardView extends Application implements StateObserver {
         StringBuilder sb = new StringBuilder();
         switch (tool) {
             case "RESIDENTIAL" -> {
-                sb.append("🏠 Residential\nCost: 500 $ | Max HP: 300\n");
+                sb.append("🏠 Residential\nCost: 500 $ | Max HP: 300\nCapacity: 200\n");
                 sb.append("Effects: +2 Budget, +0.2 Happiness, +1 Waste\n");
                 sb.append("Consumes: 5 Power\nRequires: Power, Adjacent Road");
             }
@@ -763,7 +773,7 @@ public class DashboardView extends Application implements StateObserver {
                 var cell = grid.getCell(x, y);
                 if (cell != null && cell.getStructure() instanceof Structure s) {
                     if (!s.isDestroyed() && s.getHp() < s.getMaxHp()) {
-                        totalCost += (s.getMaxHp() - s.getHp()) * 2;
+                        totalCost += (s.getMaxHp() - s.getHp()) / 2;        // Era *2, ridotto anche nel GameController
                     }
                 }
             }
@@ -1320,18 +1330,7 @@ public class DashboardView extends Application implements StateObserver {
         });
 
         // Tick manuale: avanza di un tick e gestisce l'autosave come la Timeline
-        nextTickBtn.setOnAction(e -> {
-            tickCount++;
-            controller.tick();
-            if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
-                try {
-                    controller.save(tickCount);
-                    logMessage("Autosave (tick " + tickCount + ")", "#58a6ff");
-                } catch (IOException ex) {
-                    logMessage("Autosave failed!", "#f85149");
-                }
-            }
-        });
+        nextTickBtn.setOnAction(e -> performManualTick());
 
         defaultBtn.setOnAction(e -> setActivePolicy(defaultBtn, new it.citylife.model.DefaultPolicy()));
         greenBtn.setOnAction(e -> setActivePolicy(greenBtn, new GreenPolicy()));
@@ -1426,6 +1425,10 @@ public class DashboardView extends Application implements StateObserver {
         return bar;
     }
 
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+
     /**
      * Sincronizza il bottone della policy con il modello
      */
@@ -1440,16 +1443,32 @@ public class DashboardView extends Application implements StateObserver {
         else if (policy instanceof FossilFuelPolicy) { target = fossilBtn; pName = "FossilFuel"; }
 
         if (activeBtn != null) {
-            activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-family: " + APP_FONT + ";");
+            activeBtn.setStyle("");
         }
         activeBtn = target;
         if (activeBtn != null) {
-            activeBtn.setStyle("-fx-background-color: #21262d; -fx-text-fill: #e6edf3; -fx-font-size: 14px; -fx-font-family: " + APP_FONT + "; -fx-border-color: #58a6ff; -fx-border-width: 2px;");
+            activeBtn.setStyle("-fx-border-color: #58a6ff; -fx-background-color: #161b22;");
         }
         activePolicyName = pName;
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /*
+     * Funzione helper per tick manuale
+     */
+    private void performManualTick() {
+        tickCount++;
+        controller.tick();
+        if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
+            try {
+                controller.save(tickCount);
+                logMessage("Autosave (tick " + tickCount + ")", "#58a6ff");
+            } catch (IOException ex) {
+                logMessage("Autosave failed!", "#f85149");
+            }
+        }
+    };   
+
 
     /**
      * Applica uno stile scenografico e centralizzato per TUTTI i Dialog del gioco.
@@ -1706,6 +1725,14 @@ public class DashboardView extends Application implements StateObserver {
                 budgetWasNegative = true;
             } else if (state.getBudget() >= 0) {
                 budgetWasNegative = false;
+            }
+
+            // Avviso sovrappopolazione
+            if (state.isOverpopulated() && !wasOverpopulated) {
+                logMessage("OVERPOPULATION! Not enough homes. Happiness and Health dropping!", "#f85149");
+                wasOverpopulated = true;
+            } else if (!state.isOverpopulated()) {
+                wasOverpopulated = false;
             }
 
             applyMetricAlerts(state);

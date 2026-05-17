@@ -50,6 +50,9 @@ public class CityState {
     // True se un terremoto è avvenuto nel tick corrente; usato dalla UI per la notifica
     private boolean earthquakeOccurred = false;
 
+    // True se la città è in sovrappopolazione nel tick corrente; usato dalla UI per la notifica
+    private boolean overpopulated = false;
+
     // Soddisfazioni demografiche del tick corrente (job, health, safety) — AC-19
     private PopulationGroup populationGroup = new PopulationGroup();
 
@@ -87,6 +90,8 @@ public class CityState {
     public void resetCriticalBuildings() { criticalBuildingCount = 0; }
     public boolean isEarthquakeOccurred() { return earthquakeOccurred; }
     public void setEarthquakeOccurred(boolean v) { this.earthquakeOccurred = v; }
+    public boolean isOverpopulated() { return overpopulated; }
+    public void setOverpopulated(boolean v) { this.overpopulated = v; }
     public PopulationGroup getPopulationGroup() { return populationGroup; }
 
     /**
@@ -148,6 +153,12 @@ public class CityState {
         finalDeltaHealth += modifiers.getFixedHealthChange();
         finalDeltaPollution += modifiers.getFixedPollutionChange();
         finalDeltaBudget += modifiers.getFixedBudgetChange();
+
+        // Se c'è sovrappopolazione, i bonus a felicità e salute (da edifici o politiche) vengono dimezzati
+        if (this.overpopulated) {
+            if (finalDeltaHappiness > 0) finalDeltaHappiness /= 2.0;
+            if (finalDeltaHealth > 0) finalDeltaHealth /= 2.0;
+        }
 
         // AC-19.4: ogni soddisfazione sotto 50 sottrae fino a 2.0 happiness/tick (max totale 6.0)
         double groupMalus = 0.0;

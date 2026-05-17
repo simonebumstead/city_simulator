@@ -75,7 +75,7 @@ public class BuildingFactory {
             case "SEISMIC"       -> new SeismicUpgrade(base);
 
             // Aggiunge riduzione rifiuti e bonus budget al WasteManagementCenter — costo 700
-            case "WASTE_THERMAL" -> new WasteThermalUpgrade(base);
+            case "WASTE_THERMAL" -> base.getType() == StructureType.WASTE_CENTER ? new WasteThermalUpgrade(base) : base;
 
             // Upgrade sconosciuto: restituisce la struttura invariata senza errori
             default -> base;
