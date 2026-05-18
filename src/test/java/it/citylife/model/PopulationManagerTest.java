@@ -19,12 +19,12 @@ import org.junit.jupiter.api.Test;
  *              -15, +8)
  *   newPop   = max(10, currentPop + deltaPop)
  *
- * Soddisfazioni (se residentialCount > 0):
- *   jobSatisfaction    = min(100, (ind+com)*100.0/res)
- *   healthSatisfaction = min(100, hosp*200.0/res)
- *   safetySatisfaction = max(0, 100 - pollution)
+ * Soddisfazioni (se currentPop > 0):
+ *   jobSatisfaction    = min(100, (ind*200 + com*50)*100.0 / currentPop)
+ *   healthSatisfaction = min(100, hosp*400*100.0 / currentPop)
+ *   safetySatisfaction = max(0, 100 - pollution/4 - criticalBuildingCount*5)
  *
- * Se residentialCount == 0: tutte le soddisfazioni = 100 (nessuna domanda).
+ * Se currentPop == 0: tutte a 100 (non raggiungibile in gioco, min pop = 10).
  */
 class PopulationManagerTest {
 
@@ -82,11 +82,12 @@ class PopulationManagerTest {
     }
 
     @Test
-    @DisplayName("jobSatisfaction < 100 se i posti lavoro sono insufficienti")
+    @DisplayName("jobSatisfaction < 100 se i posti lavoro sono insufficienti rispetto alla popolazione")
     void testJobSatisfactionBelowMax() {
-        // 1 industrial, 4 residential → (1+0)*100/4 = 25
+        // pop=400, 1 industrial (200 posti), 0 commercial → (200+0)*100/400 = 50
+        state.setPopulation(400);
         manager.updateDemographics(state, true, 1000, 1, 0, 0, 4);
-        assertEquals(25.0, state.getPopulationGroup().getJobSatisfaction(), 0.001);
+        assertEquals(50.0, state.getPopulationGroup().getJobSatisfaction(), 0.001);
     }
 
     @Test
@@ -98,19 +99,21 @@ class PopulationManagerTest {
     }
 
     @Test
-    @DisplayName("safetySatisfaction = max(0, 100 - pollution)")
+    @DisplayName("safetySatisfaction = max(0, 100 - pollution/4 - criticalBuildingCount*5)")
     void testSafetySatisfactionCalculation() {
+        // pollution=30, criticalBuildingCount=0 → 100 - 30/4 - 0 = 92.5
         state.setPollution(30.0);
         manager.updateDemographics(state, true, 1000, 0, 0, 0, 1);
-        assertEquals(70.0, state.getPopulationGroup().getSafetySatisfaction(), 0.001);
+        assertEquals(92.5, state.getPopulationGroup().getSafetySatisfaction(), 0.001);
     }
 
     @Test
-    @DisplayName("safetySatisfaction clamped a 0 con pollution altissima")
+    @DisplayName("safetySatisfaction si riduce con pollution massima")
     void testSafetySatisfactionClampedToZero() {
+        // pollution=100, criticalBuildingCount=0 → 100 - 100/4 - 0 = 75
         state.setPollution(100.0);
         manager.updateDemographics(state, true, 1000, 0, 0, 0, 1);
-        assertEquals(0.0, state.getPopulationGroup().getSafetySatisfaction(), 0.001);
+        assertEquals(75.0, state.getPopulationGroup().getSafetySatisfaction(), 0.001);
     }
 
     @Test
@@ -131,9 +134,13 @@ class PopulationManagerTest {
     // ── Caso residentialCount == 0 (AC-19.3 bug fix) ─────────────────────────
 
     @Test
-    @DisplayName("Se residentialCount == 0, tutte le soddisfazioni restano a 100 (nessuna domanda)")
+    @DisplayName("Offerta sufficiente → tutte le soddisfazioni a 100")
     void testAllSatisfactionsAt100WhenNoResidential() {
-        manager.updateDemographics(state, true, 1000, 0, 0, 0, 0);
+        // pop=10 (default), 1 industrial (200 posti), 1 hospital (400 cap), pollution=0
+        // jobSat    = min(100, 200*100/10) = 100
+        // healthSat = min(100, 400*100/10) = 100
+        // safetySat = 100 - 0/4 = 100
+        manager.updateDemographics(state, true, 1000, 1, 0, 1, 1);
         PopulationGroup pg = state.getPopulationGroup();
         assertEquals(100.0, pg.getJobSatisfaction(),    0.001);
         assertEquals(100.0, pg.getHealthSatisfaction(), 0.001);

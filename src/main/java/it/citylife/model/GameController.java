@@ -219,7 +219,7 @@ public class GameController {
             }
 
             // Costo proporzionale ai danni subiti: più è danneggiata, più costa (AC-15.3)
-            int repairCost = (s.getMaxHp() - s.getHp()) * 2;
+            int repairCost = (s.getMaxHp() - s.getHp()) / 2;  // Era *2, diminuito per rendere il decadimento degli edifici meno invasivo
             if (city.getState().getBudget() < repairCost) {
                 lastError = "Insufficient budget to repair! Cost: " + repairCost + "$";
                 System.out.println("Insufficient budget to repair!");

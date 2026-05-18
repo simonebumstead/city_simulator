@@ -148,11 +148,11 @@ class PolicyTest {
     }
 
     @Test
-    @DisplayName("AusterityPolicy: happiness ridotta di 5 per tick (malus flat)")
+    @DisplayName("AusterityPolicy: happiness ridotta di 15 per tick (malus flat)")
     void testAusterityPolicyReducesHappiness() {
         state.resolveTick(new AusterityPolicy().getModifiers());
-        // happiness = 67 + 0 + (-5.0) = 62.0
-        assertEquals(62.0, state.getHappiness(), 0.001);
+        // happiness = 67 + 0 + (-15.0) = 52.0
+        assertEquals(52.0, state.getHappiness(), 0.001);
     }
 
     @Test

@@ -138,8 +138,8 @@ class GameControllerTest {
 
         assertTrue(result);
         assertEquals(250, road.getHp()); // fullRepair → maxHp
-        // repairCost = (250 - 200) * 2 = 100
-        assertEquals(budgetBeforeRepair - 100, controller.getState().getBudget(), 0.001);
+        // repairCost = (250 - 200) / 2 = 25
+        assertEquals(budgetBeforeRepair - 25, controller.getState().getBudget(), 0.001);
     }
 
     @Test
@@ -162,11 +162,11 @@ class GameControllerTest {
     void testRepairInsufficientBudget() {
         controller.placeBuilding("ROAD", 0, 0); // maxHp=250
         Structure road = (Structure) controller.getGrid().getCell(0, 0).getStructure();
-        road.takeDamage(100); // hp=150, repairCost=(250-150)*2=200
-        controller.getState().setBudget(50.0); // sotto il costo
+        road.takeDamage(200); // hp=50, repairCost=(250-50)/2=100
+        controller.getState().setBudget(50.0); // sotto il costo di 100
         boolean result = controller.repair(0, 0);
         assertFalse(result);
-        assertEquals(150, road.getHp()); // hp non cambiato
+        assertEquals(50, road.getHp()); // hp non cambiato
     }
 
     // ── upgradeBuilding ──────────────────────────────────────────────────────

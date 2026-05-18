@@ -96,10 +96,10 @@ class StructureTest {
     // ── decayTick ────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("decayTick riduce gli HP di 2 per tick")
+    @DisplayName("decayTick riduce gli HP di 1 per tick")
     void testDecayTickReducesHp() {
         building.decayTick();
-        assertEquals(298, building.getHp()); // 300 - 2
+        assertEquals(299, building.getHp()); // 300 - 1
     }
 
     @Test

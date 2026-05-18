@@ -62,7 +62,8 @@ public final class MetricsPanel {
         boltIcon.setIconSize(14);
         boltIcon.setIconColor(Color.web(powered ? "#3fb950" : "#f85149"));
         energyLabel = new Label(powered ? "Power: OK" : "Power: BLACKOUT", boltIcon);
-        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-weight: bold;");
+        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149")
+                + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
 
         Label metricsTitle = sectionTitle("METRICS");
         Label logTitle = sectionTitle("NOTIFICATIONS");
@@ -93,7 +94,7 @@ public final class MetricsPanel {
             logTitle, logScroll
         );
         root.setPadding(new Insets(14));
-        root.setMinWidth(200);
+        root.setMinWidth(185);
         root.setStyle("-fx-background-color: #242526; -fx-border-color: #3e4042; -fx-border-width: 0 0 0 1;");
     }
 
@@ -122,17 +123,18 @@ public final class MetricsPanel {
 
         boolean powered = controller.hasPower();
         energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
-        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149") + "; -fx-font-weight: bold;");
+        energyLabel.setStyle("-fx-text-fill: " + (powered ? "#3fb950" : "#f85149")
+                + "; -fx-font-weight: bold; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
 
         applyAlerts(s);
     }
 
     /** Colora di rosso le metriche oltre soglia critica (AC-04.4/13.3). */
     public void applyAlerts(CityState s) {
-        budgetLabel.setStyle("-fx-text-fill: "    + (s.getBudget()    <  500 ? "#f85149" : "#facc15") + ";");
-        happinessLabel.setStyle("-fx-text-fill: " + (s.getHappiness() <   25 ? "#f85149" : "#fb923c") + ";");
-        healthLabel.setStyle("-fx-text-fill: "    + (s.getHealth()    <   25 ? "#f85149" : "#f472b6") + ";");
-        pollutionLabel.setStyle("-fx-text-fill: " + (s.getPollution() >   75 ? "#f85149" : "#4ade80") + ";");
+        budgetLabel.setStyle("-fx-text-fill: "    + (s.getBudget()    <  500 ? "#f85149" : "#facc15") + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
+        happinessLabel.setStyle("-fx-text-fill: " + (s.getHappiness() <   25 ? "#f85149" : "#fb923c") + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
+        healthLabel.setStyle("-fx-text-fill: "    + (s.getHealth()    <   25 ? "#f85149" : "#f472b6") + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
+        pollutionLabel.setStyle("-fx-text-fill: " + (s.getPollution() >   75 ? "#f85149" : "#4ade80") + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
     }
 
     /** Aggiunge una notifica temporanea (auto-rimossa dopo 10 s, max 15 messaggi). */
@@ -152,7 +154,7 @@ public final class MetricsPanel {
         fi.setIconSize(14);
         fi.setIconColor(Color.web(hex));
         Label lbl = new Label(text, fi);
-        lbl.setStyle("-fx-text-fill: " + hex + ";");
+        lbl.setStyle("-fx-text-fill: " + hex + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
         return lbl;
     }
 

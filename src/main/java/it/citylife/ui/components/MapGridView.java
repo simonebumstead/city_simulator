@@ -26,11 +26,9 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.MoveTo;
-import javafx.scene.shape.Path;
-import javafx.scene.shape.QuadCurveTo;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -376,28 +374,24 @@ public final class MapGridView {
     }
 
     private void drawRoad(StackPane cell, Road road, int x, int y) {
-        // Sfondo griglia visibile come "marciapiede" attorno al corpo stradale
         String gridBg = ((x + y) % 2 == 0) ? "#242526" : "#1e1f20";
         cell.setStyle("-fx-background-color: " + gridBg
                 + "; -fx-border-color: #3e4042; -fx-border-width: 0.5;"
                 + " -fx-background-radius: 2px; -fx-border-radius: 2px;");
 
-        double roadSize = currentCellSize * 0.80;   // corpo asfalto (80 % della cella)
-        double bodyHalf = roadSize / 2.0;            // usato per curve e raccordi
-        double lineHalf = currentCellSize * 0.48;    // linee escono leggermente oltre il corpo per connettere le celle
+        double cs    = currentCellSize;
+        double roadW = cs * 0.62;
+        double cx    = cs / 2.0;
+        double cy    = cs / 2.0;
+        double half  = roadW / 2.0;
 
-        cell.getChildren().add(new Rectangle(roadSize, roadSize, Color.web("#2d2e2f")));
-
-        // Connessioni road-to-road
-        boolean rn = road.isConnectedNorth();
-        boolean rs = road.isConnectedSouth();
-        boolean re = road.isConnectedEast();
-        boolean rw = road.isConnectedWest();
+        boolean rn = road.isConnectedNorth(), rs = road.isConnectedSouth();
+        boolean re = road.isConnectedEast(),  rw = road.isConnectedWest();
         int roadCount = (rn?1:0) + (rs?1:0) + (re?1:0) + (rw?1:0);
 
-        // Building arms solo per dead-end (≤1 connessione stradale) per evitare curve/giunzioni false
         boolean n, s, e, w;
         if (roadCount <= 1) {
+            // Strada isolata o dead-end: "punta" verso edifici adiacenti per chiusura visiva
             n = rn || hasBuildingAt(x, y - 1);
             s = rs || hasBuildingAt(x, y + 1);
             e = re || hasBuildingAt(x + 1, y);
@@ -407,40 +401,95 @@ public final class MapGridView {
         }
 
         int count = (n?1:0) + (s?1:0) + (e?1:0) + (w?1:0);
-        if (count == 0) return;
 
-        Color marking = Color.web("#e4e6eb");
+        // Connessioni strada-strada reali (esclude edifici adiacenti)
+        boolean ln = hasRoadAt(x, y - 1);
+        boolean ls = hasRoadAt(x, y + 1);
+        boolean le = hasRoadAt(x + 1, y);
+        boolean lw = hasRoadAt(x - 1, y);
+        int lc = (ln?1:0) + (ls?1:0) + (le?1:0) + (lw?1:0);
+        boolean straightNS = ln && ls && !le && !lw;
+        boolean straightEW = le && lw && !ln && !ls;
+        boolean lCurve     = lc == 2 && !straightNS && !straightEW;
 
-        // Curva: esattamente 2 direzioni adiacenti (non opposte)
-        boolean adjacentPair = (count == 2) && !((n && s) || (e && w));
-        if (adjacentPair) {
-            double cs = currentCellSize;
-            // coordinate assolute nella cella (0,0 = angolo in alto a sinistra)
-            double startX = cs / 2;
-            double startY = n ? (cs / 2 - lineHalf) : (cs / 2 + lineHalf);
-            double ctrlX  = e ? (cs / 2 + lineHalf) : (cs / 2 - lineHalf);
-            double ctrlY  = startY;   // angolo della curva
-            double endX   = ctrlX;
-            double endY   = cs / 2;
-            // StackPane con TOP_LEFT + translateX/Y(minX,minY) → coord assolute mappano 1:1
-            double minX = Math.min(startX, endX);
-            double minY = Math.min(startY, endY);
-            Path path = new Path();
-            path.setStroke(marking);
-            path.setStrokeWidth(1.5);
-            path.setFill(Color.TRANSPARENT);
-            path.getStrokeDashArray().addAll(4d, 4d);
-            path.getElements().addAll(new MoveTo(startX, startY), new QuadCurveTo(ctrlX, ctrlY, endX, endY));
-            StackPane.setAlignment(path, Pos.TOP_LEFT);
-            path.setTranslateX(minX);
-            path.setTranslateY(minY);
-            cell.getChildren().add(path);
-            return;
+        Canvas canvas = new Canvas(cs, cs);
+        canvas.setMouseTransparent(true);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        // 1) Asfalto
+        gc.setFill(Color.web("#3d3f42"));
+        if (lCurve) {
+            // Forma a L con angolo interno arrotondato (fillet).
+            // L'angolo concavo è nell'hub dove i due bracci si incontrano;
+            // arcTo aggiunge il raccordo circolare in quel punto.
+            double rf = (cs - roadW) * 0.48;
+            gc.beginPath();
+            if (ln && le) {           // N+E: concavo in alto-dx, convesso in basso-sx
+                gc.moveTo(cx-half, 0);   gc.lineTo(cx+half, 0);
+                gc.arcTo(cx+half, cy-half, cs,    cy-half, rf);
+                gc.lineTo(cs, cy-half);  gc.lineTo(cs, cy+half);
+                gc.arcTo(cx-half, cy+half, cx-half, 0,     rf);
+            } else if (ln && lw) {    // N+W: concavo in alto-sx, convesso in basso-dx
+                gc.moveTo(cx+half, 0);   gc.lineTo(cx-half, 0);
+                gc.arcTo(cx-half, cy-half, 0,     cy-half, rf);
+                gc.lineTo(0, cy-half);   gc.lineTo(0, cy+half);
+                gc.arcTo(cx+half, cy+half, cx+half, 0,     rf);
+            } else if (ls && le) {    // S+E: concavo in basso-dx, convesso in alto-sx
+                gc.moveTo(cx-half, cs);  gc.lineTo(cx+half, cs);
+                gc.arcTo(cx+half, cy+half, cs,    cy+half, rf);
+                gc.lineTo(cs, cy+half);  gc.lineTo(cs, cy-half);
+                gc.arcTo(cx-half, cy-half, cx-half, cs,    rf);
+            } else {                  // S+W: concavo in basso-sx, convesso in alto-dx
+                gc.moveTo(cx+half, cs);  gc.lineTo(cx-half, cs);
+                gc.arcTo(cx-half, cy+half, 0,     cy+half, rf);
+                gc.lineTo(0, cy+half);   gc.lineTo(0, cy-half);
+                gc.arcTo(cx+half, cy-half, cx+half, cs,    rf);
+            }
+            gc.closePath();
+            gc.fill();
+            // Bracci aggiuntivi verso edifici adiacenti (non connessioni stradali)
+            if (!ln && n) gc.fillRect(cx-half, 0,  roadW, cy);
+            if (!ls && s) gc.fillRect(cx-half, cy, roadW, cy);
+            if (!lw && w) gc.fillRect(0,  cy-half, cx, roadW);
+            if (!le && e) gc.fillRect(cx, cy-half, cx, roadW);
+        } else {
+            gc.fillRect(cx-half, cy-half, roadW, roadW);
+            if (n) gc.fillRect(cx-half, 0,  roadW, cy);
+            if (s) gc.fillRect(cx-half, cy, roadW, cy);
+            if (w) gc.fillRect(0,  cy-half, cx, roadW);
+            if (e) gc.fillRect(cx, cy-half, cx, roadW);
         }
 
-        // Rettilineo, T, +, dead-end: braccio per ogni direzione attiva
-        if (n || s) cell.getChildren().add(dashedLine(0, n ? -lineHalf : 0, 0, s ? lineHalf : 0, marking));
-        if (e || w) cell.getChildren().add(dashedLine(w ? -lineHalf : 0, 0, e ? lineHalf : 0, 0, marking));
+        // 2) Strisce centrali tratteggiate
+        gc.setStroke(Color.web("#e2e8f0"));
+        gc.setLineWidth(1.2);
+        gc.setLineDashes(5.0, 5.0);
+
+        if (straightNS) {
+            gc.strokeLine(cx, 0, cx, cs);
+        } else if (straightEW) {
+            gc.strokeLine(0, cy, cs, cy);
+        } else if (lCurve) {
+            double r = cs / 3.0;
+            gc.beginPath();
+            if (ln && le) {
+                gc.moveTo(cx, 0);   gc.arcTo(cx, cy, cs, cy, r);  gc.lineTo(cs, cy);
+            } else if (ln && lw) {
+                gc.moveTo(cx, 0);   gc.arcTo(cx, cy, 0,  cy, r);  gc.lineTo(0,  cy);
+            } else if (ls && le) {
+                gc.moveTo(cx, cs);  gc.arcTo(cx, cy, cs, cy, r);  gc.lineTo(cs, cy);
+            } else {
+                gc.moveTo(cx, cs);  gc.arcTo(cx, cy, 0,  cy, r);  gc.lineTo(0,  cy);
+            }
+            gc.stroke();
+        } else if (lc >= 1) {
+            if (ln) gc.strokeLine(cx, cy, cx, 0);
+            if (ls) gc.strokeLine(cx, cy, cx, cs);
+            if (le) gc.strokeLine(cx, cy, cs, cy);
+            if (lw) gc.strokeLine(cx, cy, 0,  cy);
+        }
+
+        cell.getChildren().add(canvas);
     }
 
     private boolean hasBuildingAt(int x, int y) {
@@ -449,12 +498,10 @@ public final class MapGridView {
         return c != null && !c.isEmpty() && c.getStructure().getType() != StructureType.ROAD;
     }
 
-    private static Line dashedLine(double x1, double y1, double x2, double y2, Color stroke) {
-        Line l = new Line(x1, y1, x2, y2);
-        l.setStroke(stroke);
-        l.setStrokeWidth(1.5);
-        l.getStrokeDashArray().addAll(4d, 4d);
-        return l;
+    private boolean hasRoadAt(int x, int y) {
+        if (x < 0 || x >= 20 || y < 0 || y >= 20) return false;
+        var c = controller.getGrid().getCell(x, y);
+        return c != null && !c.isEmpty() && c.getStructure().getType() == StructureType.ROAD;
     }
 
     private void overlaySelection(int x, int y, String tool) {

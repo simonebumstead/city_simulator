@@ -61,7 +61,8 @@ public final class BuildToolbar {
         Button repairAllBtn = new Button("Repair All", raIcon);
         repairAllBtn.setMaxWidth(Double.MAX_VALUE);
         repairAllBtn.setMinHeight(32);
-        repairAllBtn.setStyle("-fx-border-color: #3e4042 #3e4042 #3e4042 #a3e635; -fx-border-width: 1px 1px 1px 3px;");
+        repairAllBtn.setStyle("-fx-border-color: #3e4042 #3e4042 #3e4042 #a3e635; -fx-border-width: 1px 1px 1px 3px;"
+                + " -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
         Tooltip raTt = new Tooltip("🔧 Repair All\nAutomatically calculates and pays\nthe cost to repair every building.");
         raTt.setShowDelay(Duration.millis(200));
         repairAllBtn.setTooltip(raTt);
@@ -98,7 +99,8 @@ public final class BuildToolbar {
             (int)(iconColor.getGreen() * 255),
             (int)(iconColor.getBlue() * 255));
         String defaultStyle = "-fx-border-color: #3e4042 #3e4042 #3e4042 " + hex
-                            + "; -fx-border-width: 1px 1px 1px 3px;";
+                            + "; -fx-border-width: 1px 1px 1px 3px;"
+                            + " -fx-font-size: 13px; -fx-graphic-text-gap: 8;";
         btn.setStyle(defaultStyle);
         btn.setUserData(defaultStyle);
 
@@ -108,7 +110,8 @@ public final class BuildToolbar {
         btn.setOnAction(e -> {
             if (activeBuildBtn != null) activeBuildBtn.setStyle((String) activeBuildBtn.getUserData());
             activeBuildBtn = btn;
-            btn.setStyle("-fx-border-color: #2374e1; -fx-background-color: #242526;");
+            btn.setStyle("-fx-border-color: #2374e1; -fx-background-color: #242526;"
+                    + " -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
             selectedTool = tool;
         });
         return btn;
