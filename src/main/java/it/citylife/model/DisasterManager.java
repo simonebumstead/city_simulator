@@ -34,14 +34,27 @@ public class DisasterManager {
     // Lista degli osservatori (strutture) da notificare durante il terremoto
     private final List<DisasterObserver> observers = new ArrayList<>();
 
+    /**
+     * Registra un osservatore che verrà notificato al verificarsi di un terremoto.
+     * L'aggiunta è idempotente: lo stesso observer non viene inserito due volte.
+     * @param obs l'osservatore da registrare (tipicamente una {@link Structure})
+     */
     public void addObserver(DisasterObserver obs) {
         if (!observers.contains(obs)) observers.add(obs);
     }
 
+    /**
+     * Rimuove un osservatore dalla lista delle notifiche.
+     * @param obs l'osservatore da rimuovere
+     */
     public void removeObserver(DisasterObserver obs) {
         observers.remove(obs);
     }
 
+    /**
+     * Rimuove tutti gli osservatori registrati.
+     * Chiamato da {@link City} al reset della partita.
+     */
     public void clearObservers() {
         observers.clear();
     }

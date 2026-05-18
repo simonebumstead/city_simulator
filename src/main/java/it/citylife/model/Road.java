@@ -69,6 +69,11 @@ public class Road extends Structure {
         return hp;
     }
 
+    /**
+     * Getter e setter per i flag di connessione stradale nelle 4 direzioni cardinali.
+     * Usati da {@link it.citylife.ui.components.MapGridView} per il rendering
+     * del tipo di incrocio corretto (rettilinea, curva, a T, a croce).
+     */
     public boolean isConnectedNorth() { return connectedNorth; }
     public void setConnectedNorth(boolean connectedNorth) { this.connectedNorth = connectedNorth; }
 

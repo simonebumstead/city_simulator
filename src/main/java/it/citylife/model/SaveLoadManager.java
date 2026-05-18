@@ -36,16 +36,36 @@ public class SaveLoadManager {
         return file;
     }
 
+    /**
+     * Salva manualmente la partita con timestamp nel nome del file.
+     * @param city la città da serializzare
+     * @param tick il tick corrente da includere nel salvataggio
+     * @return il percorso del file JSON creato
+     * @throws IOException se la scrittura su disco fallisce
+     */
     public Path saveManual(City city, int tick) throws IOException {
         String filename = "save_" + LocalDateTime.now().format(TIMESTAMP_FMT) + ".json";
         return saveToFile(city, tick, filename);
     }
 
+    /**
+     * Esegue un salvataggio automatico (autosave) identificato dalla sessionId.
+     * @param city      la città da serializzare
+     * @param tick      il tick corrente
+     * @param sessionId identificatore univoco della sessione di gioco
+     * @return il percorso del file JSON creato/sovrascritto
+     * @throws IOException se la scrittura su disco fallisce
+     */
     public Path saveAuto(City city, int tick, String sessionId) throws IOException {
         String filename = "autosave_" + sessionId + ".json";
         return saveToFile(city, tick, filename);
     }
 
+    /**
+     * Restituisce la lista dei file di salvataggio presenti nella cartella {@code saves/}.
+     * @return lista di percorsi ordinati per nome; lista vuota se la cartella non esiste
+     * @throws IOException se la lettura della directory fallisce
+     */
     public List<Path> listSaves() throws IOException {
         if (!Files.exists(SAVES_DIR)) return List.of();
         try (Stream<Path> stream = Files.list(SAVES_DIR)) {
@@ -56,6 +76,13 @@ public class SaveLoadManager {
         }
     }
 
+    /**
+     * Carica una partita da file JSON e applica lo stato alla città fornita.
+     * @param city la città su cui ripristinare lo stato
+     * @param path il percorso del file di salvataggio
+     * @return il numero di tick al momento del salvataggio
+     * @throws IOException se il file non esiste, non è leggibile o contiene JSON malformato
+     */
     public int load(City city, Path path) throws IOException {
         SaveData data = mapper.readValue(path.toFile(), SaveData.class);
         SaveDataApplier.apply(city, data);
