@@ -32,7 +32,7 @@ final class ToolTooltips {
             case "WASTE_CENTER" -> "🗑️ Waste Center\nCost: 900 $ | Max HP: 350\n"
                     + "Effects: -20 Budget, -10 Waste\n"
                     + "Consumes: 10 Power\nRequires: Power";
-            case "ROAD" -> "🛣️ Road\nCost: 100 $ | Max HP: 250\nEffects: +0.1 Pollution";
+            case "ROAD" -> "🛣️ Road\nCost: 100 $ | Can't take damage\nEffects: +0.1 Pollution";
             case "REPAIR" -> "🔧 Repair\nClick or drag to repair damaged structures.";
             case "DEMOLISH" -> "🔨 Demolish\nClick or drag to destroy structures.";
             case "UPGRADE_SEISMIC" -> "🛡️ SEISMIC UPGRADE\n💵 Cost: 500 $\n"

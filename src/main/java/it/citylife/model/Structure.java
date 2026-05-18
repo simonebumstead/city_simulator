@@ -5,7 +5,9 @@ package it.citylife.model;
  *
  * Implementa {@link Placeable} e definisce il comportamento comune a ogni struttura:
  * sistema HP (danno, decadimento, riparazione), flag di stato (powered, connectedToRoad)
- * e il punto di notifica per gli eventi sismici.
+ *
+ * Implementa inoltre {@link DisasterObserver} per rispondere agli eventi disastrosi
+ * (come i terremoti), ricevendo danni tramite il metodo {@code onEarthquake}.
  *
  * Le sottoclassi concrete (ResidentialBuilding, PowerPlant, ecc.) implementano
  * i tre metodi astratti: applyEffects(), getType() e getConstructionCost().
@@ -15,6 +17,7 @@ package it.citylife.model;
  * il comportamento condiviso del ciclo di vita della struttura.
  *
  * @see Placeable
+ * @see DisasterObserver
  * @see StructureDecorator
  * @see CityState
  */
@@ -124,6 +127,8 @@ public abstract class Structure implements Placeable, DisasterObserver {
 
     /**
      * Punto di notifica per gli eventi sismici (AC-14.2).
+     * Gestisce l'effetto del disastro su questa struttura invocando il metodo
+     * per il calcolo dei danni.
      *
      * Chiama takeDamage() invece di accedere direttamente agli HP, garantendo
      * che il dispatch virtuale raggiunga SeismicUpgrade.takeDamage() quando
@@ -131,6 +136,7 @@ public abstract class Structure implements Placeable, DisasterObserver {
      *
      * @param damage il danno da infliggere per effetto del terremoto
      */
+    @Override
     public void onEarthquake(int damage) {
         takeDamage(damage);
     }

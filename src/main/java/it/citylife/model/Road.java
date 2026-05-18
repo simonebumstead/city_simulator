@@ -58,6 +58,17 @@ public class Road extends Structure {
     @Override
     public int getConstructionCost() { return 100; }
 
+    @Override
+    public void decayTick() {
+        // Le strade non subiscono decadimento
+    }
+
+    @Override
+    public int takeDamage(int amount) {
+        // Le strade non subiscono danni
+        return hp;
+    }
+
     public boolean isConnectedNorth() { return connectedNorth; }
     public void setConnectedNorth(boolean connectedNorth) { this.connectedNorth = connectedNorth; }
 
