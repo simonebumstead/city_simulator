@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * Poiché Structure è astratta, usiamo ResidentialBuilding come concretizzazione:
  * - maxHp = 300
- * - HP_DECAY_PER_TICK = 2 (costante privata in Structure, usata da decayTick())
+ * - HP_DECAY_PER_TICK = 1 (costante privata in Structure, usata da decayTick())
  *
  * Ogni test parte da un edificio fresco (hp = maxHp = 300).
  */
@@ -116,5 +116,14 @@ class StructureTest {
         building.takeDamage(300);   // hp = 0
         building.decayTick();       // non deve toccare hp
         assertEquals(0, building.getHp());
+    }
+
+    // ── onEarthquake ─────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("onEarthquake riduce gli HP delegando a takeDamage")
+    void testOnEarthquake() {
+        building.onEarthquake(50);
+        assertEquals(250, building.getHp());
     }
 }

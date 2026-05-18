@@ -179,4 +179,28 @@ class GameControllerTest {
         assertFalse(result);
         assertEquals("Waste Thermal Upgrade can only be applied to a Waste Center.", controller.getLastError());
     }
+
+    @Test
+    @DisplayName("Seismic Upgrade viene applicato correttamente a un edificio valido")
+    void testSeismicUpgradeSuccess() {
+        controller.placeBuilding("ROAD", 0, 0); // cost = 100, budget = 4900
+        boolean result = controller.upgradeBuilding(0, 0, "SEISMIC"); // cost = 500
+        assertTrue(result);
+        assertEquals(4400.0, controller.getState().getBudget(), 0.001);
+
+        Structure s = (Structure) controller.getGrid().getCell(0, 0).getStructure();
+        assertTrue(s instanceof SeismicUpgrade);
+    }
+
+    @Test
+    @DisplayName("Waste Thermal Upgrade viene applicato correttamente a un Waste Center")
+    void testWasteThermalUpgradeSuccess() {
+        controller.placeBuilding("WASTE_CENTER", 0, 0); // cost = 900, budget = 4100
+        boolean result = controller.upgradeBuilding(0, 0, "WASTE_THERMAL"); // cost = 700
+        assertTrue(result);
+        assertEquals(3400.0, controller.getState().getBudget(), 0.001);
+
+        Structure s = (Structure) controller.getGrid().getCell(0, 0).getStructure();
+        assertTrue(s instanceof WasteThermalUpgrade);
+    }
 }

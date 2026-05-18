@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * I file di save vengono creati nella cartella saves/ del progetto.
  * @AfterEach cancella i file prodotti durante il test per non sporcare il repository.
  *
- * API usata attraverso GameController (che espone saveGame/loadGame):
- *   Path  saveGame(int tick)     → delega a SaveLoadManager.saveAuto()
+ * API usata attraverso GameController (che espone saveManualGame/loadGame):
+ *   Path  saveManualGame(int tick) → delega a SaveLoadManager.saveManual()
  *   int   loadGame(Path path)    → delega a SaveLoadManager.load(), ritorna il tick
  *
  * Test del caricamento di file inesistente: si aspetta IOException (AC-11.3).
@@ -29,13 +29,13 @@ class SaveLoadManagerTest {
         }
     }
 
-    // ── saveGame ─────────────────────────────────────────────────────────────
+    // ── saveManualGame ─────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("saveGame crea un file JSON nella cartella saves/")
+    @DisplayName("saveManualGame crea un file JSON nella cartella saves/")
     void testSaveCreatesFile() throws IOException {
         GameController gc = new GameController();
-        savedPath = gc.saveGame(0);
+        savedPath = gc.saveManualGame(0);
         assertTrue(Files.exists(savedPath), "Il file di salvataggio deve esistere");
         assertTrue(savedPath.getFileName().toString().endsWith(".json"));
     }
@@ -48,7 +48,7 @@ class SaveLoadManagerTest {
         GameController gc = new GameController();
         gc.placeBuilding("ROAD", 3, 7);
 
-        savedPath = gc.saveGame(5);
+        savedPath = gc.saveManualGame(5);
 
         GameController gc2 = new GameController();
         int loadedTick = gc2.loadGame(savedPath);
@@ -65,7 +65,7 @@ class SaveLoadManagerTest {
         gc.getState().setBudget(3333.0);
         gc.getState().setHappiness(55.0);
 
-        savedPath = gc.saveGame(0);
+        savedPath = gc.saveManualGame(0);
 
         GameController gc2 = new GameController();
         gc2.loadGame(savedPath);
@@ -82,7 +82,7 @@ class SaveLoadManagerTest {
         gc.placeBuilding("WASTE_CENTER", 0, 0);
         gc.upgradeBuilding(0, 0, "SEISMIC");
 
-        savedPath = gc.saveGame(0);
+        savedPath = gc.saveManualGame(0);
 
         GameController gc2 = new GameController();
         gc2.loadGame(savedPath);
@@ -99,7 +99,7 @@ class SaveLoadManagerTest {
         GameController gc = new GameController();
         gc.placeBuilding("ROAD", 0, 0); // solo cella (0,0) occupata
 
-        savedPath = gc.saveGame(0);
+        savedPath = gc.saveManualGame(0);
 
         GameController gc2 = new GameController();
         gc2.loadGame(savedPath);
@@ -123,7 +123,7 @@ class SaveLoadManagerTest {
     @DisplayName("Dopo un salvataggio, listSaves include il file appena creato")
     void testListSavesIncludesSavedFile() throws IOException {
         GameController gc = new GameController();
-        savedPath = gc.saveGame(0);
+        savedPath = gc.saveManualGame(0);
 
         List<Path> saves = gc.listSaves();
         assertTrue(saves.contains(savedPath),
