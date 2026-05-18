@@ -190,8 +190,8 @@ public class GameController {
                 System.out.println("[DEMOLISH] Insufficient budget to demolish! Cost: " + demolitionCost);
                 return false;
             }
-            // Rimborso = 50% del valore di costruzione; il netto è +40% per il giocatore
-            int refund = s.getConstructionCost() / 2;
+            // Rimborso lordo = 60% del valore di costruzione; il netto è +50% per il giocatore (AC-21.2)
+            int refund = s.getConstructionCost() * 6 / 10;
             city.getState().setBudget(city.getState().getBudget() + refund - demolitionCost);
             System.out.println("[DEMOLISH] Removal cost: " + demolitionCost + " | Refund: " + refund + " | Budget: " + city.getState().getBudget());
             city.removeDisasterObserver(s);
@@ -384,7 +384,7 @@ public class GameController {
         Cell cell = city.getGrid().getCell(x, y);
         if (cell != null && !cell.isEmpty() && cell.getStructure() instanceof Structure s) {
             int demolitionCost = s.getConstructionCost() / 10;
-            int refund = s.getConstructionCost() / 2;
+            int refund = s.getConstructionCost() * 6 / 10;
             return refund - demolitionCost;
         }
         return 0;

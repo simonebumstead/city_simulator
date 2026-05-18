@@ -129,4 +129,14 @@ class SaveLoadManagerTest {
         assertTrue(saves.contains(savedPath),
                 "listSaves deve contenere il file appena salvato");
     }
+
+    @Test
+    @DisplayName("load con JSON malformato lancia IOException (AC-08.3)")
+    void testLoadCorruptedFileThrowsIOException() throws IOException {
+        Path corrotto = Files.createTempFile("corrupt_save", ".json");
+        Files.writeString(corrotto, "{ json non valido !!! }");
+        GameController gc = new GameController();
+        assertThrows(IOException.class, () -> gc.loadGame(corrotto));
+        Files.deleteIfExists(corrotto);
+    }
 }

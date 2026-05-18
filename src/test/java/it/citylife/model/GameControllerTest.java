@@ -18,12 +18,15 @@ import org.junit.jupiter.api.Test;
  *   Residential: constructionCost = 500
  *   Industrial:  constructionCost = 1000
  *
- *   demolish: demolitionCost = cost/10, refund = cost/2
- *             netto = refund - demolitionCost
- *   repair:   repairCost = (maxHp - hp) * 2
+ *   Hospital:  constructionCost = 1200, maxHp = 350
+ *
+ *   demolish: demolitionCost = cost/10, refund = cost * 6 / 10
+ *             netto = refund - demolitionCost (= 50% costo originale, AC-21.2)
+ *   repair:   repairCost = (maxHp - hp) / 2
  *
  * Nota: Road è usata come edificio "neutro" nei test perché non richiede
  * adiacenza stradale (solo i RESIDENTIAL hanno questo vincolo).
+ * I test di repair usano Hospital perché Road è immune ai danni (takeDamage no-op).
  */
 class GameControllerTest {
 
@@ -101,8 +104,8 @@ class GameControllerTest {
         assertTrue(result);
         assertTrue(controller.getGrid().isCellEmpty(0, 0));
 
-        // demolitionCost = 100/10 = 10, refund = 100/2 = 50, netto = +40
-        assertEquals(budgetAfterPlace + 40, controller.getState().getBudget(), 0.001);
+        // demolitionCost = 100/10 = 10, refund = 100*6/10 = 60, netto = +50 (AC-21.2)
+        assertEquals(budgetAfterPlace + 50, controller.getState().getBudget(), 0.001);
     }
 
     @Test
@@ -129,16 +132,17 @@ class GameControllerTest {
     @Test
     @DisplayName("Riparare un edificio danneggiato ripristina HP e deduce il costo")
     void testRepairSuccess() {
-        controller.placeBuilding("ROAD", 0, 0); // Road maxHp=250, cost=100, budget=4900
-        Structure road = (Structure) controller.getGrid().getCell(0, 0).getStructure();
-        road.takeDamage(50); // hp = 200
+        // Usa Hospital (maxHp=350, cost=1200): Road è immune ai danni (takeDamage no-op)
+        controller.placeBuilding("HOSPITAL", 0, 0); // budget = 5000 - 1200 = 3800
+        Structure hospital = (Structure) controller.getGrid().getCell(0, 0).getStructure();
+        hospital.takeDamage(50); // hp = 300
 
         double budgetBeforeRepair = controller.getState().getBudget();
         boolean result = controller.repair(0, 0);
 
         assertTrue(result);
-        assertEquals(250, road.getHp()); // fullRepair → maxHp
-        // repairCost = (250 - 200) / 2 = 25
+        assertEquals(350, hospital.getHp()); // fullRepair → maxHp
+        // repairCost = (350 - 300) / 2 = 25
         assertEquals(budgetBeforeRepair - 25, controller.getState().getBudget(), 0.001);
     }
 
@@ -160,13 +164,14 @@ class GameControllerTest {
     @Test
     @DisplayName("Budget insufficiente per la riparazione: restituisce false")
     void testRepairInsufficientBudget() {
-        controller.placeBuilding("ROAD", 0, 0); // maxHp=250
-        Structure road = (Structure) controller.getGrid().getCell(0, 0).getStructure();
-        road.takeDamage(200); // hp=50, repairCost=(250-50)/2=100
+        // Usa Hospital (maxHp=350): Road è immune ai danni (takeDamage no-op)
+        controller.placeBuilding("HOSPITAL", 0, 0); // maxHp=350
+        Structure hospital = (Structure) controller.getGrid().getCell(0, 0).getStructure();
+        hospital.takeDamage(200); // hp=150, repairCost=(350-150)/2=100
         controller.getState().setBudget(50.0); // sotto il costo di 100
         boolean result = controller.repair(0, 0);
         assertFalse(result);
-        assertEquals(50, road.getHp()); // hp non cambiato
+        assertEquals(150, hospital.getHp()); // hp non cambiato
     }
 
     // ── upgradeBuilding ──────────────────────────────────────────────────────
