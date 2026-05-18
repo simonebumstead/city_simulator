@@ -16,9 +16,11 @@ import it.citylife.ui.components.DialogHelper;
 import it.citylife.ui.components.MapGridView;
 import it.citylife.ui.components.MetricsPanel;
 import it.citylife.ui.components.SimulationControlsBar;
+import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -30,9 +32,11 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 /**
  * Finestra principale di CityLogic. Assembla i componenti UI in
@@ -47,6 +51,7 @@ public class DashboardView extends Application implements StateObserver {
 
     private SimulationController controller;
     private Stage primaryStage;
+    private BorderPane rootPane;
     private Label tickLabel;
 
     private MetricsPanel metricsPanel;
@@ -54,6 +59,7 @@ public class DashboardView extends Application implements StateObserver {
     private MapGridView mapView;
     private BuildToolbar buildToolbar;
     private SimulationControlsBar controlsBar;
+    private StackPane mapOverlayPane;
 
     private boolean budgetWasNegative = false;
     private boolean wasOverpopulated = false;
@@ -65,6 +71,7 @@ public class DashboardView extends Application implements StateObserver {
         controller.addObserver(this);
 
         BorderPane root = new BorderPane();
+        this.rootPane = root;
         root.setStyle("-fx-background-color: #18191a; -fx-font-family: " + APP_FONT + ";");
 
         FontIcon headerIcon = new FontIcon(FontAwesomeSolid.CITY);
@@ -89,7 +96,11 @@ public class DashboardView extends Application implements StateObserver {
         VBox toolbarNode = buildToolbar.getNode();
         toolbarNode.prefWidthProperty().bind(Bindings.min(mapPane.widthProperty().multiply(0.20), 350));
         mapPane.setLeft(toolbarNode);
-        mapPane.setCenter(mapView.getNode());
+
+        // Usiamo uno StackPane per racchiudere la mappa. Ci permetterà di centrarci sopra qualsiasi popup!
+        mapOverlayPane = new StackPane();
+        mapOverlayPane.getChildren().add(mapView.getNode());
+        mapPane.setCenter(mapOverlayPane);
 
         TabPane tabPane = new TabPane();
         Tab mapTab  = new Tab("City Map",  mapPane);
@@ -182,6 +193,7 @@ public class DashboardView extends Application implements StateObserver {
             if (state.isEarthquakeOccurred()) {
                 chartView.showEarthquakeAlert(tick);
                 metricsPanel.log("EARTHQUAKE!", "#f38ba8");
+                showEarthquakeWarning();
             }
             if (state.getCriticalBuildingCount() > 0) {
                 metricsPanel.log(state.getCriticalBuildingCount() + " building(s) in critical condition! (HP < 20%)", "#f9e64f");
@@ -201,5 +213,51 @@ public class DashboardView extends Application implements StateObserver {
 
             mapView.refresh();
         });
+    }
+
+    /**
+     * Mostra un avviso popup centrato perfettamente sulla mappa per il Terremoto.
+     */
+    private void showEarthquakeWarning() {
+        if (mapOverlayPane == null) return;
+
+        VBox popup = new VBox(15);
+        popup.setAlignment(Pos.CENTER);
+        popup.setMouseTransparent(true);
+        
+        // Lo StackPane rispetta il maxSize impostato e posizionerà il popup al millimetro al centro
+        popup.setMaxSize(450, 250); 
+
+        // Design rosso/nero molto più minaccioso
+        popup.setStyle("-fx-background-color: rgba(40, 0, 0, 0.95); " +
+                       "-fx-background-radius: 15; " +
+                       "-fx-border-color: #ff3333; " +
+                       "-fx-border-width: 4; " +
+                       "-fx-border-radius: 15; " +
+                       "-fx-padding: 30; " +
+                       "-fx-effect: dropshadow(gaussian, rgba(255, 50, 50, 0.8), 20, 0.5, 0, 0);");
+
+        FontIcon warningIcon = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
+        warningIcon.setIconSize(80);
+        warningIcon.setIconColor(Color.web("#ff3333"));
+
+        Label warningText = new Label("EARTHQUAKE!");
+        warningText.setStyle("-fx-text-fill: #ff3333; -fx-font-size: 45px; -fx-font-weight: bold; -fx-font-family: " + APP_FONT + ";");
+
+        popup.getChildren().addAll(warningIcon, warningText);
+        mapOverlayPane.getChildren().add(popup);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), popup);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+
+        FadeTransition fadeOut = new FadeTransition(Duration.millis(500), popup);
+        fadeOut.setFromValue(1.0);
+        fadeOut.setToValue(0.0);
+        fadeOut.setDelay(Duration.millis(2000)); // Allungato leggermente per maggiore visibilità
+        fadeOut.setOnFinished(e -> mapOverlayPane.getChildren().remove(popup));
+
+        fadeIn.setOnFinished(e -> fadeOut.play());
+        fadeIn.play();
     }
 }
