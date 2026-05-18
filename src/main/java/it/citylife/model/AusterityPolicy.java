@@ -25,7 +25,7 @@ public class AusterityPolicy implements PolicyStrategy {
                 .setFixedBudgetChange(500)
 
                 // Malcontento generalizzato causato dai tagli ai servizi
-                .setFixedHappinessChange(-15.0)
+                .setFixedHappinessChange(-5.0)
 
                 // Degrado della sanità pubblica per riduzione dei fondi
                 .setFixedHealthChange(-2.0);

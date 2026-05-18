@@ -61,13 +61,14 @@ public final class BuildToolbar {
         Button repairAllBtn = new Button("Repair All", raIcon);
         repairAllBtn.setMaxWidth(Double.MAX_VALUE);
         repairAllBtn.setMinHeight(32);
+        repairAllBtn.setStyle("-fx-border-color: #3e4042 #3e4042 #3e4042 #a3e635; -fx-border-width: 1px 1px 1px 3px;");
         Tooltip raTt = new Tooltip("🔧 Repair All\nAutomatically calculates and pays\nthe cost to repair every building.");
         raTt.setShowDelay(Duration.millis(200));
         repairAllBtn.setTooltip(raTt);
         repairAllBtn.setOnAction(e -> showRepairAllPreview());
 
         Label upgradeTitle = sectionTitle("UPGRADE");
-        Button seismicBtn      = toolButton("Seismic (500)", "UPGRADE_SEISMIC", FontAwesomeSolid.SHIELD_ALT, Color.web("#38bdf8"));
+        Button seismicBtn      = toolButton("Seismic (500)", "UPGRADE_SEISMIC", FontAwesomeSolid.SHIELD_ALT, Color.web("#4599ff"));
         Button wasteThermalBtn = toolButton("Waste Thermal (700)", "UPGRADE_WASTE_THERMAL", FontAwesomeSolid.FIRE, Color.web("#f97316"));
 
         root = new VBox(8,
@@ -78,7 +79,7 @@ public final class BuildToolbar {
         );
         root.setPadding(new Insets(14));
         root.setMinWidth(160);
-        root.setStyle("-fx-background-color: #161b22; -fx-border-color: #30363d; -fx-border-width: 0 1 0 0;");
+        root.setStyle("-fx-background-color: #242526; -fx-border-color: #3e4042; -fx-border-width: 0 1 0 0;");
     }
 
     public VBox getNode() { return root; }
@@ -92,13 +93,22 @@ public final class BuildToolbar {
         btn.setMaxWidth(Double.MAX_VALUE);
         btn.setMinHeight(32);
 
+        String hex = "#%02x%02x%02x".formatted(
+            (int)(iconColor.getRed() * 255),
+            (int)(iconColor.getGreen() * 255),
+            (int)(iconColor.getBlue() * 255));
+        String defaultStyle = "-fx-border-color: #3e4042 #3e4042 #3e4042 " + hex
+                            + "; -fx-border-width: 1px 1px 1px 3px;";
+        btn.setStyle(defaultStyle);
+        btn.setUserData(defaultStyle);
+
         Tooltip tt = ToolTooltips.forTool(tool);
         if (tt != null) btn.setTooltip(tt);
 
         btn.setOnAction(e -> {
-            if (activeBuildBtn != null) activeBuildBtn.setStyle("");
+            if (activeBuildBtn != null) activeBuildBtn.setStyle((String) activeBuildBtn.getUserData());
             activeBuildBtn = btn;
-            btn.setStyle("-fx-border-color: #58a6ff; -fx-background-color: #161b22;");
+            btn.setStyle("-fx-border-color: #2374e1; -fx-background-color: #242526;");
             selectedTool = tool;
         });
         return btn;
@@ -159,7 +169,7 @@ public final class BuildToolbar {
 
     private static Label sectionTitle(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-text-fill: #8b949e; -fx-font-size: 10px; -fx-font-weight: bold;");
+        l.setStyle("-fx-text-fill: #b0b3b8; -fx-font-size: 10px; -fx-font-weight: bold;");
         return l;
     }
 }

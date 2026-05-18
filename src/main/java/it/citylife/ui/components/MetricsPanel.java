@@ -10,6 +10,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.Priority;
@@ -32,19 +33,29 @@ public final class MetricsPanel {
     private final Label energyLabel;
     private final VBox logPanel;
 
+    private final ProgressBar happinessBar, healthBar, pollutionBar;
+    private final ProgressBar jobSatBar, healthSatBar, safetySatBar;
+
     public MetricsPanel(SimulationController controller) {
         this.controller = controller;
         CityState s = controller.getState();
 
-        budgetLabel     = metric(String.format("Budget: %.0f", s.getBudget()),    FontAwesomeSolid.COINS, "#facc15");
-        populationLabel = metric("Population: " + s.getPopulation(),              FontAwesomeSolid.USERS, "#e6edf3");
-        happinessLabel  = metric(String.format("Happiness: %.1f", s.getHappiness()), FontAwesomeSolid.SMILE, "#fb923c");
-        healthLabel     = metric(String.format("Health: %.1f", s.getHealth()),    FontAwesomeSolid.HEART, "#f472b6");
-        pollutionLabel  = metric(String.format("Pollution: %.1f", s.getPollution()), FontAwesomeSolid.SMOG, "#4ade80");
-        wasteLabel      = metric("Waste: " + s.getWasteLevel(),                   FontAwesomeSolid.TRASH, "#8b949e");
+        budgetLabel     = metric(String.format("Budget: %.0f", s.getBudget()),         FontAwesomeSolid.COINS,         "#facc15");
+        populationLabel = metric("Population: " + s.getPopulation(),                   FontAwesomeSolid.USERS,         "#e4e6eb");
+        happinessLabel  = metric(String.format("Happiness: %.1f", s.getHappiness()),   FontAwesomeSolid.SMILE,         "#fb923c");
+        healthLabel     = metric(String.format("Health: %.1f", s.getHealth()),         FontAwesomeSolid.HEART,         "#f472b6");
+        pollutionLabel  = metric(String.format("Pollution: %.1f", s.getPollution()),   FontAwesomeSolid.SMOG,          "#4ade80");
+        wasteLabel      = metric("Waste: " + s.getWasteLevel(),                        FontAwesomeSolid.TRASH,         "#b0b3b8");
         jobSatLabel     = metric("Job Satisfaction: 50%",    FontAwesomeSolid.BRIEFCASE,     "#60a5fa");
         healthSatLabel  = metric("Health Satisfaction: 50%", FontAwesomeSolid.NOTES_MEDICAL, "#34d399");
         safetySatLabel  = metric("Safety Satisfaction: 50%", FontAwesomeSolid.SHIELD_ALT,    "#a78bfa");
+
+        happinessBar = progressBar("#fb923c", s.getHappiness() / 100.0);
+        healthBar    = progressBar("#f472b6", s.getHealth()    / 100.0);
+        pollutionBar = progressBar("#4ade80", s.getPollution() / 100.0);
+        jobSatBar    = progressBar("#60a5fa", 0.5);
+        healthSatBar = progressBar("#34d399", 0.5);
+        safetySatBar = progressBar("#a78bfa", 0.5);
 
         boolean powered = controller.hasPower();
         FontIcon boltIcon = new FontIcon(FontAwesomeSolid.BOLT);
@@ -66,11 +77,16 @@ public final class MetricsPanel {
         logScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0;");
         VBox.setVgrow(logScroll, Priority.ALWAYS);
 
-        root = new VBox(10,
+        root = new VBox(6,
             metricsTitle,
-            budgetLabel, populationLabel, happinessLabel,
-            healthLabel, pollutionLabel, wasteLabel,
-            jobSatLabel, healthSatLabel, safetySatLabel,
+            budgetLabel, populationLabel,
+            row(happinessLabel,  happinessBar),
+            row(healthLabel,     healthBar),
+            row(pollutionLabel,  pollutionBar),
+            wasteLabel,
+            row(jobSatLabel,    jobSatBar),
+            row(healthSatLabel, healthSatBar),
+            row(safetySatLabel, safetySatBar),
             new Separator(),
             energyLabel,
             new Separator(),
@@ -78,7 +94,7 @@ public final class MetricsPanel {
         );
         root.setPadding(new Insets(14));
         root.setMinWidth(200);
-        root.setStyle("-fx-background-color: #161b22; -fx-border-color: #30363d; -fx-border-width: 0 0 0 1;");
+        root.setStyle("-fx-background-color: #242526; -fx-border-color: #3e4042; -fx-border-width: 0 0 0 1;");
     }
 
     public VBox getNode() { return root; }
@@ -96,6 +112,13 @@ public final class MetricsPanel {
         jobSatLabel.setText(String.format("Job Sat.: %.0f%%",    pg.getJobSatisfaction()));
         healthSatLabel.setText(String.format("Health Sat.: %.0f%%", pg.getHealthSatisfaction()));
         safetySatLabel.setText(String.format("Safety Sat.: %.0f%%", pg.getSafetySatisfaction()));
+
+        happinessBar.setProgress(s.getHappiness()              / 100.0);
+        healthBar.setProgress(s.getHealth()                    / 100.0);
+        pollutionBar.setProgress(s.getPollution()              / 100.0);
+        jobSatBar.setProgress(pg.getJobSatisfaction()          / 100.0);
+        healthSatBar.setProgress(pg.getHealthSatisfaction()    / 100.0);
+        safetySatBar.setProgress(pg.getSafetySatisfaction()    / 100.0);
 
         boolean powered = controller.hasPower();
         energyLabel.setText(powered ? "Power: OK" : "Power: BLACKOUT");
@@ -133,9 +156,20 @@ public final class MetricsPanel {
         return lbl;
     }
 
+    private static ProgressBar progressBar(String accent, double initial) {
+        ProgressBar pb = new ProgressBar(initial);
+        pb.setMaxWidth(Double.MAX_VALUE);
+        pb.setStyle("-fx-accent: " + accent + ";");
+        return pb;
+    }
+
+    private static VBox row(Label lbl, ProgressBar bar) {
+        return new VBox(2, lbl, bar);
+    }
+
     private static Label sectionTitle(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-text-fill: #8b949e; -fx-font-size: 10px; -fx-font-weight: bold;");
+        l.setStyle("-fx-text-fill: #b0b3b8; -fx-font-size: 10px; -fx-font-weight: bold;");
         return l;
     }
 }

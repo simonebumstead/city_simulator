@@ -65,13 +65,13 @@ public class DashboardView extends Application implements StateObserver {
         controller.addObserver(this);
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #0d1117; -fx-font-family: " + APP_FONT + ";");
+        root.setStyle("-fx-background-color: #18191a; -fx-font-family: " + APP_FONT + ";");
 
         FontIcon headerIcon = new FontIcon(FontAwesomeSolid.CITY);
         headerIcon.setIconSize(18);
-        headerIcon.setIconColor(Color.web("#58a6ff"));
+        headerIcon.setIconColor(Color.web("#2374e1"));
         tickLabel = new Label("CityLogic  |  Tick: 0", headerIcon);
-        tickLabel.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12px 16px; -fx-border-color: #30363d; -fx-border-width: 0 0 1 0;");
+        tickLabel.setStyle("-fx-text-fill: #e4e6eb; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12px 16px; -fx-background-color: #242526; -fx-border-color: #2374e1; -fx-border-width: 0 0 2px 0;");
         root.setTop(tickLabel);
 
         metricsPanel = new MetricsPanel(controller);

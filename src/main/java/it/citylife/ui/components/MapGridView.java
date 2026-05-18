@@ -28,6 +28,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
+import javafx.scene.shape.QuadCurveTo;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -67,7 +70,7 @@ public final class MapGridView {
     private BorderPane buildLayout() {
         BorderPane pane = new BorderPane();
         StackPane gridWrapper = new StackPane();
-        gridWrapper.setStyle("-fx-background-color: #101f13;");
+        gridWrapper.setStyle("-fx-background-color: #18191a;");
         gridWrapper.setAlignment(Pos.CENTER);
 
         GridPane grid = buildGridPane();
@@ -104,15 +107,15 @@ public final class MapGridView {
         grid.setHgap(1);
         grid.setVgap(1);
         grid.setPadding(new Insets(10));
-        grid.setStyle("-fx-background-color: #101f13;");
+        grid.setStyle("-fx-background-color: #18191a;");
         grid.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
         for (int x = 0; x < 20; x++) {
             for (int y = 0; y < 20; y++) {
                 StackPane cell = new StackPane();
                 cell.setPrefSize(currentCellSize, currentCellSize);
-                String bg = ((x + y) % 2 == 0) ? "#1a3320" : "#152b1a";
-                cell.setStyle("-fx-background-color: " + bg + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
+                String bg = ((x + y) % 2 == 0) ? "#242526" : "#1e1f20";
+                cell.setStyle("-fx-background-color: " + bg + "; -fx-border-color: #3e4042; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
 
                 final int fx = x, fy = y;
                 cell.setOnMouseClicked(e -> {
@@ -306,9 +309,9 @@ public final class MapGridView {
         cell.setOnMouseExited(null);
 
         Cell gc = controller.getGrid().getCell(x, y);
-        String emptyBg = ((x + y) % 2 == 0) ? "#1a3320" : "#152b1a";
+        String emptyBg = ((x + y) % 2 == 0) ? "#242526" : "#1e1f20";
         if (gc == null || gc.isEmpty()) {
-            cell.setStyle("-fx-background-color: " + emptyBg + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
+            cell.setStyle("-fx-background-color: " + emptyBg + "; -fx-border-color: #3e4042; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
             return;
         }
         if (!(gc.getStructure() instanceof Structure s)) return;
@@ -318,7 +321,7 @@ public final class MapGridView {
 
         Structure base = s.getBaseStructure();
         if (base instanceof Road road) {
-            drawRoad(cell, emptyBg, road);
+            drawRoad(cell, road, x, y);
         } else {
             cell.setStyle("-fx-background-color: " + hex + "44; -fx-border-color: " + hex + "aa; -fx-border-width: 1.5; -fx-background-radius: 6px; -fx-border-radius: 6px;");
             FontIcon icon = new FontIcon(IconCatalog.iconFor(s.getType()));
@@ -372,49 +375,78 @@ public final class MapGridView {
         }
     }
 
-    private void drawRoad(StackPane cell, String emptyBg, Road road) {
-        cell.setStyle("-fx-background-color: " + emptyBg + "; -fx-border-color: #26472d; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
+    private void drawRoad(StackPane cell, Road road, int x, int y) {
+        // Sfondo griglia visibile come "marciapiede" attorno al corpo stradale
+        String gridBg = ((x + y) % 2 == 0) ? "#242526" : "#1e1f20";
+        cell.setStyle("-fx-background-color: " + gridBg
+                + "; -fx-border-color: #3e4042; -fx-border-width: 0.5;"
+                + " -fx-background-radius: 2px; -fx-border-radius: 2px;");
 
-        double thickness = currentCellSize * 0.45;
-        double length = currentCellSize * 0.28;
-        Color roadBg = Color.web("#334155");
-        Color marking = Color.web("#facc15");
+        double roadSize = currentCellSize * 0.80;   // corpo asfalto (80 % della cella)
+        double bodyHalf = roadSize / 2.0;            // usato per curve e raccordi
+        double lineHalf = currentCellSize * 0.48;    // linee escono leggermente oltre il corpo per connettere le celle
 
-        cell.getChildren().add(new Rectangle(thickness, thickness, roadBg));
+        cell.getChildren().add(new Rectangle(roadSize, roadSize, Color.web("#2d2e2f")));
 
-        if (road.isConnectedNorth()) addArm(cell, thickness, length, roadBg, marking, Pos.TOP_CENTER, true);
-        if (road.isConnectedSouth()) addArm(cell, thickness, length, roadBg, marking, Pos.BOTTOM_CENTER, true);
-        if (road.isConnectedWest())  addArm(cell, thickness, length, roadBg, marking, Pos.CENTER_LEFT, false);
-        if (road.isConnectedEast())  addArm(cell, thickness, length, roadBg, marking, Pos.CENTER_RIGHT, false);
+        // Connessioni road-to-road
+        boolean rn = road.isConnectedNorth();
+        boolean rs = road.isConnectedSouth();
+        boolean re = road.isConnectedEast();
+        boolean rw = road.isConnectedWest();
+        int roadCount = (rn?1:0) + (rs?1:0) + (re?1:0) + (rw?1:0);
 
-        boolean vert = (road.isConnectedNorth() || road.isConnectedSouth()) && !road.isConnectedWest() && !road.isConnectedEast();
-        boolean horiz = (road.isConnectedWest() || road.isConnectedEast()) && !road.isConnectedNorth() && !road.isConnectedSouth();
-        boolean inter = (road.isConnectedNorth() || road.isConnectedSouth()) && (road.isConnectedWest() || road.isConnectedEast());
-
-        if (inter) {
-            Rectangle c = new Rectangle(currentCellSize * 0.17, currentCellSize * 0.17, Color.TRANSPARENT);
-            c.setStroke(marking);
-            c.setStrokeWidth(1.5);
-            cell.getChildren().add(c);
-        } else if (vert) {
-            Line l = dashedLine(0, 0, 0, thickness, marking);
-            cell.getChildren().add(l);
-        } else if (horiz) {
-            Line l = dashedLine(0, 0, thickness, 0, marking);
-            cell.getChildren().add(l);
+        // Building arms solo per dead-end (≤1 connessione stradale) per evitare curve/giunzioni false
+        boolean n, s, e, w;
+        if (roadCount <= 1) {
+            n = rn || hasBuildingAt(x, y - 1);
+            s = rs || hasBuildingAt(x, y + 1);
+            e = re || hasBuildingAt(x + 1, y);
+            w = rw || hasBuildingAt(x - 1, y);
         } else {
-            cell.getChildren().add(new Rectangle(4, 4, marking));
+            n = rn; s = rs; e = re; w = rw;
         }
+
+        int count = (n?1:0) + (s?1:0) + (e?1:0) + (w?1:0);
+        if (count == 0) return;
+
+        Color marking = Color.web("#e4e6eb");
+
+        // Curva: esattamente 2 direzioni adiacenti (non opposte)
+        boolean adjacentPair = (count == 2) && !((n && s) || (e && w));
+        if (adjacentPair) {
+            double cs = currentCellSize;
+            // coordinate assolute nella cella (0,0 = angolo in alto a sinistra)
+            double startX = cs / 2;
+            double startY = n ? (cs / 2 - lineHalf) : (cs / 2 + lineHalf);
+            double ctrlX  = e ? (cs / 2 + lineHalf) : (cs / 2 - lineHalf);
+            double ctrlY  = startY;   // angolo della curva
+            double endX   = ctrlX;
+            double endY   = cs / 2;
+            // StackPane con TOP_LEFT + translateX/Y(minX,minY) → coord assolute mappano 1:1
+            double minX = Math.min(startX, endX);
+            double minY = Math.min(startY, endY);
+            Path path = new Path();
+            path.setStroke(marking);
+            path.setStrokeWidth(1.5);
+            path.setFill(Color.TRANSPARENT);
+            path.getStrokeDashArray().addAll(4d, 4d);
+            path.getElements().addAll(new MoveTo(startX, startY), new QuadCurveTo(ctrlX, ctrlY, endX, endY));
+            StackPane.setAlignment(path, Pos.TOP_LEFT);
+            path.setTranslateX(minX);
+            path.setTranslateY(minY);
+            cell.getChildren().add(path);
+            return;
+        }
+
+        // Rettilineo, T, +, dead-end: braccio per ogni direzione attiva
+        if (n || s) cell.getChildren().add(dashedLine(0, n ? -lineHalf : 0, 0, s ? lineHalf : 0, marking));
+        if (e || w) cell.getChildren().add(dashedLine(w ? -lineHalf : 0, 0, e ? lineHalf : 0, 0, marking));
     }
 
-    private static void addArm(StackPane cell, double thickness, double length, Color bg, Color mark, Pos pos, boolean vertical) {
-        Rectangle r = vertical ? new Rectangle(thickness, length, bg) : new Rectangle(length, thickness, bg);
-        StackPane.setAlignment(r, pos);
-        cell.getChildren().add(r);
-
-        Line l = vertical ? dashedLine(0, 0, 0, length, mark) : dashedLine(0, 0, length, 0, mark);
-        StackPane.setAlignment(l, pos);
-        cell.getChildren().add(l);
+    private boolean hasBuildingAt(int x, int y) {
+        if (x < 0 || x >= 20 || y < 0 || y >= 20) return false;
+        var c = controller.getGrid().getCell(x, y);
+        return c != null && !c.isEmpty() && c.getStructure().getType() != StructureType.ROAD;
     }
 
     private static Line dashedLine(double x1, double y1, double x2, double y2, Color stroke) {

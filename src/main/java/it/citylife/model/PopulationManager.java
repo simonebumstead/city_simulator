@@ -70,22 +70,22 @@ public class PopulationManager {
         PopulationGroup pg = state.getPopulationGroup();
         int currentPop = state.getPopulation();
         
-        if (currentPop == 0) {
-            // Nessuna popolazione: nessuna domanda insoddisfatta, tutte le soddisfazioni al massimo
+        if (residentialCount == 0) {
+            // Nessun residenziale: nessuna domanda, tutte le soddisfazioni al massimo
             pg.setJobSatisfaction(100.0);
             pg.setHealthSatisfaction(100.0);
             pg.setSafetySatisfaction(100.0);
         } else {
-            // jobSat: ogni industria garantisce 200 posti, ogni commerciale 50. Diviso per popolazione corrente
-            double availableJobs = (industrialCount * 200.0) + (commercialCount * 50.0);
-            pg.setJobSatisfaction(Math.min(100.0, availableJobs * 100.0 / currentPop));
-            
-            // healthSat: ogni ospedale cura 400 persone. Diviso per popolazione corrente
-            double availableHealthCare = hospitalCount * 400.0;
-            pg.setHealthSatisfaction(Math.min(100.0, availableHealthCare * 100.0 / currentPop));
-            
+            // jobSat: rapporto edifici lavoro / residenziali (AC-19.2)
+            double availableJobs = industrialCount + commercialCount;
+            pg.setJobSatisfaction(Math.min(100.0, availableJobs * 100.0 / residentialCount));
+
+            // healthSat: ogni ospedale cura 200 residenziali. Rapportato ai residenziali
+            double availableHealthCare = hospitalCount * 200.0;
+            pg.setHealthSatisfaction(Math.min(100.0, availableHealthCare * 100.0 / residentialCount));
+
             // safetySat: penalizzata da inquinamento, edifici danneggiati ed eventuali terremoti in corso
-            double safetySat = 100.0 - (state.getPollution() / 4) - (state.getCriticalBuildingCount() * 5.0);
+            double safetySat = 100.0 - state.getPollution() - (state.getCriticalBuildingCount() * 5.0);
             if (state.isEarthquakeOccurred()) {
                 safetySat -= 50.0;
             }

@@ -73,7 +73,7 @@ public final class SimulationControlsBar {
         speedSlider.setShowTickLabels(true);
         speedSlider.setMajorTickUnit(0.5);
         Label speedLabel = new Label("Speed: 1.0x");
-        speedLabel.setStyle("-fx-text-fill: #e6edf3; -fx-font-size: 14px;");
+        speedLabel.setStyle("-fx-text-fill: #e4e6eb; -fx-font-size: 14px;");
         speedSlider.valueProperty().addListener((obs, old, val) -> {
             speedLabel.setText(String.format("Speed: %.1fx", val.doubleValue()));
             timeline.setRate(val.doubleValue());
@@ -114,7 +114,7 @@ public final class SimulationControlsBar {
 
         root = new StackPane();
         root.setPadding(new Insets(8, 16, 8, 16));
-        root.setStyle("-fx-background-color: #161b22; -fx-border-color: #30363d; -fx-border-width: 1 0 0 0;");
+        root.setStyle("-fx-background-color: #242526; -fx-border-color: #3e4042; -fx-border-width: 1 0 0 0;");
         StackPane.setAlignment(leftGroup, Pos.CENTER_LEFT);
         StackPane.setAlignment(rightGroup, Pos.CENTER_RIGHT);
         root.getChildren().addAll(centerGroup, leftGroup, rightGroup);
@@ -149,14 +149,14 @@ public final class SimulationControlsBar {
         else if (p instanceof FossilFuelPolicy){ target = fossilBtn;   name = "FossilFuel"; }
         if (activeBtn != null) activeBtn.setStyle("");
         activeBtn = target;
-        activeBtn.setStyle("-fx-border-color: #58a6ff; -fx-background-color: #161b22;");
+        activeBtn.setStyle("-fx-border-color: #2374e1; -fx-background-color: #242526;");
         activePolicyName = name;
     }
 
     private void setActivePolicy(Button btn, PolicyStrategy policy) {
         if (activeBtn != null) activeBtn.setStyle("");
         activeBtn = btn;
-        btn.setStyle("-fx-border-color: #58a6ff; -fx-background-color: #161b22;");
+        btn.setStyle("-fx-border-color: #2374e1; -fx-background-color: #242526;");
         String newName = policy.getClass().getSimpleName().replace("Policy", "");
         metricsPanel.log("Policy " + activePolicyName + " deactivated — " + newName + " now active.", "#8b949e");
         activePolicyName = newName;

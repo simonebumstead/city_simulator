@@ -65,7 +65,7 @@ public final class DashboardChart {
         HBox statsBar = new HBox(40, dashPopLabel, dashHapLabel, dashHealthLabel, dashPollLabel, earthquakeNotifLabel);
         statsBar.setAlignment(Pos.CENTER);
         statsBar.setPadding(new Insets(10, 0, 10, 0));
-        statsBar.setStyle("-fx-background-color: #0d1117; -fx-border-color: #30363d; -fx-border-width: 0 0 1 0;");
+        statsBar.setStyle("-fx-background-color: #242526; -fx-border-color: #3e4042; -fx-border-width: 0 0 1 0;");
 
         root = new VBox(statsBar, chart);
         VBox.setVgrow(chart, Priority.ALWAYS);

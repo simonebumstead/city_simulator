@@ -33,7 +33,7 @@ public abstract class Structure implements Placeable {
     protected boolean powered = true;
 
     // Punti vita persi ogni tick per invecchiamento naturale (AC-15.1)
-    private static final int HP_DECAY_PER_TICK = 1;
+    private static final int HP_DECAY_PER_TICK = 2;
 
     /**
      * Inizializza la struttura con gli HP massimi specificati.
