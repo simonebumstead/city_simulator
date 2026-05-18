@@ -59,11 +59,10 @@ public class IndustrialBuilding extends Structure {
             state.addIndustrialBudgetDelta(30);
         }
 
-        state.updatePollution(2.5);             // Emissioni industriali: la fonte principale di inquinamento
-        state.updateHappiness(-1.0);            // Rumore, traffico pesante e smog riducono il benessere
-        state.updateHealth(-0.8);               // Esposizione cronica alle emissioni danneggia la salute
-        power.addConsumption(25);               // Consumo energetico elevato: macchinari e impianti H24
-        state.addIndustrialPollutionDelta(2.5); // Tracciato separatamente per statistiche (attualmente non usato in resolveTick)
+        state.updatePollution(2.5);  // Emissioni industriali: la fonte principale di inquinamento
+        state.updateHappiness(-1.0); // Rumore, traffico pesante e smog riducono il benessere
+        state.updateHealth(-0.8);    // Esposizione cronica alle emissioni danneggia la salute
+        power.addConsumption(25);    // Consumo energetico elevato: macchinari e impianti H24
     }
 
     /** Restituisce il tipo INDUSTRIAL, usato da City e PopulationManager per il conteggio demografico. */

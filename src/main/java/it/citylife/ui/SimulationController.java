@@ -221,4 +221,14 @@ public class SimulationController {
     public int getEstimatedRepairCost(int x, int y) {
         return controller.getEstimatedRepairCost(x, y);
     }
+
+    /**
+     * Ripara tutti gli edifici danneggiati in un'unica operazione.
+     * Delega a {@link GameController#repairAll()}.
+     *
+     * @return true se almeno un edificio è stato riparato con successo
+     */
+    public boolean repairAll() {
+        return controller.repairAll();
+    }
 }

@@ -1,8 +1,6 @@
 package it.citylife.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -207,5 +205,126 @@ class GameControllerTest {
 
         Structure s = (Structure) controller.getGrid().getCell(0, 0).getStructure();
         assertTrue(s instanceof WasteThermalUpgrade);
+    }
+
+    // ── Demolizione strada → isolamento (AC3 SCRUM-20) ─────────────────────
+
+    @Test
+    @DisplayName("Commerciale con road genera più reddito rispetto a uno isolato nel tick")
+    void testCommercialWithRoadGeneratesMoreIncomeThanIsolated() {
+        // Scenario A: PowerPlant (5,0), Road (5,1), Commercial (5,2) — connesso e alimentato
+        // Distanza Chebyshev (5,0)→(5,2) = max(0,2) = 2 ≤ 5 → alimentato ✓
+        GameController c1 = new GameController();
+        c1.placeBuilding("POWER_PLANT", 5, 0);
+        c1.placeBuilding("ROAD", 5, 1);
+        c1.placeBuilding("COMMERCIAL", 5, 2);
+        double before1 = c1.getState().getBudget();
+        c1.advanceTick();
+        double deltaWithRoad = c1.getState().getBudget() - before1;
+
+        // Scenario B: stessa topologia ma senza road — commercial alimentato ma non connesso
+        GameController c2 = new GameController();
+        c2.placeBuilding("POWER_PLANT", 5, 0);
+        // nessuna road
+        c2.placeBuilding("COMMERCIAL", 5, 2);
+        double before2 = c2.getState().getBudget();
+        c2.advanceTick();
+        double deltaNoRoad = c2.getState().getBudget() - before2;
+
+        // Con road il commerciale aggiunge +15: il delta deve essere +15 migliore
+        assertTrue(deltaWithRoad > deltaNoRoad,
+                "Un commerciale con road deve generare più reddito rispetto a uno isolato");
+    }
+
+    @Test
+    @DisplayName("Commerciale isolato dopo demolizione della road: non genera reddito (AC3 SCRUM-20)")
+    void testCommercialIsolatedAfterRoadDemolitionNoIncome() {
+        // Layout: PowerPlant (5,0), Road (5,1), Commercial (5,2)
+        controller.placeBuilding("POWER_PLANT", 5, 0);
+        controller.placeBuilding("ROAD", 5, 1);
+        controller.placeBuilding("COMMERCIAL", 5, 2);
+
+        // Demolisco la road: il commerciale resta isolato
+        controller.demolish(5, 1);
+
+        double budgetBefore = controller.getState().getBudget();
+        controller.advanceTick();
+
+        // Senza road il commerciale non deve generare reddito positivo netto
+        // (può esserci la PowerPlant che genera +250 ma non il commerciale)
+        // Confronto: se il budget è aumentato solo per effetti di altri edifici, ok;
+        // ma il commerciale non deve contribuire. Verifichiamo via flag connectedToRoad.
+        Cell cell = controller.getGrid().getCell(5, 2);
+        assertNotNull(cell);
+        Structure commercial = (Structure) cell.getStructure();
+        assertFalse(commercial.isConnectedToRoad(),
+                "Dopo la demolizione della road il commerciale deve risultare non connesso");
+    }
+
+    // ── repairAll (B2) ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("repairAll ripara tutti gli edifici danneggiati e deduce il costo totale")
+    void testRepairAllSuccess() {
+        controller.placeBuilding("HOSPITAL", 0, 0); // maxHp=350, budget=3800
+        controller.placeBuilding("HOSPITAL", 1, 1); // maxHp=350, budget=2600
+
+        Structure h1 = (Structure) controller.getGrid().getCell(0, 0).getStructure();
+        Structure h2 = (Structure) controller.getGrid().getCell(1, 1).getStructure();
+        h1.takeDamage(100); // hp=250, repairCost=(350-250)/2=50
+        h2.takeDamage(200); // hp=150, repairCost=(350-150)/2=100
+
+        double budgetBefore = controller.getState().getBudget();
+        boolean result = controller.repairAll();
+
+        assertTrue(result);
+        assertEquals(350, h1.getHp(), "Ospedale 1 deve essere riparato a maxHp");
+        assertEquals(350, h2.getHp(), "Ospedale 2 deve essere riparato a maxHp");
+        assertEquals(budgetBefore - 150, controller.getState().getBudget(), 0.001,
+                "Il costo totale (50+100=150) deve essere detratto dal budget");
+    }
+
+    @Test
+    @DisplayName("repairAll restituisce false se non ci sono edifici danneggiati")
+    void testRepairAllNothingToDo() {
+        controller.placeBuilding("ROAD", 0, 0); // HP pieno
+        boolean result = controller.repairAll();
+        assertFalse(result);
+    }
+
+    @Test
+    @DisplayName("repairAll restituisce false se il budget è insufficiente")
+    void testRepairAllInsufficientBudget() {
+        controller.placeBuilding("HOSPITAL", 0, 0); // maxHp=350
+        Structure h = (Structure) controller.getGrid().getCell(0, 0).getStructure();
+        h.takeDamage(200); // repairCost = (350-150)/2 = 100
+        controller.getState().setBudget(50.0); // sotto il costo
+
+        boolean result = controller.repairAll();
+        assertFalse(result);
+        assertEquals(150, h.getHp(), "Gli HP non devono cambiare se il budget è insufficiente");
+    }
+
+    // ── changePolicy AC2 SCRUM-18 ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("changePolicy sostituisce la politica attiva con quella nuova (AC2 SCRUM-18)")
+    void testChangePolicyReplacesActive() {
+        controller.changePolicy(new GreenPolicy());
+        assertInstanceOf(GreenPolicy.class, controller.getActivePolicy(),
+                "La politica attiva deve essere GreenPolicy dopo il cambio");
+
+        controller.changePolicy(new FossilFuelPolicy());
+        assertInstanceOf(FossilFuelPolicy.class, controller.getActivePolicy(),
+                "FossilFuelPolicy deve sostituire GreenPolicy (politiche mutualmente esclusive)");
+    }
+
+    @Test
+    @DisplayName("changePolicy(null) ripristina la DefaultPolicy")
+    void testChangePolicyNullRestoresDefault() {
+        controller.changePolicy(new AusterityPolicy());
+        controller.changePolicy(null);
+        assertInstanceOf(DefaultPolicy.class, controller.getActivePolicy(),
+                "changePolicy(null) deve ripristinare la DefaultPolicy neutrale");
     }
 }

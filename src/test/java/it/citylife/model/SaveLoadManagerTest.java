@@ -139,4 +139,103 @@ class SaveLoadManagerTest {
         assertThrows(IOException.class, () -> gc.loadGame(corrotto));
         Files.deleteIfExists(corrotto);
     }
+
+    // ── autosave (AC-08.5) ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("autosaveGame produce un file con prefisso 'autosave_' (AC-08.5)")
+    void testAutosaveCreatesFile() throws IOException {
+        GameController gc = new GameController();
+        savedPath = gc.autosaveGame(5);
+        assertTrue(Files.exists(savedPath), "Il file di autosave deve esistere su disco");
+        assertTrue(savedPath.getFileName().toString().startsWith("autosave_"),
+                "Il file di autosave deve avere prefisso 'autosave_'");
+    }
+
+    @Test
+    @DisplayName("autosaveGame preserva tick e metriche (AC-08.5)")
+    void testAutosavePreservesState() throws IOException {
+        GameController gc = new GameController();
+        gc.getState().setBudget(2500.0);
+        savedPath = gc.autosaveGame(10);
+
+        GameController gc2 = new GameController();
+        int loadedTick = gc2.loadGame(savedPath);
+
+        assertEquals(10, loadedTick);
+        assertEquals(2500.0, gc2.getState().getBudget(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Autosave multipli nella stessa sessione sovrascrivono il file precedente")
+    void testAutosaveOverwritesSameSession() throws IOException {
+        GameController gc = new GameController();
+        savedPath = gc.autosaveGame(5);
+        Path secondPath = gc.autosaveGame(10);
+
+        // Stesso controller → stessa sessionId → stesso file
+        assertEquals(savedPath.getFileName().toString(),
+                secondPath.getFileName().toString(),
+                "Due autosave della stessa sessione devono usare lo stesso file");
+
+        // Il file deve contenere il tick più recente
+        GameController gc2 = new GameController();
+        int loadedTick = gc2.loadGame(savedPath);
+        assertEquals(10, loadedTick);
+
+        Files.deleteIfExists(secondPath);
+    }
+
+    // ── Decorator doppio round-trip (B4, AC-16.1 SCRUM-24) ──────────────────
+
+    @Test
+    @DisplayName("Round-trip: Waste Center con SEISMIC + WASTE_THERMAL viene ripristinato con 2 upgrade")
+    void testSaveLoadDoubleDecoratorRoundTrip() throws IOException {
+        GameController gc = new GameController();
+        gc.placeBuilding("WASTE_CENTER", 0, 0);       // budget 4100
+        gc.upgradeBuilding(0, 0, "SEISMIC");           // budget 3600
+        gc.upgradeBuilding(0, 0, "WASTE_THERMAL");     // budget 2900
+
+        Structure beforeSave = (Structure) gc.getGrid().getCell(0, 0).getStructure();
+        assertTrue(beforeSave instanceof StructureDecorator);
+        assertEquals(2, ((StructureDecorator) beforeSave).getUpgradeLevel(),
+                "Devono esserci 2 livelli di Decorator prima del salvataggio");
+
+        savedPath = gc.saveManualGame(0);
+
+        GameController gc2 = new GameController();
+        gc2.loadGame(savedPath);
+
+        Structure afterLoad = (Structure) gc2.getGrid().getCell(0, 0).getStructure();
+        assertNotNull(afterLoad);
+        assertInstanceOf(StructureDecorator.class, afterLoad,
+                "Dopo il caricamento la struttura deve ancora essere un StructureDecorator");
+        assertEquals(2, ((StructureDecorator) afterLoad).getUpgradeLevel(),
+                "Il numero di upgrade deve essere 2 anche dopo il caricamento");
+        assertEquals(StructureType.WASTE_CENTER, afterLoad.getType(),
+                "Il tipo deve rimanere WASTE_CENTER lungo tutta la catena di Decorator");
+    }
+
+    @Test
+    @DisplayName("Round-trip: gli HP vengono preservati correttamente dopo Decorator doppio")
+    void testSaveLoadDoubleDecoratorPreservesHp() throws IOException {
+        GameController gc = new GameController();
+        gc.placeBuilding("WASTE_CENTER", 0, 0);
+        gc.upgradeBuilding(0, 0, "SEISMIC");
+        gc.upgradeBuilding(0, 0, "WASTE_THERMAL");
+
+        // Infliggo danni per avere HP < maxHp
+        Structure s = (Structure) gc.getGrid().getCell(0, 0).getStructure();
+        s.takeDamage(50);
+        int hpBeforeSave = s.getHp();
+
+        savedPath = gc.saveManualGame(0);
+
+        GameController gc2 = new GameController();
+        gc2.loadGame(savedPath);
+
+        Structure afterLoad = (Structure) gc2.getGrid().getCell(0, 0).getStructure();
+        assertEquals(hpBeforeSave, afterLoad.getHp(),
+                "Gli HP devono essere preservati dopo save/load con Decorator doppio");
+    }
 }

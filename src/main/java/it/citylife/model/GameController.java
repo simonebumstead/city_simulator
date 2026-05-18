@@ -163,11 +163,11 @@ public class GameController {
     }
 
     /**
-     * Demolisce la struttura nella cella (x, y) applicando costi e rimborso (AC-07.3).
+     * Demolisce la struttura nella cella (x, y) applicando costi e rimborso (AC-21.2).
      *
      * Costo demolizione:  10% del costo di costruzione della struttura.
-     * Rimborso materiali: 50% del costo di costruzione.
-     * Netto per il giocatore: +40% del costo di costruzione (rimborso − costo).
+     * Rimborso materiali: 60% del costo di costruzione.
+     * Netto per il giocatore: +50% del costo di costruzione (rimborso − costo) — come da AC-21.2.
      *
      * Se il budget non copre il costo di demolizione, l'operazione viene annullata.
      *
@@ -232,8 +232,8 @@ public class GameController {
                 return false;
             }
 
-            // Costo proporzionale ai danni subiti: più è danneggiata, più costa (AC-15.3)
-            int repairCost = (s.getMaxHp() - s.getHp()) / 2;  // Era *2, diminuito per rendere il decadimento degli edifici meno invasivo
+            // Costo proporzionale ai danni subiti: (maxHp − hp) / 2 (AC-15.3)
+            int repairCost = (s.getMaxHp() - s.getHp()) / 2;
             if (city.getState().getBudget() < repairCost) {
                 lastError = "Insufficient budget to repair! Cost: " + repairCost + "$";
                 System.out.println("Insufficient budget to repair!");
@@ -249,6 +249,47 @@ public class GameController {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Ripara tutti gli edifici danneggiati della città in un'unica operazione.
+     *
+     * Calcola il costo totale stimato sommando (maxHp − hp)/2 per ogni struttura danneggiata,
+     * verifica la disponibilità del budget, poi ripristina tutti gli HP a maxHp.
+     * Il costo viene detratto con setBudget (modifica immediata, fuori dal ciclo delta).
+     *
+     * @return true se la riparazione è avvenuta, false se il budget è insufficiente
+     *         o non ci sono edifici da riparare
+     */
+    public boolean repairAll() {
+        Grid grid = city.getGrid();
+        int totalCost = 0;
+        for (int x = 0; x < grid.getWidth(); x++) {
+            for (int y = 0; y < grid.getHeight(); y++) {
+                totalCost += getEstimatedRepairCost(x, y);
+            }
+        }
+        if (totalCost == 0) {
+            lastError = "No buildings need repairs.";
+            return false;
+        }
+        if (city.getState().getBudget() < totalCost) {
+            lastError = "Insufficient budget for global repair! Cost: " + totalCost + "$";
+            return false;
+        }
+        for (int x = 0; x < grid.getWidth(); x++) {
+            for (int y = 0; y < grid.getHeight(); y++) {
+                Cell cell = grid.getCell(x, y);
+                if (cell != null && cell.getStructure() instanceof Structure s
+                        && !s.isDestroyed() && s.getHp() < s.getMaxHp()) {
+                    s.fullRepair();
+                }
+            }
+        }
+        city.getState().setBudget(city.getState().getBudget() - totalCost);
+        System.out.println("[REPAIR ALL] Total cost: " + totalCost + " | Budget: " + city.getState().getBudget());
+        city.notifyObserversPublic();
+        return true;
     }
 
     /**

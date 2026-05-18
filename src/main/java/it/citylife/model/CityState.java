@@ -223,7 +223,5 @@ public class CityState {
     /** Azzera il delta industrial (usato internamente a resolveTick). */
     public void resetIndustrialDeltas() { this.deltaIndustrialBudget = 0; }
 
-    public void addIndustrialPollutionDelta(double v) {}
     public double getLastIndustrialBudgetDelta() { return deltaIndustrialBudget; }
-    public double getLastIndustrialPollutionDelta() { return 0; }
 }

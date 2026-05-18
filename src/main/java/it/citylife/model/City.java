@@ -168,14 +168,16 @@ public class City {
         if (s.isDestroyed()) return;
 
         // Edifici che richiedono corrente ma non sono coperti da una PowerPlant non applicano
-        // effetti; i Residential vengono comunque contati per la capacità
-        if (!isPowered(x, y) && requiresPower(s)) {
+        // effetti; i Residential vengono comunque contati per la capacità.
+        // Usa il flag aggiornato dalla pre-pass di GameController.advanceTick()
+        if (!s.isPowered() && requiresPower(s)) {
             if (s.getType() == StructureType.RESIDENTIAL) c.residential++;
             return;
         }
 
-        // Edifici senza strada adiacente non generano entrate di budget
-        if (!hasAdjacentRoad(x, y) && isRevenueBuilding(s)) {
+        // Edifici senza strada adiacente non generano entrate di budget.
+        // Usa il flag aggiornato dalla pre-pass di GameController.advanceTick()
+        if (!s.isConnectedToRoad() && isRevenueBuilding(s)) {
             double budgetBefore = state.getDeltaBudget();
             s.applyEffects(state, powerNet);
             double budgetAdded = state.getDeltaBudget() - budgetBefore;

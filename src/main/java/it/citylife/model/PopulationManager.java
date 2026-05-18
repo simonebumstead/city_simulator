@@ -35,7 +35,10 @@ public class PopulationManager {
     // Crescita minima garantita ogni tick in condizioni normali
     private static final int BASE_GROWTH         = 1;
 
-    // Valore di riferimento neutro per happiness, health e pollution (effetto zero)
+    // Valore di riferimento neutro per happiness, health e pollution (effetto zero sul delta demografico).
+    // Nota: la soglia "critica" che blocca la crescita (25) è deliberatamente asimmetrica rispetto
+    // a NEUTRAL_POINT (50): i valori fra 25 e 50 riducono il delta ma non bloccano la crescita,
+    // creando una "zona di allerta" dove la città rallenta senza entrare in crisi immediata.
     private static final int NEUTRAL_POINT       = 50;
 
     // Variazione massima positiva di popolazione per tick
@@ -104,9 +107,12 @@ public class PopulationManager {
         int deltaPop = (int) Math.min(MAX_GROWTH, Math.max(MAX_DECLINE,
             BASE_GROWTH + jobEffect + healthSatEffect + safetyEffect + generalHappinessEffect + generalHealthEffect));
 
-        // Se anche solo un parametro vitale è critico, la popolazione non può crescere
-        boolean criticalConditions = state.getHappiness() < 25.0 || 
-                                     state.getHealth() < 25.0 || 
+        // Se anche solo un parametro vitale è critico, la popolazione non può crescere.
+        // Soglia 25 (metà di NEUTRAL_POINT): scelta deliberatamente sotto il punto neutro
+        // per creare una "zona di allerta" [25,50] in cui il delta demografico rallenta
+        // ma non si blocca completamente (design intenzionale, non asimmetria accidentale).
+        boolean criticalConditions = state.getHappiness() < 25.0 ||
+                                     state.getHealth() < 25.0 ||
                                      state.getPollution() > 75.0 ||
                                      pg.getJobSatisfaction() < 25.0 ||
                                      pg.getHealthSatisfaction() < 25.0 ||

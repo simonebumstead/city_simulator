@@ -129,7 +129,7 @@ mvn javafx:run
 | **Jackson Databind** (`com.fasterxml.jackson.core:jackson-databind`) | 2.15.2 | Serializzazione e deserializzazione JSON per il salvataggio e caricamento delle partite (`SaveLoadManager`) |
 | **Ikonli JavaFX** (`org.kordamp.ikonli:ikonli-javafx`) | 12.3.1 | Integrazione di icone vettoriali SVG in componenti JavaFX (`FontIcon`) |
 | **Ikonli FontAwesome 5** (`org.kordamp.ikonli:ikonli-fontawesome5-pack`) | 12.3.1 | Pack di icone FontAwesome 5 Solid usate nella mappa, toolbar e pannelli (`IconCatalog`) |
-| **JUnit Jupiter** (`org.junit.jupiter`) | 5.10.0 | Framework per i test automatizzati (scope `test`); 110 test, 0 failure |
+| **JUnit Jupiter** (`org.junit.jupiter`) | 5.10.0 | Framework per i test automatizzati (scope `test`); 151 test, 0 failure |
 
 ---
 

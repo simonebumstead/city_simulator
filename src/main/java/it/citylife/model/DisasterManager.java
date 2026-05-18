@@ -14,8 +14,9 @@ import java.util.Random;
  * Ogni tick, City.updateState() verifica con probabilità EARTHQUAKE_PROBABILITY
  * se un terremoto deve scatenarsi; in caso affermativo delega a triggerEarthquake().
  *
- * Il danno è proporzionale al quadrato della magnitudo (formula quadratica),
+ * Il danno è proporzionale a 5 × magnitudo² (formula quadratica scalata),
  * garantendo che terremoti forti siano significativamente più devastanti di quelli lievi.
+ * Esempio: magnitudo 4 → 80 HP, magnitudo 7 → ~245 HP (su edifici con 200–500 HP totali).
  * Gli edifici dotati di SeismicUpgrade subiscono la metà del danno grazie al
  * dispatch virtuale dell'evento (es. onEarthquake() → takeDamage()) (AC-14.2).
  *
@@ -76,8 +77,9 @@ public class DisasterManager {
         // Magnitudo casuale: valori bassi (1–2) causano danni lievi, valori alti (6–7) sono catastrofici
         double magnitude = 1.0 + (random.nextDouble() * 6.0);
 
-        // Danno quadratico: una magnitudo 7 infligge ~49 danni, una magnitudo 1 solo ~1
-        int damageToInflict = (int) (1 * Math.pow(magnitude, 2));
+        // Danno quadratico scalato (×5): magnitudo 4 → 80 HP, magnitudo 7 → ~245 HP
+        // Calibrato in modo che un quake forte possa abbattere edifici da 200–400 HP
+        int damageToInflict = (int) (5 * Math.pow(magnitude, 2));
 
         // Malus happiness più pesante del malus health: il panico sociale supera il danno fisico
         int happinessMalus = (int) (1.5 * Math.pow(magnitude, 2));
@@ -85,7 +87,7 @@ public class DisasterManager {
 
         System.out.println(String.format("--- Earthquake of magnitude %.1f has struck the city! ---", magnitude));
         System.out.println(String.format("Each building will suffer %d damage.", damageToInflict));
-        System.out.println(String.format("Citizens' happiness dropped by %d points and health by %d.", happinessMalus, healthMalus));
+        System.out.println(String.format("Happiness dropped by %d points, health by %d.", happinessMalus, healthMalus));
 
         // Bypass del delta: happiness e health calano immediatamente, non a fine tick
         state.setHappiness(Math.max(0, state.getHappiness() - happinessMalus));

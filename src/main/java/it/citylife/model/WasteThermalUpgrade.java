@@ -25,8 +25,8 @@ public class WasteThermalUpgrade extends StructureDecorator {
     // Costo di applicazione dell'upgrade, referenziato da GameController
     public static final int COST = 700;
 
-    // Riduzione aggiuntiva di rifiuti per tick grazie al trattamento termico
-    private static final double EXTRA_WASTE_REDUCTION = 5.0;
+    // Riduzione aggiuntiva di rifiuti/tick per trattamento termico (−5 + base −10 = −15 totale)
+    private static final double ADDITIONAL_WASTE_REDUCTION = 5.0;
 
     // Entrata da vendita di energia termica prodotta dalla combustione dei rifiuti
     private static final double THERMAL_BUDGET_BONUS  = 50.0;
@@ -56,7 +56,7 @@ public class WasteThermalUpgrade extends StructureDecorator {
 
         if (wrapped.isPowered()) {
             // Trattamento termico attivo: brucia i rifiuti per produrre energia vendibile
-            state.updateWaste(-EXTRA_WASTE_REDUCTION); // Riduzione aggiuntiva per combustione
+            state.updateWaste(-ADDITIONAL_WASTE_REDUCTION); // Riduzione aggiuntiva per combustione
             state.updateBudget(THERMAL_BUDGET_BONUS);  // Entrata da vendita di energia termica alla rete
         }
     }

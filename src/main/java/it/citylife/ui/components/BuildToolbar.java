@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import it.citylife.model.Structure;
 import it.citylife.model.StructureType;
 import it.citylife.ui.SimulationController;
 import javafx.geometry.Insets;
@@ -147,22 +146,12 @@ public final class BuildToolbar {
         Optional<ButtonType> res = alert.showAndWait();
         if (res.isEmpty() || res.get() != ButtonType.OK) return;
 
-        if (controller.getState().getBudget() < totalCost) {
+        if (!controller.repairAll()) {
             DialogHelper.showError(primaryStage, "Insufficient funds",
                     "You need " + totalCost + "$ to repair everything.");
             return;
         }
-        for (int x = 0; x < grid.getWidth(); x++) {
-            for (int y = 0; y < grid.getHeight(); y++) {
-                var cell = grid.getCell(x, y);
-                if (cell != null && cell.getStructure() instanceof Structure s
-                        && !s.isDestroyed() && s.getHp() < s.getMaxHp()) {
-                    s.fullRepair();
-                }
-            }
-        }
-        controller.getState().updateBudget(-totalCost);
-        metricsPanel.log("Global repair completed (-" + totalCost + "$)", "#3fb950");
+        if (metricsPanel != null) metricsPanel.log("Global repair completed (-" + totalCost + "$)", "#3fb950");
         if (onUiChange != null) onUiChange.run();
     }
 

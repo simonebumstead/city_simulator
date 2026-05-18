@@ -18,6 +18,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -29,10 +30,17 @@ import javafx.util.Duration;
 /**
  * Barra inferiore: start/stop/tick manuale, save/load, pulsanti politica e slider velocità.
  * Possiede la {@link Timeline} che scandisce i tick automatici e il contatore {@code tickCount}.
+ *
+ * L'autosave può essere abilitato o disabilitato dall'utente tramite checkbox.
+ * La frequenza è fissa ({@link #AUTOSAVE_EVERY_TICKS} tick) ma il toggle on/off
+ * è esposto visivamente nella barra di controllo.
  */
 public final class SimulationControlsBar {
 
     private static final int AUTOSAVE_EVERY_TICKS = 5;
+
+    // Stato del toggle autosave: true = abilitato (default), false = disabilitato
+    private boolean autosaveEnabled = true;
 
     private final SimulationController controller;
     private final Stage primaryStage;
@@ -106,7 +114,17 @@ public final class SimulationControlsBar {
         saveBtn.setOnAction(e -> handleSave(saveBtn));
         loadBtn.setOnAction(e -> handleLoad());
 
-        HBox leftGroup   = new HBox(10, startBtn, stopBtn, nextBtn, saveBtn, loadBtn, newGameBtn);
+        CheckBox autosaveBox = new CheckBox("Autosave");
+        autosaveBox.setSelected(true);
+        autosaveBox.setStyle("-fx-text-fill: #e4e6eb; -fx-font-size: 13px;");
+        autosaveBox.setTooltip(new javafx.scene.control.Tooltip(
+                "Autosave ogni " + AUTOSAVE_EVERY_TICKS + " tick.\nDeseleziona per disabilitare."));
+        autosaveBox.selectedProperty().addListener((obs, old, val) -> {
+            autosaveEnabled = val;
+            metricsPanel.log("Autosave " + (val ? "enabled" : "disabled") + ".", "#8b949e");
+        });
+
+        HBox leftGroup   = new HBox(10, startBtn, stopBtn, nextBtn, saveBtn, loadBtn, autosaveBox, newGameBtn);
         HBox centerGroup = new HBox(10, defaultBtn, greenBtn, austerityBtn, fossilBtn);
         HBox rightGroup  = new HBox(10, speedSlider, speedLabel);
         leftGroup.setAlignment(Pos.CENTER_LEFT);
@@ -133,7 +151,7 @@ public final class SimulationControlsBar {
     private void doTick() {
         tickCount++;
         controller.tick();
-        if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
+        if (autosaveEnabled && tickCount % AUTOSAVE_EVERY_TICKS == 0) {
             try {
                 controller.autosave(tickCount);
                 metricsPanel.log("Autosave (tick " + tickCount + ")", "#58a6ff");

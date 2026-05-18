@@ -169,30 +169,30 @@ public final class MapGridView {
                 case "DEMOLISH" -> controller.demolish(x, y);
                 case "REPAIR" -> {
                     boolean r = controller.repair(x, y);
-                    if (r) metricsPanel.log("Building repaired", "#3fb950");
+                    if (r && metricsPanel != null) metricsPanel.log("Building repaired", "#3fb950");
                     yield r;
                 }
                 case "UPGRADE_SEISMIC" -> {
                     boolean r = controller.upgrade(x, y, "SEISMIC");
-                    if (r) metricsPanel.log("Seismic Upgrade applied (-500$)", "#38bdf8");
+                    if (r && metricsPanel != null) metricsPanel.log("Seismic Upgrade applied (-500$)", "#38bdf8");
                     yield r;
                 }
                 case "UPGRADE_WASTE_THERMAL" -> {
                     boolean r = controller.upgrade(x, y, "WASTE_THERMAL");
-                    if (r) metricsPanel.log("Waste Thermal Upgrade applied (-700$)", "#f97316");
+                    if (r && metricsPanel != null) metricsPanel.log("Waste Thermal Upgrade applied (-700$)", "#f97316");
                     yield r;
                 }
                 default -> controller.placeBuilding(tool, x, y);
             };
         } catch (Exception ex) { ok = false; }
 
-        if (!ok) {
+        if (!ok && metricsPanel != null) {
             String error = controller.getLastError();
             metricsPanel.log(error != null && !error.isEmpty() ? error : "Cannot perform this action!",
                     error != null && !error.isEmpty() ? "#f85149" : "#f9e64f");
         }
         updateGrid();
-        metricsPanel.update(controller.getState());
+        // metricsPanel.update() è chiamato da DashboardView.onStateChanged() via Observer — non serve qui
     }
 
     private void finishDrag() {
@@ -254,7 +254,7 @@ public final class MapGridView {
             }
         }
         resetDragSelection();
-        metricsPanel.update(controller.getState());
+        // metricsPanel.update() è chiamato da DashboardView.onStateChanged() via Observer — non serve qui
     }
 
     private boolean confirmArea(String title, String header, String body, String style) {
