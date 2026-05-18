@@ -152,6 +152,8 @@ public class DashboardView extends Application implements StateObserver {
             DialogHelper.style(welcome, "dialog-info", primaryStage);
             welcome.showAndWait();
             controlsBar.syncPolicyButtonWithModel();
+            // Forza l'aggiornamento iniziale
+            onStateChanged(controller.getState());
             return;
         }
 
@@ -170,12 +172,16 @@ public class DashboardView extends Application implements StateObserver {
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isEmpty() || result.get() != loadGameType) {
             controlsBar.syncPolicyButtonWithModel();
+            // Forza l'aggiornamento iniziale se si sceglie nuova partita
+            onStateChanged(controller.getState());
             return;
         }
         try {
             controlsBar.setTickCount(controller.load(latest));
             metricsPanel.log("Game restored: " + latest.getFileName(), "#58a6ff");
             controlsBar.syncPolicyButtonWithModel();
+            // L'aggiornamento iniziale in caso di caricamento avviene in controlsBar.handleLoad() o qui
+            onStateChanged(controller.getState());
         } catch (IOException ex) {
             DialogHelper.showError(primaryStage, "Load error", ex.getMessage());
         }

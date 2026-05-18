@@ -53,6 +53,8 @@ public final class DashboardChart {
     private final XYChart.Series<Number, Number> healthSatSeries   = new XYChart.Series<>();
     private final XYChart.Series<Number, Number> safetySatSeries   = new XYChart.Series<>();
 
+    private boolean originResetNeeded = true;
+
     public DashboardChart() {
         // --- Grafici (niente titolo, niente legenda) ---
         NumberAxis xAxisPop = new NumberAxis(); xAxisPop.setLabel("Tick");
@@ -153,6 +155,33 @@ public final class DashboardChart {
 
     /** Aggiorna label e serie storiche. */
     public void update(int tick, CityState s) {
+        if (originResetNeeded) {
+            NumberAxis[] xAxes = {
+                (NumberAxis) populationChart.getXAxis(),
+                (NumberAxis) indicatoriChart.getXAxis(),
+                (NumberAxis) soddisfazioneChart.getXAxis()
+            };
+            for (NumberAxis xAxis : xAxes) {
+                xAxis.setAutoRanging(false);
+                xAxis.setLowerBound(tick);
+                xAxis.setUpperBound(tick + 10);
+            }
+            originResetNeeded = false;
+        }
+
+        NumberAxis[] xAxes = {
+            (NumberAxis) populationChart.getXAxis(),
+            (NumberAxis) indicatoriChart.getXAxis(),
+            (NumberAxis) soddisfazioneChart.getXAxis()
+        };
+        for (NumberAxis xAxis : xAxes) {
+            if (tick > xAxis.getUpperBound()) {
+                xAxis.setUpperBound(tick);
+            }
+            double range = xAxis.getUpperBound() - xAxis.getLowerBound();
+            xAxis.setTickUnit(Math.max(1.0, Math.floor(range / 10.0)));
+        }
+
         dashPopLabel.setText("Population: " + s.getPopulation());
         dashHapLabel.setText(String.format("Happiness: %.1f", s.getHappiness()));
         dashHealthLabel.setText(String.format("Health: %.1f", s.getHealth()));
@@ -208,6 +237,7 @@ public final class DashboardChart {
         jobSatSeries.getData().clear();
         healthSatSeries.getData().clear();
         safetySatSeries.getData().clear();
+        originResetNeeded = true;
     }
 
     // --- Helpers privati ---
