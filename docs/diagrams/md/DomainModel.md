@@ -34,6 +34,7 @@ classDiagram
         PARK
         ROAD
         HOSPITAL
+        WASTE_CENTER
     }
 
     %% ==========================================
@@ -146,6 +147,21 @@ classDiagram
         +getType() StructureType
     }
 
+    class CommercialBuilding {
+        +applyEffects(state: CityState, powerNet: PowerNetwork)
+        +getType() StructureType
+    }
+
+    class Hospital {
+        +applyEffects(state: CityState, powerNet: PowerNetwork)
+        +getType() StructureType
+    }
+
+    class WasteManagementCenter {
+        +applyEffects(state: CityState, powerNet: PowerNetwork)
+        +getType() StructureType
+    }
+
     %% ==========================================
     %% DECORATORS (DECORATOR PATTERN)
     %% ==========================================
@@ -187,6 +203,10 @@ classDiagram
     }
 
     class AusterityPolicy {
+        +getModifiers() PolicyModifiers
+    }
+
+    class FossilFuelPolicy {
         +getModifiers() PolicyModifiers
     }
 
@@ -233,9 +253,12 @@ classDiagram
 
     Structure <|-- ResidentialBuilding
     Structure <|-- IndustrialBuilding
+    Structure <|-- CommercialBuilding
     Structure <|-- PowerPlant
     Structure <|-- Park
     Structure <|-- Road
+    Structure <|-- Hospital
+    Structure <|-- WasteManagementCenter
 
     Structure <|-- StructureDecorator
     StructureDecorator "1" o-- "1" Structure : wraps
@@ -245,6 +268,7 @@ classDiagram
     PolicyStrategy <|.. DefaultPolicy
     PolicyStrategy <|.. GreenPolicy
     PolicyStrategy <|.. AusterityPolicy
+    PolicyStrategy <|.. FossilFuelPolicy
 
     %% Dependencies
     CityState ..> PolicyModifiers : uses

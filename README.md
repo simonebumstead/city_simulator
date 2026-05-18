@@ -1,20 +1,78 @@
-## CityLogic
-### Sviluppatori: Alessandro Piano, Simone Iantosca, Michele Coppari, Paolo Muraro.
+# CityLogic — City Simulator
 
-Citylogic è un simulatore gestionale di città sviluppato in Java, in cui il giocatore veste i panni del Sindaco. L'obiettivo principale è costruire, espandere e mantenere in salute una metropoli virtuale, bilanciando attentamente la crescita economica con il benessere dei cittadini e la tutela dell'ambiente.
+**Sviluppatori:** Alessandro Piano, Simone Iantosca, Michele Coppari, Paolo Muraro  
+**Tecnologie:** Java 17 · JavaFX 17 · Maven · Jackson · Ikonli
 
-Ogni scelta ha un peso: costruire una nuova area industriale aumenterà le entrate cittadine e i posti di lavoro, ma farà crollare la Felicità e schizzare alle stelle l'Inquinamento. La sfida sta nel trovare la strategia perfetta per far prosperare la città turno dopo turno.
+---
 
-Funzionalità Principali (Gameplay):
-Pianificazione Urbana su Griglia: Costruisci la tua metropoli su una mappa tattica 20x20. Posiziona strategicamente Strade per le connessioni, Edifici (Residenziali, Commerciali, Industriali) per l'economia e Infrastrutture (Centrali Elettriche, Parchi) per il supporto.
+## Descrizione del progetto
 
-Motore di Simulazione Dinamico: Un sistema a "Tick" (avanzamento temporale) ricalcola costantemente lo stato della città (Budget, Popolazione, Inquinamento e Felicità) in base agli edifici attivi.
+CityLogic è un simulatore gestionale a turni sviluppato in Java con interfaccia grafica JavaFX, in cui il giocatore veste i panni del Sindaco di una città in crescita su una griglia 20×20. L'obiettivo è costruire, espandere e mantenere in salute una metropoli virtuale, bilanciando crescita economica, benessere dei cittadini e sostenibilità ambientale turno dopo turno.
 
-Sistema di Politiche (Ordinanze): Guida lo sviluppo strategico attivando leggi cittadine. Adotta una "Politica Verde" per abbattere le emissioni a discapito delle tasse, o spingi sull' "Espansione Industriale" per massimizzare i profitti.
+Ogni decisione ha conseguenze concrete e durature: un'area industriale aumenta il budget e i posti di lavoro, ma fa crollare la felicità dei residenti e schizzare l'inquinamento. Un ospedale migliora la salute e favorisce la crescita demografica, ma pesa sul bilancio ogni tick. La sfida sta nel trovare la strategia giusta e nel saper reagire ai disastri imprevisti.
 
-Eventi Casuali: Testa la resilienza della tua pianificazione urbana affrontando disastri improvvisi, come i terremoti, che possono danneggiare gli edifici e avere ripercussioni sulle statistiche globali.
+---
 
-Persistenza dello Stato: Salva e carica le tue partite localmente per riprendere la simulazione in qualsiasi momento.
+## Edifici e infrastrutture
+
+La città si costruisce posizionando sulla griglia 8 tipi di struttura, ognuna con effetti specifici sulle metriche:
+
+| Edificio | Costo | Effetti principali | Note |
+|----------|------:|--------------------|------|
+| **Strada** | 100 | Connette gli edifici alla rete viaria | Richiesta da Residenziali per funzionare |
+| **Residenziale** | 500 | +budget (tasse), +felicità, +rifiuti/tick | Richiede strada adiacente e alimentazione |
+| **Commerciale** | 750 | +budget, +felicità | Richiede strada adiacente e alimentazione |
+| **Industriale** | 1.000 | +budget (elevato), +inquinamento, −felicità | Richiede strada adiacente e alimentazione |
+| **Centrale Elettrica** | 2.000 | Alimenta tutti gli edifici entro raggio 5 | +inquinamento, −felicità |
+| **Parco** | 300 | −inquinamento, +felicità, +salute | Bonus +2 felicità ai Residenziali nel raggio 3 |
+| **Ospedale** | 1.200 | +salute, +felicità | Copre fino a 400 residenti; richiede alimentazione |
+| **Centro Raccolta Rifiuti** | 900 | −rifiuti/tick | Controbilancia i rifiuti prodotti dai Residenziali |
+
+Gli edifici non alimentati da una Centrale Elettrica non producono effetti e vengono evidenziati visivamente sulla mappa. Ogni struttura (eccetto le Strade) perde 1 HP per tick: se scende sotto il 20% dell'HP massimo viene segnalata come critica.
+
+---
+
+## Metriche della città
+
+Lo stato della città è monitorato in tempo reale attraverso 6 metriche, tutte visibili nella dashboard con grafici time-series:
+
+| Metrica | Range | Impatto |
+|---------|-------|---------|
+| **Budget** | illimitato | Necessario per costruire, riparare e demolire; negativo = bancarotta |
+| **Popolazione** | min 10 | Cresce se felicità, salute e soddisfazioni sono alte; diminuisce altrimenti |
+| **Felicità** | 0 – 100 | Influenzata da edifici, parchi, politiche e disastri |
+| **Salute** | 0 – 100 | Dipende da ospedali, inquinamento e livello di rifiuti |
+| **Inquinamento** | 0 – 100 | Generato da industrie e centrali; ridotto da parchi e Politica Verde |
+| **Rifiuti** | 0+ | Prodotti da Residenziali; sopra 50 unità penalizzano salute e felicità |
+
+La popolazione è ulteriormente descritta da tre soddisfazioni interne — **lavoro**, **salute** e **sicurezza** — che pesano sulla crescita demografica tick per tick.
+
+---
+
+## Politiche cittadine
+
+Il giocatore può attivare in qualsiasi momento una delle 4 ordinanze disponibili, che alterano i moltiplicatori globali di tutte le metriche:
+
+| Politica | Effetto principale | Trade-off |
+|----------|--------------------|-----------|
+| **Default** | Nessun modificatore | — |
+| **Verde** | −50% inquinamento, +salute, +felicità | −200 budget/tick |
+| **Combustibili Fossili** | +300 budget/tick, ×1.5 ricavi industriali | ×2 inquinamento, −salute |
+| **Austerità** | +500 budget/tick | −15 felicità/tick, −2 salute/tick |
+
+---
+
+## Sistemi speciali
+
+**Deterioramento e manutenzione** — Tutti gli edifici (eccetto le Strade) si deteriorano di 1 HP per tick. Il giocatore può ripararli al costo di `(maxHP − HP attuali) / 2`. Un edificio a 0 HP è distrutto e non produce effetti.
+
+**Potenziamenti (Decorator Pattern)** — Ogni struttura può ricevere fino a 3 livelli di upgrade:
+- *SeismicUpgrade* — dimezza i danni ricevuti dai terremoti
+- *WasteThermalUpgrade* — applicabile solo ai Centri Raccolta; aggiunge −5 rifiuti e +50 budget/tick
+
+**Terremoti** — Con probabilità 1% per tick si scatena un terremoto di magnitudo casuale. Il danno agli edifici è proporzionale a magnitudine², e si traduce in un calo immediato di felicità e salute. Gli edifici con SeismicUpgrade subiscono la metà del danno.
+
+**Demolizione** — Il giocatore può demolire qualsiasi struttura pagando il 10% del suo costo; riceve in cambio il 60% (rimborso netto: +50% del costo originale).
 
 ## Documentazione
 Tutta la documentazione è nella cartella [docs](docs).

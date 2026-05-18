@@ -15,6 +15,8 @@ classDiagram
         POWER_PLANT
         PARK
         ROAD
+        HOSPITAL
+        WASTE_CENTER
     }
 
     %% --- INTERFACES ---
@@ -109,9 +111,12 @@ classDiagram
     }
     class ResidentialBuilding
     class IndustrialBuilding
+    class CommercialBuilding
     class PowerPlant
     class Park
     class Road
+    class Hospital
+    class WasteManagementCenter
 
     %% --- DECORATORS ---
     class StructureDecorator {
@@ -153,9 +158,12 @@ classDiagram
 
     ResidentialBuilding --|> Structure
     IndustrialBuilding --|> Structure
+    CommercialBuilding --|> Structure
     PowerPlant --|> Structure
     Park --|> Structure
     Road --|> Structure
+    Hospital --|> Structure
+    WasteManagementCenter --|> Structure
 
     %% Decorator Pattern
     StructureDecorator --|> Structure
