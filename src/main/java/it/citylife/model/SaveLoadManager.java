@@ -28,13 +28,22 @@ public class SaveLoadManager {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public Path saveAuto(City city, int tick) throws IOException {
+    private Path saveToFile(City city, int tick, String filename) throws IOException {
         Files.createDirectories(SAVES_DIR);
-        String filename = "save_" + LocalDateTime.now().format(TIMESTAMP_FMT) + ".json";
         Path file = SAVES_DIR.resolve(filename);
         mapper.writerWithDefaultPrettyPrinter()
               .writeValue(file.toFile(), SaveDataMapper.toSaveData(city, tick));
         return file;
+    }
+
+    public Path saveManual(City city, int tick) throws IOException {
+        String filename = "save_" + LocalDateTime.now().format(TIMESTAMP_FMT) + ".json";
+        return saveToFile(city, tick, filename);
+    }
+
+    public Path saveAuto(City city, int tick, String sessionId) throws IOException {
+        String filename = "autosave_" + sessionId + ".json";
+        return saveToFile(city, tick, filename);
     }
 
     public List<Path> listSaves() throws IOException {

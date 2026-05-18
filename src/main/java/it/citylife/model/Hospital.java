@@ -12,7 +12,7 @@ package it.citylife.model;
  * sanitaria inizi a calare.
  *
  * Effetti per tick (quando alimentato):
- *   - Health:    +5.0
+ *   - Health:    +10.0
  *   - Happiness: +0.5
  *   - Budget:    −25 (costi di personale e manutenzione)
  *   - Consumo:   15 unità di energia

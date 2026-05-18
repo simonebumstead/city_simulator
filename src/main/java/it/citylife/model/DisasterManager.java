@@ -1,9 +1,15 @@
 package it.citylife.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
- * Gestisce gli eventi sismici casuali che possono colpire la città.
+ * Gestisce i disastri casuali che possono colpire la città.
+ *
+ * Utilizza il pattern Observer (tramite l'interfaccia {@link DisasterObserver})
+ * per notificare gli edifici al verificarsi di un evento catastrofico, rendendo 
+ * il sistema facilmente estensibile in futuro per supportare nuovi tipi di disastri.
  *
  * Ogni tick, City.updateState() verifica con probabilità EARTHQUAKE_PROBABILITY
  * se un terremoto deve scatenarsi; in caso affermativo delega a triggerEarthquake().
@@ -11,10 +17,10 @@ import java.util.Random;
  * Il danno è proporzionale al quadrato della magnitudo (formula quadratica),
  * garantendo che terremoti forti siano significativamente più devastanti di quelli lievi.
  * Gli edifici dotati di SeismicUpgrade subiscono la metà del danno grazie al
- * dispatch virtuale su onEarthquake() → takeDamage() (AC-14.2).
+ * dispatch virtuale dell'evento (es. onEarthquake() → takeDamage()) (AC-14.2).
  *
  * @see City#updateState()
- * @see Structure#onEarthquake(int)
+ * @see DisasterObserver
  * @see SeismicUpgrade
  */
 public class DisasterManager {
@@ -25,6 +31,21 @@ public class DisasterManager {
     // Generatore casuale per la magnitudo del terremoto
     private final Random random = new Random();
 
+    // Lista degli osservatori (strutture) da notificare durante il terremoto
+    private final List<DisasterObserver> observers = new ArrayList<>();
+
+    public void addObserver(DisasterObserver obs) {
+        if (!observers.contains(obs)) observers.add(obs);
+    }
+
+    public void removeObserver(DisasterObserver obs) {
+        observers.remove(obs);
+    }
+
+    public void clearObservers() {
+        observers.clear();
+    }
+
     /**
      * Scatena un terremoto che colpisce l'intera griglia della città.
      *
@@ -34,13 +55,11 @@ public class DisasterManager {
      *   3. Calcola i malus a happiness (1.5 × magnitudo²) e health (0.5 × magnitudo²)
      *   4. Applica happiness e health direttamente con setter (bypass del delta,
      *      perché il terremoto è un evento istantaneo, non un effetto per tick)
-     *   5. Itera la griglia: chiama onEarthquake(danno) su ogni struttura;
-     *      gli edifici che raggiungono 0 HP vengono rimossi dalla cella (AC-14.2)
+     *   5. Notifica tutti gli observer registrati applicando il danno (Observer Pattern)
      *
-     * @param grid  la griglia della città su cui applicare i danni
      * @param state lo stato della città su cui applicare i malus a happiness e health
      */
-    public void triggerEarthquake(Grid grid, CityState state) {
+    public void triggerEarthquake(CityState state) {
         // Magnitudo casuale: valori bassi (1–2) causano danni lievi, valori alti (6–7) sono catastrofici
         double magnitude = 1.0 + (random.nextDouble() * 6.0);
 
@@ -59,30 +78,9 @@ public class DisasterManager {
         state.setHappiness(Math.max(0, state.getHappiness() - happinessMalus));
         state.setHealth(Math.max(0, state.getHealth() - healthMalus));
 
-        int collapsedBuildings = 0;
-
-        // Itera su tutta la griglia e applica il danno a ogni edificio
-        for (int x = 0; x < grid.getWidth(); x++) {
-            for (int y = 0; y < grid.getHeight(); y++) {
-                Cell targetCell = grid.getCell(x, y);
-
-                if (targetCell != null && targetCell.getStructure() instanceof Structure building) {
-                    // AC-14.2: onEarthquake() garantisce il dispatch virtuale verso SeismicUpgrade.takeDamage()
-                    building.onEarthquake(damageToInflict);
-
-                    // Edifici a 0 HP crollano e vengono rimossi dalla griglia
-                    if (building.isDestroyed()) {
-                        targetCell.setStructure(null);
-                        collapsedBuildings++;
-                    }
-                }
-            }
-        }
-
-        if (collapsedBuildings > 0) {
-            System.out.println(String.format("%d buildings have collapsed.", collapsedBuildings));
-        } else {
-            System.out.println("Fortunately, no buildings collapsed.");
+        List<DisasterObserver> copy = new ArrayList<>(observers);
+        for (DisasterObserver obs : copy) {
+            obs.onEarthquake(damageToInflict);
         }
     }
 }

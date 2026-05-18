@@ -35,6 +35,14 @@ public class SimulationController {
     }
 
     /**
+     * Inizia una nuova partita.
+     * Delega a {@link GameController#startNewGame()}.
+     */
+    public void startNewGame() {
+        controller.startNewGame();
+    }
+
+    /**
      * Avanza la simulazione di un tick.
      * Delega a {@link GameController#advanceTick()}.
      */
@@ -154,14 +162,26 @@ public class SimulationController {
 
     /**
      * Salva lo stato corrente della città su file JSON.
-     * Delega a {@link GameController#saveGame(int)}.
+     * Delega a {@link GameController#saveManualGame(int)}.
      *
      * @param tick il numero di tick corrente da includere nel salvataggio
      * @return il Path del file JSON creato
      * @throws IOException se la scrittura su disco fallisce
      */
-    public Path save(int tick) throws IOException {
-        return controller.saveGame(tick);
+    public Path saveManual(int tick) throws IOException {
+        return controller.saveManualGame(tick);
+    }
+
+    /**
+     * Esegue un salvataggio automatico che sovrascrive il precedente della sessione corrente.
+     * Delega a {@link GameController#autosaveGame(int)}.
+     *
+     * @param tick il numero di tick corrente da includere nel salvataggio
+     * @return il Path del file JSON creato
+     * @throws IOException se la scrittura su disco fallisce
+     */
+    public Path autosave(int tick) throws IOException {
+        return controller.autosaveGame(tick);
     }
 
     /**
@@ -190,5 +210,15 @@ public class SimulationController {
     /** Restituisce l'ultimo errore di validazione generato dal dominio. */
     public String getLastError() {
         return controller.getLastError();
+    }
+
+    /** Restituisce la stima del rimborso netto per una demolizione. */
+    public int getEstimatedDemolitionRefund(int x, int y) {
+        return controller.getEstimatedDemolitionRefund(x, y);
+    }
+
+    /** Restituisce il costo stimato per la riparazione. */
+    public int getEstimatedRepairCost(int x, int y) {
+        return controller.getEstimatedRepairCost(x, y);
     }
 }

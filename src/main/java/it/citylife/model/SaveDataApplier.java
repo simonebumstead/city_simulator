@@ -14,10 +14,11 @@ final class SaveDataApplier {
     private SaveDataApplier() {}
 
     static void apply(City city, SaveData data) {
+        city.clearDisasterObservers();
         clearGrid(city.getGrid());
         restoreMetrics(city.getState(), data);
         restorePower(city.getPowerNet(), data);
-        restoreBuildings(city.getGrid(), data);
+        restoreBuildings(city, data);
         city.setPolicy(policyFromName(data.activePolicy));
     }
 
@@ -48,7 +49,8 @@ final class SaveDataApplier {
         net.addConsumption(data.totalConsumption);
     }
 
-    private static void restoreBuildings(Grid grid, SaveData data) {
+    private static void restoreBuildings(City city, SaveData data) {
+        Grid grid = city.getGrid();
         for (BuildingEntry entry : data.buildings) {
             Structure building = BuildingFactory.createBuilding(entry.type);
 
@@ -64,6 +66,7 @@ final class SaveDataApplier {
                 }
             }
             grid.placeStructure(building, entry.x, entry.y);
+            city.addDisasterObserver(building);
         }
     }
 

@@ -122,11 +122,7 @@ public final class BuildToolbar {
         var grid = controller.getGrid();
         for (int x = 0; x < grid.getWidth(); x++) {
             for (int y = 0; y < grid.getHeight(); y++) {
-                var cell = grid.getCell(x, y);
-                if (cell != null && cell.getStructure() instanceof Structure s
-                        && !s.isDestroyed() && s.getHp() < s.getMaxHp()) {
-                    totalCost += (s.getMaxHp() - s.getHp()) / 2;
-                }
+                totalCost += controller.getEstimatedRepairCost(x, y);
             }
         }
 

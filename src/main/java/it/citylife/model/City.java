@@ -91,6 +91,18 @@ public class City {
          */
     }
 
+    /**
+     * Ripristina la città allo stato iniziale (nuova partita), mantenendo intatti gli osservatori registrati.
+     */
+    public void reset() {
+        this.grid = new Grid();
+        this.state = new CityState();
+        this.powerNet = new PowerNetwork();
+        this.activePolicy = new DefaultPolicy();
+        this.disasterManager.clearObservers();
+        notifyObserversPublic();
+    }
+
     // --- METODI CORE ---
 
     /**
@@ -190,8 +202,25 @@ public class City {
 
     private void tickDisastersPhase() {
         if (random.nextDouble() < DisasterManager.EARTHQUAKE_PROBABILITY) {
-            disasterManager.triggerEarthquake(grid, state);
+            disasterManager.triggerEarthquake(state);
             state.setEarthquakeOccurred(true);
+            
+            int collapsedBuildings = 0;
+            for (int x = 0; x < grid.getWidth(); x++) {
+                for (int y = 0; y < grid.getHeight(); y++) {
+                    Cell c = grid.getCell(x, y);
+                    if (c != null && c.getStructure() instanceof Structure s && s.isDestroyed()) {
+                        grid.removeStructure(x, y);
+                        disasterManager.removeObserver(s);
+                        collapsedBuildings++;
+                    }
+                }
+            }
+            if (collapsedBuildings > 0) {
+                System.out.println(String.format("%d buildings have collapsed.", collapsedBuildings));
+            } else {
+                System.out.println("Fortunately, no buildings collapsed.");
+            }
         }
     }
 
@@ -362,4 +391,16 @@ public class City {
 
     /** Restituisce la rete elettrica corrente. */
     public PowerNetwork getPowerNet() { return powerNet; }
+
+    public void addDisasterObserver(DisasterObserver obs) {
+        disasterManager.addObserver(obs);
+    }
+
+    public void removeDisasterObserver(DisasterObserver obs) {
+        disasterManager.removeObserver(obs);
+    }
+
+    public void clearDisasterObservers() {
+        disasterManager.clearObservers();
+    }
 }

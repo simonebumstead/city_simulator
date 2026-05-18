@@ -16,6 +16,8 @@ import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -41,7 +43,7 @@ public final class SimulationControlsBar {
     private final StackPane root;
     private final Timeline timeline;
 
-    private final Button defaultBtn, greenBtn, austerityBtn, fossilBtn;
+    private final Button defaultBtn, greenBtn, austerityBtn, fossilBtn, newGameBtn;
     private final Button startBtn, stopBtn;
     private Button activeBtn;
     private String activePolicyName = "Default";
@@ -61,6 +63,7 @@ public final class SimulationControlsBar {
         Button nextBtn  = new Button("⏭ Tick");
         Button saveBtn  = new Button("Save");
         Button loadBtn  = new Button("Load");
+        newGameBtn      = new Button("New Game");
         defaultBtn      = new Button("Default");
         greenBtn        = new Button("Green");
         austerityBtn    = new Button("Austerity");
@@ -94,6 +97,7 @@ public final class SimulationControlsBar {
         });
         nextBtn.setOnAction(e -> performManualTick());
 
+        newGameBtn.setOnAction(e -> handleNewGame());
         defaultBtn.setOnAction(e   -> setActivePolicy(defaultBtn,   new DefaultPolicy()));
         greenBtn.setOnAction(e     -> setActivePolicy(greenBtn,     new GreenPolicy()));
         austerityBtn.setOnAction(e -> setActivePolicy(austerityBtn, new AusterityPolicy()));
@@ -102,7 +106,7 @@ public final class SimulationControlsBar {
         saveBtn.setOnAction(e -> handleSave(saveBtn));
         loadBtn.setOnAction(e -> handleLoad());
 
-        HBox leftGroup   = new HBox(10, startBtn, stopBtn, nextBtn, saveBtn, loadBtn);
+        HBox leftGroup   = new HBox(10, startBtn, stopBtn, nextBtn, saveBtn, loadBtn, newGameBtn);
         HBox centerGroup = new HBox(10, defaultBtn, greenBtn, austerityBtn, fossilBtn);
         HBox rightGroup  = new HBox(10, speedSlider, speedLabel);
         leftGroup.setAlignment(Pos.CENTER_LEFT);
@@ -131,7 +135,7 @@ public final class SimulationControlsBar {
         controller.tick();
         if (tickCount % AUTOSAVE_EVERY_TICKS == 0) {
             try {
-                controller.save(tickCount);
+                controller.autosave(tickCount);
                 metricsPanel.log("Autosave (tick " + tickCount + ")", "#58a6ff");
             } catch (IOException ex) {
                 metricsPanel.log("Autosave failed!", "#f85149");
@@ -165,7 +169,7 @@ public final class SimulationControlsBar {
 
     private void handleSave(Button saveBtn) {
         try {
-            controller.save(tickCount);
+            controller.saveManual(tickCount);
             saveBtn.setText("✓ Saved!");
             saveBtn.setStyle("-fx-border-color: #3fb950;");
             new Timeline(new KeyFrame(Duration.seconds(2.5), ev -> {
@@ -174,6 +178,28 @@ public final class SimulationControlsBar {
             })).play();
         } catch (IOException ex) {
             DialogHelper.showError(primaryStage, "Save error", ex.getMessage());
+        }
+    }
+
+    private void handleNewGame() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setGraphic(null);
+        alert.setTitle("New Game");
+        alert.setHeaderText("Start a new game?");
+        alert.setContentText("All unsaved progress in your current city will be lost.\nDo you want to proceed?");
+        DialogHelper.style(alert, "dialog-error", primaryStage);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            timeline.pause();
+            startBtn.setVisible(true);  startBtn.setManaged(true);
+            stopBtn.setVisible(false);  stopBtn.setManaged(false);
+            chartView.clearSeries();
+            tickCount = 0;
+            controller.startNewGame();
+            mapView.refresh();
+            metricsPanel.log("Started a new game.", "#3fb950");
+            syncPolicyButtonWithModel();
         }
     }
 

@@ -18,7 +18,7 @@ package it.citylife.model;
  * @see StructureDecorator
  * @see CityState
  */
-public abstract class Structure implements Placeable {
+public abstract class Structure implements Placeable, DisasterObserver {
 
     // Punti vita correnti della struttura
     protected int hp;

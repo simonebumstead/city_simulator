@@ -26,6 +26,8 @@ public class GameController {
     // Il modello principale della simulazione
     private City city;
 
+    private String gameSessionId;
+
     // Gestore della persistenza: salvataggio e caricamento su file JSON
     private final SaveLoadManager ioManager = new SaveLoadManager();
 
@@ -36,6 +38,16 @@ public class GameController {
      */
     public GameController() {
         this.city = new City();
+        this.gameSessionId = String.valueOf(System.currentTimeMillis());
+    }
+
+    /**
+     * Inizia una nuova partita resettando lo stato della città.
+     */
+    public void startNewGame() {
+        city.reset();
+        lastError = "";
+        this.gameSessionId = String.valueOf(System.currentTimeMillis());
     }
 
     /**
@@ -106,6 +118,7 @@ public class GameController {
         }
 
         city.getGrid().placeStructure(building, x, y);
+        city.addDisasterObserver(building);
         // setBudget per modifica immediata: il costo di costruzione non transita nel delta di fine tick
         city.getState().setBudget(city.getState().getBudget() - building.getConstructionCost());
 
@@ -181,6 +194,7 @@ public class GameController {
             int refund = s.getConstructionCost() / 2;
             city.getState().setBudget(city.getState().getBudget() + refund - demolitionCost);
             System.out.println("[DEMOLISH] Removal cost: " + demolitionCost + " | Refund: " + refund + " | Budget: " + city.getState().getBudget());
+            city.removeDisasterObserver(s);
         }
 
         city.getGrid().removeStructure(x, y);
@@ -305,8 +319,10 @@ public class GameController {
         if (upgraded == null) return false;
 
         city.getState().setBudget(city.getState().getBudget() - cost);
+        city.removeDisasterObserver(base);
         // Sostituisce la struttura nella cella con la versione decorata
         cell.setStructure(upgraded);
+        city.addDisasterObserver(upgraded);
         System.out.println("[UPGRADE] Applied " + upgradeType + " at (" + x + "," + y + ") | Cost: " + cost);
         city.notifyObserversPublic();
         return true;
@@ -319,8 +335,19 @@ public class GameController {
      * @return il Path del file creato
      * @throws IOException se la scrittura su disco fallisce
      */
-    public Path saveGame(int tick) throws IOException {
-        return ioManager.saveAuto(city, tick);
+    public Path saveManualGame(int tick) throws IOException {
+        return ioManager.saveManual(city, tick);
+    }
+
+    /**
+     * Esegue un salvataggio automatico che sovrascrive il precedente della sessione corrente.
+     *
+     * @param tick il numero del tick corrente, incluso nel file di salvataggio
+     * @return il Path del file creato
+     * @throws IOException se la scrittura su disco fallisce
+     */
+    public Path autosaveGame(int tick) throws IOException {
+        return ioManager.saveAuto(city, tick, gameSessionId);
     }
 
     /**
@@ -344,8 +371,37 @@ public class GameController {
     public int loadGame(Path path) throws IOException {
         int tick = ioManager.load(city, path);
         city.updateRoadConnections(); // Aggiorna le connessioni delle strade dopo il caricamento
+        this.gameSessionId = String.valueOf(System.currentTimeMillis());
         city.notifyObserversPublic();
         return tick;
+    }
+
+    /**
+     * Calcola il rimborso netto stimato per la demolizione di un edificio.
+     * @return il netto (rimborso - costo) oppure 0 se non demolibile.
+     */
+    public int getEstimatedDemolitionRefund(int x, int y) {
+        Cell cell = city.getGrid().getCell(x, y);
+        if (cell != null && !cell.isEmpty() && cell.getStructure() instanceof Structure s) {
+            int demolitionCost = s.getConstructionCost() / 10;
+            int refund = s.getConstructionCost() / 2;
+            return refund - demolitionCost;
+        }
+        return 0;
+    }
+
+    /**
+     * Calcola il costo stimato per riparare un edificio danneggiato.
+     * @return il costo oppure 0 se l'edificio è integro o distrutto.
+     */
+    public int getEstimatedRepairCost(int x, int y) {
+        Cell cell = city.getGrid().getCell(x, y);
+        if (cell != null && !cell.isEmpty() && cell.getStructure() instanceof Structure s) {
+            if (!s.isDestroyed() && s.getHp() < s.getMaxHp()) {
+                return (s.getMaxHp() - s.getHp()) / 2;
+            }
+        }
+        return 0;
     }
 
     /** Restituisce lo stato corrente della città. */

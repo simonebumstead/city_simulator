@@ -216,10 +216,13 @@ public final class MapGridView {
                 if (c != null && !c.isEmpty() && c.getStructure() instanceof Structure s) {
                     if ("DEMOLISH".equals(tool)) {
                         toDemolish++;
-                        refund += (int)(s.getConstructionCost() * 0.4);
-                    } else if ("REPAIR".equals(tool) && !s.isDestroyed() && s.getHp() < s.getMaxHp()) {
-                        toRepair++;
-                        repairCost += (s.getMaxHp() - s.getHp()) * 2;
+                        refund += controller.getEstimatedDemolitionRefund(x, y);
+                    } else if ("REPAIR".equals(tool)) {
+                        int cost = controller.getEstimatedRepairCost(x, y);
+                        if (cost > 0) {
+                            toRepair++;
+                            repairCost += cost;
+                        }
                     }
                 }
             }
