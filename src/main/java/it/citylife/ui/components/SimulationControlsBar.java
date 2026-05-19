@@ -13,6 +13,7 @@ import it.citylife.model.PolicyStrategy;
 import it.citylife.ui.SimulationController;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -20,10 +21,15 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.Labeled;
+import javafx.scene.control.Label;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -48,7 +54,7 @@ public final class SimulationControlsBar {
     private final MapGridView mapView;
     private final DashboardChart chartView;
 
-    private final StackPane root;
+    private final BorderPane root;
     private final Timeline timeline;
 
     private final Button defaultBtn, greenBtn, austerityBtn, fossilBtn, newGameBtn;
@@ -134,15 +140,138 @@ public final class SimulationControlsBar {
         centerGroup.setPickOnBounds(false);
         rightGroup.setPickOnBounds(false);
 
-        root = new StackPane();
+        this.root = new BorderPane();
         root.setPadding(new Insets(8, 16, 8, 16));
         root.setStyle("-fx-background-color: #242526; -fx-border-color: #3e4042; -fx-border-width: 1 0 0 0;");
-        StackPane.setAlignment(leftGroup, Pos.CENTER_LEFT);
-        StackPane.setAlignment(rightGroup, Pos.CENTER_RIGHT);
-        root.getChildren().addAll(centerGroup, leftGroup, rightGroup);
+
+        root.setLeft(leftGroup);
+        root.setCenter(centerGroup);
+        root.setRight(rightGroup);
+
+        List<Button> policyButtons = List.of(defaultBtn, greenBtn, austerityBtn, fossilBtn);
+
+        // Anche i controlli a sinistra (tranne start/stop) possono restringersi e crescere.
+        List<Region> responsiveLeftControls = List.of(nextBtn, saveBtn, loadBtn, autosaveBox, newGameBtn);
+        for (Region control : responsiveLeftControls) {
+            control.setMaxWidth(Double.MAX_VALUE);
+            HBox.setHgrow(control, Priority.SOMETIMES);
+        }
+
+        // Listener per la responsività: nasconde gradualmente i pulsanti delle policy quando lo spazio si riduce.
+        root.sceneProperty().addListener((sceneObs, oldScene, newScene) -> {
+            if (newScene == null) return;
+            // Attende che la scena sia pronta per calcolare le dimensioni corrette.
+            Platform.runLater(() -> {
+                // La larghezza minima dei pulsanti policy è la larghezza preferita del pulsante "Save".
+                final double minPolicyButtonWidth = saveBtn.prefWidth(-1);
+                for (Button btn : policyButtons) {
+                    btn.setMinWidth(minPolicyButtonWidth);
+                }
+
+                // Applica la stessa larghezza minima ai controlli di sinistra.
+                for (Region control : responsiveLeftControls) {
+                    control.setMinWidth(minPolicyButtonWidth);
+                }
+
+                // Calcola la larghezza preferita massima tra i pulsanti delle policy.
+                // Questo valore verrà usato come limite massimo di crescita per mantenere un aspetto consistente
+                // ed evitare che i pulsanti diventino troppo grandi quando c'è molto spazio.
+                double maxPrefWidth = 0;
+                for (Button btn : policyButtons) {
+                    maxPrefWidth = Math.max(maxPrefWidth, btn.prefWidth(-1));
+                }
+                final double maxPolicyButtonWidth = maxPrefWidth;
+
+                // Configura i pulsanti delle policy per crescere, ma solo fino alla loro dimensione massima preferita.
+                // Questo crea un comportamento consistente in ogni stato della finestra (normale, massimizzata, etc.).
+                for (Button btn : policyButtons) {
+                    btn.setMaxWidth(maxPolicyButtonWidth);
+                    HBox.setHgrow(btn, Priority.SOMETIMES);
+                }
+
+                // Aggiunge un listener alla larghezza del contenitore centrale (HBox).
+                centerGroup.widthProperty().addListener((obs, oldVal, newVal) -> {
+                    double availableWidth = newVal.doubleValue();
+                    double spacing = centerGroup.getSpacing();
+
+                    // Calcola quanti pulsanti possono essere visibili.
+                    double cumulativeWidth = 0;
+                    int visibleCount = 0;
+                    for (Button btn : policyButtons) {
+                        double widthWithSpacing = btn.getMinWidth();
+                        // Aggiunge lo spazio solo se non è il primo elemento visibile.
+                        if (visibleCount > 0) {
+                            widthWithSpacing += spacing;
+                        }
+                        // Un pulsante è visibile se c'è spazio per la sua larghezza minima.
+                        if (cumulativeWidth + widthWithSpacing <= availableWidth) {
+                            cumulativeWidth += widthWithSpacing;
+                            visibleCount++;
+                        } else {
+                            break; // Non c'è più spazio.
+                        }
+                    }
+
+                    // Applica la visibilità.
+                    for (int i = 0; i < policyButtons.size(); i++) {
+                        Button btn = policyButtons.get(i);
+                        boolean shouldBeVisible = i < visibleCount;
+                        if (btn.isManaged() != shouldBeVisible) {
+                            btn.setManaged(shouldBeVisible);
+                            btn.setVisible(shouldBeVisible);
+                        }
+                    }
+                });
+
+                // Aggiunge un listener alla larghezza del contenitore di sinistra (HBox).
+                leftGroup.widthProperty().addListener((obs, oldVal, newVal) -> {
+                    double availableWidth = newVal.doubleValue();
+                    double spacing = leftGroup.getSpacing();
+
+                    // Calcola lo spazio occupato dai controlli non responsivi (start/stop).
+                    double fixedWidth = 0;
+                    if (startBtn.isManaged()) {
+                        fixedWidth += startBtn.prefWidth(-1) + spacing;
+                    }
+                    if (stopBtn.isManaged()) {
+                        fixedWidth += stopBtn.prefWidth(-1) + spacing;
+                    }
+
+                    double availableForResponsive = availableWidth - fixedWidth;
+
+                    // Calcola quanti controlli responsivi possono essere visibili.
+                    double cumulativeWidth = 0;
+                    int visibleCount = 0;
+                    for (Region control : responsiveLeftControls) {
+                        double widthWithSpacing = control.getMinWidth();
+                        // Aggiunge lo spazio solo se non è il primo elemento visibile.
+                        if (visibleCount > 0) {
+                            widthWithSpacing += spacing;
+                        }
+                        // Un controllo è visibile se c'è spazio per la sua larghezza minima.
+                        if (cumulativeWidth + widthWithSpacing <= availableForResponsive) {
+                            cumulativeWidth += widthWithSpacing;
+                            visibleCount++;
+                        } else {
+                            break; // Non c'è più spazio.
+                        }
+                    }
+
+                    // Applica la visibilità. I controlli scompaiono da destra a sinistra.
+                    for (int i = 0; i < responsiveLeftControls.size(); i++) {
+                        Region control = responsiveLeftControls.get(i);
+                        boolean shouldBeVisible = i < visibleCount;
+                        if (control.isManaged() != shouldBeVisible) {
+                            control.setManaged(shouldBeVisible);
+                            control.setVisible(shouldBeVisible);
+                        }
+                    }
+                });
+            });
+        });
     }
 
-    public StackPane getNode() { return root; }
+    public Pane getNode() { return root; }
     public int getTickCount() { return tickCount; }
     public void setTickCount(int v) { tickCount = v; }
 
