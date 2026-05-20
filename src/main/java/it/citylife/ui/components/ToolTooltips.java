@@ -3,7 +3,7 @@ package it.citylife.ui.components;
 import javafx.scene.control.Tooltip;
 import javafx.util.Duration;
 
-/** Tooltip statici per i pulsanti della {@link BuildToolbar}. */
+/** Tooltip statici per i pulsanti della UI (toolbar e barra controlli). */
 final class ToolTooltips {
 
     private ToolTooltips() {}
@@ -44,6 +44,23 @@ final class ToolTooltips {
         if (text == null) return null;
         Tooltip tt = new Tooltip(text);
         tt.setShowDelay(Duration.millis(150));
+        tt.setShowDuration(Duration.INDEFINITE);
+        return tt;
+    }
+
+    static Tooltip forPolicy(String policyName) {
+        if (policyName == null) return null;
+        String text = switch (policyName) {
+            case "DEFAULT" -> "📜 Default Policy\nNo special modifiers.\nThe city runs on its own merits.";
+            case "GREEN" -> "🌿 Green Policy\nCost: -200 Budget/tick\nEffects:\n • -50% Pollution\n • + Health & Happiness";
+            case "FOSSIL_FUEL" -> "⛽ Fossil Fuel Policy\nEffects:\n • +300 Budget/tick\n • x1.5 Industrial revenue\n • x2 Pollution\n • - Health";
+            case "AUSTERITY" -> "💰 Austerity Policy\nEffects:\n • +500 Budget/tick\n • -15 Happiness/tick\n • -2 Health/tick";
+            default -> null;
+        };
+        if (text == null) return null;
+        Tooltip tt = new Tooltip(text);
+        tt.setShowDelay(Duration.millis(150));
+        tt.setShowDuration(Duration.INDEFINITE);
         return tt;
     }
 }

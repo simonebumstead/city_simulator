@@ -86,6 +86,11 @@ public final class SimulationControlsBar {
         austerityBtn    = new Button("Austerity");
         fossilBtn       = new Button("Fossil Fuel");
 
+        defaultBtn.setTooltip(ToolTooltips.forPolicy("DEFAULT"));
+        greenBtn.setTooltip(ToolTooltips.forPolicy("GREEN"));
+        austerityBtn.setTooltip(ToolTooltips.forPolicy("AUSTERITY"));
+        fossilBtn.setTooltip(ToolTooltips.forPolicy("FOSSIL_FUEL"));
+
         timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> doTick()));
         timeline.setCycleCount(Timeline.INDEFINITE);
 
