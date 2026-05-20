@@ -9,7 +9,7 @@ package it.citylife.model;
  *
  * L'ospedale contribuisce al calcolo della healthSatisfaction del gruppo demografico
  * (AC-19.2): ogni ospedale copre fino a 200 residenti prima che la soddisfazione
- * sanitaria inizi a calare.
+ * sanitaria inizi a calare (la logica in PopulationManager usa 400 residenti).
  *
  * Effetti per tick (quando alimentato):
  *   - Health:    +10.0

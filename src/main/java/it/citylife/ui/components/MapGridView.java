@@ -50,7 +50,10 @@ public final class MapGridView {
     private double currentCellSize = 35.0;
 
     private boolean isDragging = false;
-    private int dragStartX = -1, dragStartY = -1, dragEndX = -1, dragEndY = -1;
+    private int dragStartX = -1;
+    private int dragStartY = -1;
+    private int dragEndX = -1;
+    private int dragEndY = -1;
     private boolean justFinishedDrag = false;
 
     public MapGridView(SimulationController controller, Stage primaryStage,
@@ -301,18 +304,17 @@ public final class MapGridView {
     private void drawCell(int x, int y) {
         StackPane cell = cells[x][y];
         cell.getChildren().clear();
-        Tooltip oldTip = (Tooltip) cell.getProperties().get("cellTooltip");
-        if (oldTip != null) {
-            Tooltip.uninstall(cell, oldTip);
-            cell.getProperties().remove("cellTooltip");
-        }
-        cell.setOnMouseEntered(null);
-        cell.setOnMouseExited(null);
+        Tooltip currentTip = (Tooltip) cell.getProperties().get("cellTooltip");
 
         Cell gc = controller.getGrid().getCell(x, y);
         String emptyBg = ((x + y) % 2 == 0) ? "#242526" : "#1e1f20";
         if (gc == null || gc.isEmpty()) {
             cell.setStyle("-fx-background-color: " + emptyBg + "; -fx-border-color: #3e4042; -fx-border-width: 0.5; -fx-background-radius: 2px; -fx-border-radius: 2px;");
+            // Se la cella è diventata vuota, disinstalla il tooltip se esisteva.
+            if (currentTip != null) {
+                Tooltip.uninstall(cell, currentTip);
+                cell.getProperties().remove("cellTooltip");
+            }
             return;
         }
         if (!(gc.getStructure() instanceof Structure s)) return;
@@ -362,9 +364,21 @@ public final class MapGridView {
         };
         boolean powerWarning = requiresPower && !controller.isPowered(x, y);
 
-        Tooltip tt = buildCellTooltip(s, powerWarning);
-        Tooltip.install(cell, tt);
-        cell.getProperties().put("cellTooltip", tt);
+        String tooltipText = buildCellTooltipText(s, powerWarning);
+
+        if (currentTip != null && currentTip.isShowing()) {
+            // Se il tooltip è già visibile, aggiorna solo il testo per evitare che scompaia.
+            currentTip.setText(tooltipText);
+        } else {
+            // Altrimenti, disinstalla il vecchio (se esiste) e installa quello nuovo.
+            if (currentTip != null) {
+                Tooltip.uninstall(cell, currentTip);
+            }
+            Tooltip newTip = new Tooltip(tooltipText);
+            newTip.setShowDelay(Duration.millis(150));
+            Tooltip.install(cell, newTip);
+            cell.getProperties().put("cellTooltip", newTip);
+        }
 
         if (powerWarning) {
             FontIcon warn = new FontIcon(FontAwesomeSolid.EXCLAMATION_TRIANGLE);
@@ -516,27 +530,23 @@ public final class MapGridView {
         cells[x][y].getChildren().add(ov);
     }
 
-    private Tooltip buildCellTooltip(Structure s, boolean powerWarning) {
+    private String buildCellTooltipText(Structure s, boolean powerWarning) {
         StringBuilder sb = new StringBuilder();
         sb.append(IconCatalog.labelFor(s.getType())).append("\n");
         sb.append("HP: ").append(s.getHp()).append(" / ").append(s.getMaxHp());
         if (s.isDestroyed()) sb.append("  [DESTROYED]");
         sb.append("\n");
         if (powerWarning) sb.append("⚠️ WARNING: Not powered!\n");
-        else sb.append("Powered: ").append(s.isPowered() ? "Yes" : "No").append("\n");
-        sb.append("Adjacent road: ").append(s.isConnectedToRoad() ? "Yes" : "No").append("\n");
+        else sb.append("Powered: ").append(s.isPowered() ? "Yes" : "No").append("\n"); 
+        sb.append("Adjacent road: ").append(s.isConnectedToRoad() ? "Yes" : "No").append("\n"); 
         if (s instanceof StructureDecorator dec) {
             List<String> ups = dec.collectUpgrades();
             sb.append("Upgrade Lv.").append(dec.getUpgradeLevel());
             if (!ups.isEmpty()) sb.append(": ").append(String.join(", ", ups));
             sb.append("\n");
         }
-        sb.append("Build cost: ").append(s.getConstructionCost());
-        Tooltip tt = new Tooltip(sb.toString());
-        tt.setShowDelay(Duration.millis(150));
-        return tt;
+        sb.append("Build cost: ").append(s.getConstructionCost()); 
+        return sb.toString();
     }
 
-    @SuppressWarnings("unused")
-    private static void unused(StructureType t) {} // keep StructureType import live
 }

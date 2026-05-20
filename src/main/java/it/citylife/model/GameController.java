@@ -77,6 +77,23 @@ public class GameController {
     }
 
     /**
+     * Resetta i flag di eventi "one-shot" (es. terremoto) che sono già stati notificati alla UI.
+     *
+     * Questo metodo viene chiamato all'inizio delle azioni dell'utente (piazzare, demolire, ecc.)
+     * per evitare che la notifica di un evento accaduto nel tick precedente (es. un terremoto)
+     * venga mostrata di nuovo quando la UI si aggiorna in seguito all'azione corrente.
+     */
+    private void consumeOneShotEvents() {
+        // Al momento, l'unico evento che causa questo problema è il terremoto.
+        // Se lo stato indica che è avvenuto un terremoto, significa che la notifica
+        // è già stata inviata alla fine del tick precedente. Azzeriamo il flag
+        // per evitare notifiche duplicate.
+        if (city.getState().isEarthquakeOccurred()) {
+            city.getState().setEarthquakeOccurred(false);
+        }
+    }
+
+    /**
      * Piazza una nuova struttura del tipo indicato nella cella (x, y).
      *
      * Validazioni in ordine:
@@ -93,6 +110,8 @@ public class GameController {
      * @return true se il piazzamento è andato a buon fine, false altrimenti
      */
     public boolean placeBuilding(String type, int x, int y) {
+        consumeOneShotEvents();
+
         Structure building = BuildingFactory.createBuilding(type);
         Cell cell = city.getGrid().getCell(x, y);
 
@@ -176,6 +195,8 @@ public class GameController {
      * @return true se la demolizione è avvenuta, false se la cella è vuota o il budget è insufficiente
      */
     public boolean demolish(int x, int y) {
+        consumeOneShotEvents();
+
         Cell cell = city.getGrid().getCell(x, y);
         if (cell == null || cell.isEmpty()) {
             lastError = "Nothing to demolish here.";
@@ -215,6 +236,8 @@ public class GameController {
      * @return true se la riparazione è avvenuta, false altrimenti
      */
     public boolean repair(int x, int y) {
+        consumeOneShotEvents();
+
         Cell cell = city.getGrid().getCell(x, y);
         if (cell == null || cell.isEmpty()) {
             lastError = "Nothing to repair here.";
@@ -262,6 +285,8 @@ public class GameController {
      *         o non ci sono edifici da riparare
      */
     public boolean repairAll() {
+        consumeOneShotEvents();
+
         Grid grid = city.getGrid();
         int totalCost = 0;
         for (int x = 0; x < grid.getWidth(); x++) {
@@ -310,6 +335,8 @@ public class GameController {
      * @return true se l'upgrade è stato applicato, false altrimenti
      */
     public boolean upgradeBuilding(int x, int y, String upgradeType) {
+        consumeOneShotEvents();
+
         Cell cell = city.getGrid().getCell(x, y);
         if (cell == null || cell.isEmpty()) {
             lastError = "Nothing to upgrade here.";

@@ -67,7 +67,11 @@ public final class BuildToolbar {
         repairAllBtn.setTooltip(raTt);
         repairAllBtn.setOnAction(e -> showRepairAllPreview());
 
-        Label upgradeTitle = sectionTitle("UPGRADE");
+        Label upgradeTitle = sectionTitle("UPGRADE"); 
+
+        // Aggiungo un separatore per migliorare la leggibilità della UI
+        new Separator();
+
         Button seismicBtn      = toolButton("Seismic (500)", "UPGRADE_SEISMIC", FontAwesomeSolid.SHIELD_ALT, Color.web("#4599ff"));
         Button wasteThermalBtn = toolButton("Waste Thermal (700)", "UPGRADE_WASTE_THERMAL", FontAwesomeSolid.FIRE, Color.web("#f97316"));
 

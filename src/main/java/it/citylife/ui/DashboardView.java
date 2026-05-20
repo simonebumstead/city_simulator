@@ -35,6 +35,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -48,16 +49,15 @@ import javafx.util.Duration;
 public class DashboardView extends Application implements StateObserver {
 
     private static final String APP_FONT = "monospace";
+    private static final String APP_NAME = "CityLogic";
 
     private SimulationController controller;
     private Stage primaryStage;
-    private BorderPane rootPane;
     private Label tickLabel;
 
     private MetricsPanel metricsPanel;
     private DashboardChart chartView;
     private MapGridView mapView;
-    private BuildToolbar buildToolbar;
     private SimulationControlsBar controlsBar;
     private StackPane mapOverlayPane;
 
@@ -69,15 +69,13 @@ public class DashboardView extends Application implements StateObserver {
         this.primaryStage = primaryStage;
         controller = new SimulationController();
         controller.addObserver(this);
-
         BorderPane root = new BorderPane();
-        this.rootPane = root;
         root.setStyle("-fx-background-color: #18191a; -fx-font-family: " + APP_FONT + ";");
 
         FontIcon headerIcon = new FontIcon(FontAwesomeSolid.CITY);
         headerIcon.setIconSize(18);
         headerIcon.setIconColor(Color.web("#2374e1"));
-        tickLabel = new Label("CityLogic  |  Tick: 0", headerIcon);
+        tickLabel = new Label(APP_NAME + "  |  Tick: 0", headerIcon);
         tickLabel.setStyle("-fx-text-fill: #e4e6eb; -fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 12px 16px; -fx-background-color: #242526; -fx-border-color: #2374e1; -fx-border-width: 0 0 2px 0;");
         root.setTop(tickLabel);
 
@@ -85,7 +83,7 @@ public class DashboardView extends Application implements StateObserver {
         chartView = new DashboardChart();
 
         // BuildToolbar deve esistere prima del MapGridView per fornire il selectedTool
-        buildToolbar = new BuildToolbar(controller, primaryStage, metricsPanel, () -> {
+        BuildToolbar buildToolbar = new BuildToolbar(controller, primaryStage, metricsPanel, () -> {
             mapView.refresh();
             metricsPanel.update(controller.getState());
         });
@@ -116,7 +114,7 @@ public class DashboardView extends Application implements StateObserver {
 
         root.setBottom(controlsBar.getNode());
 
-        primaryStage.setTitle("CityLogic");
+        primaryStage.setTitle(APP_NAME);
         Scene scene = new Scene(root, 1300, 750);
         scene.getStylesheets().add(getClass().getResource("/it/citylife/ui/dashboard.css").toExternalForm());
 
@@ -131,67 +129,76 @@ public class DashboardView extends Application implements StateObserver {
         primaryStage.getIcons().clear();
         try (var stream = getClass().getResourceAsStream("/it/citylife/ui/icon.png")) {
             if (stream != null) primaryStage.getIcons().add(new Image(stream));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // Ignored: if the icon fails to load, the app will run without it. This is not a critical error.
+        }
 
         primaryStage.show();
         showStartupDialog();
     }
 
     private void showStartupDialog() {
+        // Il gioco parte sempre con uno stato "nuova partita".
+        // Aggiorniamo subito la UI per mostrare questo stato iniziale.
+        controlsBar.syncPolicyButtonWithModel();
+        onStateChanged(controller.getState());
+
         List<Path> saves;
         try { saves = controller.listSaves(); } catch (IOException ex) { return; }
 
         if (saves.isEmpty()) {
-            ButtonType startType = new ButtonType("Start", ButtonBar.ButtonData.OK_DONE);
+            // Nessun salvataggio, mostriamo solo un semplice messaggio di benvenuto non modale.
             Alert welcome = new Alert(Alert.AlertType.INFORMATION);
             welcome.setGraphic(null);
-            welcome.setTitle("CityLogic");
-            welcome.setHeaderText("🎮 Welcome to CityLogic!");
+            welcome.setTitle(APP_NAME);
+            welcome.setHeaderText("🎮 Welcome to " + APP_NAME + "!");
             welcome.setContentText("No saves found. Press Start to begin your journey!");
-            welcome.getButtonTypes().setAll(startType);
+            welcome.getButtonTypes().setAll(new ButtonType("Start", ButtonBar.ButtonData.OK_DONE));
+
+            welcome.initModality(Modality.NONE); // Rende il dialog non-modale
             DialogHelper.style(welcome, "dialog-info", primaryStage);
-            welcome.showAndWait();
-            controlsBar.syncPolicyButtonWithModel();
-            // Forza l'aggiornamento iniziale
-            onStateChanged(controller.getState());
+            welcome.show(); // Mostra il dialog senza bloccare la finestra principale
             return;
         }
 
+        // Trovati dei salvataggi, offriamo la possibilità di caricare l'ultimo.
         Path latest = saves.get(saves.size() - 1);
         ButtonType newGameType  = new ButtonType("New Game",  ButtonBar.ButtonData.LEFT);
         ButtonType loadGameType = new ButtonType("Load Save", ButtonBar.ButtonData.RIGHT);
 
         Alert dialog = new Alert(Alert.AlertType.CONFIRMATION);
         dialog.setGraphic(null);
-        dialog.setTitle("CityLogic");
-        dialog.setHeaderText("🎮 Welcome back to CityLogic!");
+        dialog.setTitle(APP_NAME);
+        dialog.setHeaderText("🎮 Welcome back to " + APP_NAME + "!");
         dialog.setContentText("Start a new city or resume your previous one?");
         dialog.getButtonTypes().setAll(newGameType, loadGameType);
+
+        dialog.initModality(Modality.NONE); // Rende il dialog non-modale
         DialogHelper.style(dialog, "dialog-info", primaryStage);
 
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isEmpty() || result.get() != loadGameType) {
-            controlsBar.syncPolicyButtonWithModel();
-            // Forza l'aggiornamento iniziale se si sceglie nuova partita
-            onStateChanged(controller.getState());
-            return;
-        }
-        try {
-            controlsBar.setTickCount(controller.load(latest));
-            metricsPanel.log("Game restored: " + latest.getFileName(), "#58a6ff");
-            controlsBar.syncPolicyButtonWithModel();
-            // L'aggiornamento iniziale in caso di caricamento avviene in controlsBar.handleLoad() o qui
-            onStateChanged(controller.getState());
-        } catch (IOException ex) {
-            DialogHelper.showError(primaryStage, "Load error", ex.getMessage());
-        }
+        // Mostra il dialog e gestisce il risultato in modo asincrono.
+        dialog.show();
+        dialog.resultProperty().addListener((obs, old, result) -> {
+            if (result == loadGameType) {
+                try {
+                    controlsBar.setTickCount(controller.load(latest));
+                    metricsPanel.log("Game restored: " + latest.getFileName(), "#58a6ff");
+                    controlsBar.syncPolicyButtonWithModel();
+                    onStateChanged(controller.getState());
+                } catch (IOException ex) {
+                    DialogHelper.showError(primaryStage, "Load error", ex.getMessage());
+                }
+            }
+            // Se l'utente sceglie "New Game" o chiude il dialog, non facciamo nulla,
+            // perché lo stato di "nuova partita" è già attivo e visualizzato.
+        });
     }
 
     @Override
     public void onStateChanged(CityState state) {
         Platform.runLater(() -> {
             int tick = controlsBar.getTickCount();
-            tickLabel.setText("CityLogic  |  Tick: " + tick);
+            tickLabel.setText(APP_NAME + "  |  Tick: " + tick);
 
             metricsPanel.update(state);
             chartView.update(tick, state);

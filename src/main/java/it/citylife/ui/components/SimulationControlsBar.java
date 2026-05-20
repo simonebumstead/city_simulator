@@ -21,8 +21,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
-import javafx.scene.control.Labeled;
-import javafx.scene.control.Label;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.BorderPane;
@@ -57,8 +55,13 @@ public final class SimulationControlsBar {
     private final BorderPane root;
     private final Timeline timeline;
 
-    private final Button defaultBtn, greenBtn, austerityBtn, fossilBtn, newGameBtn;
-    private final Button startBtn, stopBtn;
+    private final Button defaultBtn;
+    private final Button greenBtn;
+    private final Button austerityBtn;
+    private final Button fossilBtn;
+    private final Button newGameBtn;
+    private final Button startBtn;
+    private final Button stopBtn;
     private Button activeBtn;
     private String activePolicyName = "Default";
 
@@ -189,7 +192,6 @@ public final class SimulationControlsBar {
                     HBox.setHgrow(btn, Priority.SOMETIMES);
                 }
 
-                // Aggiunge un listener alla larghezza del contenitore centrale (HBox).
                 centerGroup.widthProperty().addListener((obs, oldVal, newVal) -> {
                     double availableWidth = newVal.doubleValue();
                     double spacing = centerGroup.getSpacing();
@@ -223,19 +225,14 @@ public final class SimulationControlsBar {
                     }
                 });
 
-                // Aggiunge un listener alla larghezza del contenitore di sinistra (HBox).
                 leftGroup.widthProperty().addListener((obs, oldVal, newVal) -> {
                     double availableWidth = newVal.doubleValue();
                     double spacing = leftGroup.getSpacing();
 
                     // Calcola lo spazio occupato dai controlli non responsivi (start/stop).
                     double fixedWidth = 0;
-                    if (startBtn.isManaged()) {
-                        fixedWidth += startBtn.prefWidth(-1) + spacing;
-                    }
-                    if (stopBtn.isManaged()) {
-                        fixedWidth += stopBtn.prefWidth(-1) + spacing;
-                    }
+                    if (startBtn.isManaged()) fixedWidth += startBtn.prefWidth(-1) + spacing;
+                    if (stopBtn.isManaged()) fixedWidth += stopBtn.prefWidth(-1) + spacing;
 
                     double availableForResponsive = availableWidth - fixedWidth;
 
@@ -272,6 +269,7 @@ public final class SimulationControlsBar {
     }
 
     public Pane getNode() { return root; }
+
     public int getTickCount() { return tickCount; }
     public void setTickCount(int v) { tickCount = v; }
 

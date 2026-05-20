@@ -65,7 +65,7 @@ public class DisasterManager {
      *
      * Sequenza di esecuzione:
      *   1. Genera una magnitudo casuale in [1.0, 7.0)
-     *   2. Calcola il danno agli edifici: 1 × magnitudo²
+     *   2. Calcola il danno agli edifici: 5 × magnitudo²
      *   3. Calcola i malus a happiness (1.5 × magnitudo²) e health (0.5 × magnitudo²)
      *   4. Applica happiness e health direttamente con setter (bypass del delta,
      *      perché il terremoto è un evento istantaneo, non un effetto per tick)

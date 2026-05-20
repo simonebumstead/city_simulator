@@ -40,13 +40,17 @@ public final class DashboardChart {
     private final Label dashPopLabel;
 
     // Stats bar — Indicators
-    private final Label dashHapLabel, dashHealthLabel, dashPollLabel;
+    private final Label dashHapLabel;
+    private final Label dashHealthLabel;
+    private final Label dashPollLabel;
 
     // Stats bar — Satisfaction
-    private final Label dashJobSatLabel, dashHealthSatLabel, dashSafetySatLabel;
+    private final Label dashJobSatLabel;
+    private final Label dashHealthSatLabel;
+    private final Label dashSafetySatLabel;
 
     private final XYChart.Series<Number, Number> populationSeries  = new XYChart.Series<>();
-    private final XYChart.Series<Number, Number> happinessSeries   = new XYChart.Series<>();
+    private final XYChart.Series<Number, Number> happinessSeries = new XYChart.Series<>();
     private final XYChart.Series<Number, Number> healthSeries      = new XYChart.Series<>();
     private final XYChart.Series<Number, Number> pollutionSeries   = new XYChart.Series<>();
     private final XYChart.Series<Number, Number> jobSatSeries      = new XYChart.Series<>();

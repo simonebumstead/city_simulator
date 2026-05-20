@@ -70,25 +70,6 @@ public class City {
 
         // Impostiamo la politica neutrale di default alla partenza del gioco
         this.activePolicy = new DefaultPolicy();
-
-        /*
-        // Edifici di default in posizioni casuali non sovrapposte
-        List<Structure> defaults = Arrays.asList(
-            new PowerPlant(),
-            new ResidentialBuilding(), new ResidentialBuilding(), new ResidentialBuilding(),
-            new IndustrialBuilding(), new IndustrialBuilding(),
-            new CommercialBuilding(),
-            new Park()
-        );
-        for (Structure s : defaults) {
-            int rx, ry;
-            do {
-                rx = random.nextInt(20);
-                ry = random.nextInt(20);
-            } while (!grid.getCell(rx, ry).isEmpty());
-            grid.placeStructure(s, rx, ry);
-        }
-         */
     }
 
     /**
@@ -128,6 +109,7 @@ public class City {
     private void updateState() {
         tickResetPhase();
         BuildingCounts counts = tickStructuresPhase();
+        cleanupDecayedBuildings();
         applyParkEffects();
         int maxCapacity = tickCapacityPhase(counts.residential);
         state.resolveTick(activePolicy.getModifiers());
@@ -149,13 +131,13 @@ public class City {
             for (int y = 0; y < grid.getHeight(); y++) {
                 Cell cell = grid.getCell(x, y);
                 if (cell == null || !(cell.getStructure() instanceof Structure s)) continue;
-                processStructure(s, x, y, c);
+                processStructure(s, c);
             }
         }
         return c;
     }
 
-    private void processStructure(Structure s, int x, int y, BuildingCounts c) {
+    private void processStructure(Structure s, BuildingCounts c) {
         // AC-15.1: ogni struttura decade di HP_DECAY_PER_TICK ogni tick
         s.decayTick();
 
@@ -219,6 +201,10 @@ public class City {
                 }
             }
             if (collapsedBuildings > 0) {
+                // Se degli edifici sono crollati, è necessario aggiornare subito le connessioni
+                // stradali in modo che la UI possa ridisegnarle correttamente nello stesso tick,
+                // senza attendere il pre-pass del tick successivo.
+                updateRoadConnections();
                 System.out.println(String.format("%d buildings have collapsed.", collapsedBuildings));
             } else {
                 System.out.println("Fortunately, no buildings collapsed.");
@@ -239,6 +225,33 @@ public class City {
             state.getHealth(), state.getPollution(), state.getWasteLevel());
         System.out.println("  Policy: " + activePolicy.getClass().getSimpleName());
         System.out.println("  Power: " + (powerNet.hasEnoughPower() ? "OK" : "BLACKOUT"));
+    }
+
+    /**
+     * Scansiona la griglia alla ricerca di edifici distrutti dal decadimento naturale e li rimuove.
+     *
+     * Questo metodo viene eseguito dopo che il decadimento è stato applicato in `tickStructuresPhase`,
+     * ma prima di qualsiasi altro evento come un terremoto. In questo modo, si assicura che gli
+     * edifici che raggiungono 0 HP a causa del tempo vengano correttamente rimossi dalla mappa
+     * e non continuino a essere renderizzati.
+     */
+    private void cleanupDecayedBuildings() {
+        int collapsedCount = 0;
+        for (int x = 0; x < grid.getWidth(); x++) {
+            for (int y = 0; y < grid.getHeight(); y++) {
+                Cell c = grid.getCell(x, y);
+                // Qualsiasi edificio distrutto in questa fase del tick è crollato per decadimento.
+                if (c != null && c.getStructure() instanceof Structure s && s.isDestroyed()) {
+                    grid.removeStructure(x, y);
+                    disasterManager.removeObserver(s);
+                    collapsedCount++;
+                }
+            }
+        }
+        if (collapsedCount > 0) {
+            System.out.println(String.format("%d building(s) collapsed due to decay.", collapsedCount));
+            updateRoadConnections();
+        }
     }
 
     private static final class BuildingCounts {
@@ -316,21 +329,21 @@ public class City {
      * @param s la struttura da verificare
      * @return true se la struttura richiede corrente
      */
-    private boolean requiresPower(Structure s) {
-        return s instanceof ResidentialBuilding || s instanceof CommercialBuilding || s instanceof IndustrialBuilding;
+    private static boolean requiresPower(Structure s) {
+        return switch (s.getType()) {
+            case RESIDENTIAL, COMMERCIAL, INDUSTRIAL, HOSPITAL, WASTE_CENTER -> true;
+            default -> false;
+        };
     }
 
     /**
      * Indica se la struttura genera entrate di budget (revenue).
      *
-     * Solo Commercial e Industrial producono revenue diretta; per questi tipi,
-     * se la cella non è adiacente a una Road, il delta positivo di budget viene annullato.
-     *
      * @param s la struttura da verificare
      * @return true se la struttura produce revenue di budget
      */
-    private boolean isRevenueBuilding(Structure s) {
-        return s instanceof CommercialBuilding || s instanceof IndustrialBuilding;
+    private static boolean isRevenueBuilding(Structure s) {
+        return s.getType() == StructureType.COMMERCIAL || s.getType() == StructureType.INDUSTRIAL;
     }
 
     /**

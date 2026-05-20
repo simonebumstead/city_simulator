@@ -8,8 +8,8 @@ package it.citylife.model;
  *                         edifici produttivi (industrial + commercial) e residenziali
  *   - healthSatisfaction: soddisfazione sanitaria, dipende dal numero di ospedali
  *                         relativamente alla popolazione residente
- *   - safetySatisfaction: soddisfazione sulla sicurezza, inversamente proporzionale
- *                         al livello di inquinamento (100 − pollution)
+ *   - safetySatisfaction: soddisfazione sulla sicurezza, penalizzata da inquinamento,
+ *                         edifici danneggiati ed eventi catastrofici.
  *
  * I valori vengono aggiornati ogni tick da {@link PopulationManager#updateDemographics}
  * e letti da {@link CityState#resolveTick} per calcolare il malus di felicità (AC-19.4).
