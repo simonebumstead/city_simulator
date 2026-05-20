@@ -69,42 +69,9 @@ public final class UISettings {
 
     /** Carica e applica posizione e dimensioni salvate alla finestra. */
     public static void loadWindowBounds(Stage stage) {
-        if (!Files.exists(CONFIG_PATH)) {
-            stage.setFullScreen(true); // Imposta a schermo intero al primo avvio
-            return;
-        }
-
-        Properties props = new Properties();
-        try (FileInputStream in = new FileInputStream(CONFIG_PATH.toFile())) {
-            props.load(in);
-        } catch (IOException e) {
-            System.err.println("Could not load window settings: " + e.getMessage());
-            stage.setFullScreen(true); // Fallback a schermo intero in caso di errore di caricamento
-            return;
-        }
-
-        try {
-            // Default a schermo intero se la proprietà non esiste (primo avvio con questa versione)
-            boolean fullscreen = Boolean.parseBoolean(props.getProperty("fullscreen", "true"));
-
-            if (fullscreen) {
-                stage.setFullScreen(true); // Applica lo stato di schermo intero salvato
-            } else {
-                // Se non è a schermo intero, controlla se è massimizzato
-                boolean maximized = Boolean.parseBoolean(props.getProperty("maximized", "false"));
-                if (maximized) {
-                    stage.setMaximized(true);
-                } else {
-                    // Altrimenti, imposta le dimensioni e la posizione normali
-                    stage.setX(Double.parseDouble(props.getProperty("x", "100")));
-                    stage.setY(Double.parseDouble(props.getProperty("y", "100")));
-                    stage.setWidth(Double.parseDouble(props.getProperty("width", "1280")));
-                    stage.setHeight(Double.parseDouble(props.getProperty("height", "720")));
-                }
-            }
-        } catch (NumberFormatException e) {
-            System.err.println("Corrupted window settings file: " + e.getMessage());
-            stage.setFullScreen(true); // Fallback a schermo intero in caso di file corrotto
-        }
+        // Per soddisfare la richiesta, impostiamo sempre la finestra massimizzata all'avvio.
+        // Questo permette di avere il gioco a tutto schermo mantenendo visibili la barra degli strumenti
+        // e i pulsanti di controllo della finestra (X, -, ecc.).
+        stage.setMaximized(true);
     }
 }

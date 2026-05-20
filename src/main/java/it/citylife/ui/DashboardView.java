@@ -16,6 +16,7 @@ import it.citylife.ui.components.DialogHelper;
 import it.citylife.ui.components.MapGridView;
 import it.citylife.ui.components.MetricsPanel;
 import it.citylife.ui.components.SimulationControlsBar;
+import it.citylife.ui.components.UISettings;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -133,6 +134,7 @@ public class DashboardView extends Application implements StateObserver {
             // Ignored: if the icon fails to load, the app will run without it. This is not a critical error.
         }
 
+        UISettings.loadWindowBounds(primaryStage);
         primaryStage.show();
         showStartupDialog();
     }
