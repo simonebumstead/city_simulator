@@ -361,7 +361,7 @@ public class City {
         for (int px = 0; px < grid.getWidth(); px++) {
             for (int py = 0; py < grid.getHeight(); py++) {
                 Cell parkCell = grid.getCell(px, py);
-                if (parkCell == null || !(parkCell.getStructure() instanceof Park)) continue;
+                if (parkCell == null || parkCell.isEmpty() || parkCell.getStructure().getType() != StructureType.PARK) continue;
 
                 // AC-05.4: ogni Park riduce l'inquinamento globale
                 state.updatePollution(-PARK_POLLUTION_REDUCTION);
@@ -370,7 +370,7 @@ public class City {
                 for (int rx = 0; rx < grid.getWidth(); rx++) {
                     for (int ry = 0; ry < grid.getHeight(); ry++) {
                         Cell resCell = grid.getCell(rx, ry);
-                        if (resCell == null || !(resCell.getStructure() instanceof ResidentialBuilding)) continue;
+                        if (resCell == null || resCell.isEmpty() || resCell.getStructure().getType() != StructureType.RESIDENTIAL) continue;
                         if (Math.max(Math.abs(px - rx), Math.abs(py - ry)) <= PARK_HAPPINESS_RADIUS) {
                             state.updateHappiness(PARK_HAPPINESS_BONUS);
                         }

@@ -41,7 +41,7 @@ public final class GridQueries {
         for (int px = 0; px < grid.getWidth(); px++) {
             for (int py = 0; py < grid.getHeight(); py++) {
                 Cell pc = grid.getCell(px, py);
-                if (pc != null && pc.getStructure() instanceof PowerPlant
+                if (pc != null && !pc.isEmpty() && pc.getStructure().getType() == StructureType.POWER_PLANT
                         && Math.max(Math.abs(px - x), Math.abs(py - y)) <= POWER_RADIUS) {
                     return true;
                 }
