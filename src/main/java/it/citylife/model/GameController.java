@@ -347,6 +347,12 @@ public class GameController {
             return false;
         }
 
+        // Le strade non possono essere potenziate. Fallimento silenzioso.
+        if (base.getType() == StructureType.ROAD) {
+            // Non impostare lastError per evitare messaggi nella UI
+            return false;
+        }
+
         // AC-16.3: massimo 3 livelli di decorator annidati per struttura
         int currentLevel = (base instanceof StructureDecorator d) ? d.getUpgradeLevel() : 0;
         if (currentLevel >= 3) {

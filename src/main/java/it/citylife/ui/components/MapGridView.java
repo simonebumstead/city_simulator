@@ -191,8 +191,9 @@ public final class MapGridView {
 
         if (!ok && metricsPanel != null) {
             String error = controller.getLastError();
-            metricsPanel.log(error != null && !error.isEmpty() ? error : "Cannot perform this action!",
-                    error != null && !error.isEmpty() ? "#f85149" : "#f9e64f");
+            if (error != null && !error.isEmpty()) {
+                metricsPanel.log(error, "#f85149");
+            }
         }
         updateGrid();
         // metricsPanel.update() è chiamato da DashboardView.onStateChanged() via Observer — non serve qui

@@ -177,7 +177,7 @@ class GameControllerTest {
     @Test
     @DisplayName("Waste Thermal Upgrade non può essere applicato a un edificio diverso da Waste Center")
     void testWasteThermalUpgradeOnlyOnWasteCenter() {
-        controller.placeBuilding("ROAD", 0, 0); // Piazziamo una strada
+        controller.placeBuilding("HOSPITAL", 0, 0); // Usiamo un edificio potenziabile ma non corretto
         boolean result = controller.upgradeBuilding(0, 0, "WASTE_THERMAL");
         assertFalse(result);
         assertEquals("Waste Thermal Upgrade can only be applied to a Waste Center.", controller.getLastError());
@@ -186,10 +186,10 @@ class GameControllerTest {
     @Test
     @DisplayName("Seismic Upgrade viene applicato correttamente a un edificio valido")
     void testSeismicUpgradeSuccess() {
-        controller.placeBuilding("ROAD", 0, 0); // cost = 100, budget = 4900
+        controller.placeBuilding("HOSPITAL", 0, 0); // cost = 1200, budget = 3800
         boolean result = controller.upgradeBuilding(0, 0, "SEISMIC"); // cost = 500
         assertTrue(result);
-        assertEquals(4400.0, controller.getState().getBudget(), 0.001);
+        assertEquals(3300.0, controller.getState().getBudget(), 0.001);
 
         Structure s = (Structure) controller.getGrid().getCell(0, 0).getStructure();
         assertTrue(s instanceof SeismicUpgrade);
