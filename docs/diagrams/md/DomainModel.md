@@ -237,11 +237,13 @@ classDiagram
     %% ==========================================
     
     %% Aggregation & Composition
-    GameController "1" o-- "1" City : controls
-    City "1" o-- "1" Grid : contains
-    City "1" o-- "1" CityState : tracks
-    City "1" o-- "1" PowerNetwork : manages
-    City "1" o-- "1" DisasterManager : uses
+    GameController "1" *-- "1" City : controls
+    City "1" *-- "1" Grid : contains
+    City "1" *-- "1" CityState : tracks
+    City "1" *-- "1" PowerNetwork : manages
+    City "1" *-- "1" DisasterManager : uses
+    
+    %% Aggregation
     City "1" o-- "1" PolicyStrategy : applies
     
     Grid "1" *-- "0..*" Cell : composed of

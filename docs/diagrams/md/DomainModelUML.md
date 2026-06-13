@@ -9,9 +9,10 @@ class Cell
 class CityState
 class PowerNetwork
 class DisasterManager
-class Policy
+class PolicyStrategy
 
 ' --- Strutture ---
+interface Placeable
 class Structure
 class ResidentialBuilding
 class IndustrialBuilding
@@ -24,11 +25,12 @@ City *-- Grid : contains
 City *-- CityState : tracks
 City *-- PowerNetwork : manages
 City *-- DisasterManager : uses
-City o-- Policy : active policy
+City o-- PolicyStrategy : active policy
 
 Grid *-- Cell : composed of
-Cell o-- Structure : holds
+Cell o-- Placeable : holds
 
+Placeable <|.. Structure
 Structure <|-- ResidentialBuilding
 Structure <|-- IndustrialBuilding
 Structure <|-- PowerPlant

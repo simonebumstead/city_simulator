@@ -131,14 +131,22 @@ class BuildingFactory {
 Placeable <|.. Structure
 DisasterObserver <|.. Structure
 
-GameController "1" o-- "1" City : controls
-City "1" o-- "1" Grid : contains
-City "1" o-- "1" CityState : tracks
-City "1" o-- "1" PowerNetwork : manages
-City "1" o-- "1" DisasterManager : uses
+' GameController owns the City (Composition)
+GameController "1" *-- "1" City : controls
+
+' City components (Composition)
+City "1" *-- "1" Grid : contains
+City "1" *-- "1" CityState : tracks
+City "1" *-- "1" PowerNetwork : manages
+City "1" *-- "1" DisasterManager : uses
+
+' City has an active policy (Aggregation)
 City "1" o-- "1" PolicyStrategy : applies
 
+' Grid owns Cells (Composition)
 Grid "1" *-- "*" Cell : composed of
+
+' Cell aggregates Placeable (Aggregation, can be moved/destroyed)
 Cell "1" o-- "0..1" Placeable : holds
 
 Structure <|-- ResidentialBuilding
