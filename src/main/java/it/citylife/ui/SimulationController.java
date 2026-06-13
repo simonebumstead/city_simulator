@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import it.citylife.model.GameController;
-import it.citylife.model.PolicyStrategy;
-import it.citylife.model.StateObserver; 
+import it.citylife.model.core.GameController;
+import it.citylife.model.policies.PolicyStrategy;
+import it.citylife.model.structures.upgrades.StateObserver;
+import it.citylife.model.core.CityState;
+import it.citylife.model.grid.Grid;
+import it.citylife.model.grid.GridQueries;
 
 /**
  * Facade leggero tra il layer UI e {@link GameController}.
@@ -89,7 +92,7 @@ public class SimulationController {
 
     /** True se la cella (x, y) è coperta da una PowerPlant. */
     public boolean isPowered(int x, int y) {
-        return it.citylife.model.GridQueries.isPoweredAt(controller.getGrid(), x, y);
+        return GridQueries.isPoweredAt(controller.getGrid(), x, y);
     }
 
     /**
@@ -147,7 +150,7 @@ public class SimulationController {
      *
      * @return la griglia 20×20 corrente
      */
-    public it.citylife.model.Grid getGrid() {
+    public Grid getGrid() {
         return controller.getGrid();
     }
 
@@ -156,7 +159,7 @@ public class SimulationController {
      *
      * @return il CityState con tutte le metriche aggiornate
      */
-    public it.citylife.model.CityState getState() {
+    public CityState getState() {
         return controller.getState();
     }
 

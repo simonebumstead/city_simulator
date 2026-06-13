@@ -1,5 +1,9 @@
 package it.citylife.model;
 
+import it.citylife.model.core.GameController;
+import it.citylife.model.structures.Structure;
+import it.citylife.model.structures.StructureType;
+import it.citylife.model.structures.upgrades.StructureDecorator;
 import org.junit.jupiter.api.*;
 import java.io.IOException;
 import java.nio.file.*;

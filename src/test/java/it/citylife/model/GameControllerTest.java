@@ -1,6 +1,16 @@
 package it.citylife.model;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import it.citylife.model.core.GameController;
+import it.citylife.model.grid.Cell;
+import it.citylife.model.policies.AusterityPolicy;
+import it.citylife.model.policies.DefaultPolicy;
+import it.citylife.model.policies.FossilFuelPolicy;
+import it.citylife.model.policies.GreenPolicy;
+import it.citylife.model.structures.Structure;
+import it.citylife.model.structures.upgrades.SeismicUpgrade;
+import it.citylife.model.structures.upgrades.WasteThermalUpgrade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,9 @@
 package it.citylife.model;
 
+import it.citylife.model.grid.Grid;
+import it.citylife.model.grid.GridQueries;
+import it.citylife.model.structures.BuildingFactory;
+import it.citylife.model.structures.Structure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

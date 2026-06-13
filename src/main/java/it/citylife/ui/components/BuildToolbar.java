@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import it.citylife.model.StructureType;
+import it.citylife.model.structures.StructureType;
 import it.citylife.ui.SimulationController;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;

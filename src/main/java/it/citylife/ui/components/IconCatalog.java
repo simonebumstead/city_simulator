@@ -2,7 +2,7 @@ package it.citylife.ui.components;
 
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
-import it.citylife.model.StructureType;
+import it.citylife.model.structures.StructureType;
 import javafx.scene.paint.Color;
 
 /** Mapping tra {@link StructureType} e relativa icona / colore / etichetta UI. */

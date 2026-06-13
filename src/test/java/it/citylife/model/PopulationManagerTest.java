@@ -2,6 +2,10 @@ package it.citylife.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import it.citylife.model.core.CityState;
+import it.citylife.model.core.PopulationGroup;
+import it.citylife.model.core.PopulationManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,7 +32,7 @@ import org.junit.jupiter.api.Test;
  */
 class PopulationManagerTest {
 
-    private CityState       state;
+    private CityState state;
     private PopulationManager manager;
 
     @BeforeEach

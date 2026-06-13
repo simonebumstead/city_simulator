@@ -1,5 +1,9 @@
 package it.citylife.model;
 
+import it.citylife.model.core.CityState;
+import it.citylife.model.policies.DefaultPolicy;
+import it.citylife.model.policies.GreenPolicy;
+import it.citylife.model.policies.PolicyModifiers;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 

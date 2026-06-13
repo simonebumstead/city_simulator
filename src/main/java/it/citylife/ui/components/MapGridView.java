@@ -7,11 +7,11 @@ import java.util.function.Supplier;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import it.citylife.model.Cell;
-import it.citylife.model.Road;
-import it.citylife.model.Structure;
-import it.citylife.model.StructureDecorator;
-import it.citylife.model.StructureType;
+import it.citylife.model.grid.Cell;
+import it.citylife.model.structures.Road;
+import it.citylife.model.structures.Structure;
+import it.citylife.model.structures.upgrades.StructureDecorator;
+import it.citylife.model.structures.StructureType;
 import it.citylife.ui.SimulationController;
 import javafx.application.Platform;
 import javafx.geometry.Insets;

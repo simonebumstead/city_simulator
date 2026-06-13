@@ -3,8 +3,8 @@ package it.citylife.ui.components;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import it.citylife.model.CityState;
-import it.citylife.model.PopulationGroup;
+import it.citylife.model.core.CityState;
+import it.citylife.model.core.PopulationGroup;
 import it.citylife.ui.SimulationController;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;

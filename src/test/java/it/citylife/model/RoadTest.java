@@ -1,5 +1,10 @@
 package it.citylife.model;
 
+import it.citylife.model.core.CityState;
+import it.citylife.model.core.PowerNetwork;
+import it.citylife.model.policies.DefaultPolicy;
+import it.citylife.model.structures.Road;
+import it.citylife.model.structures.StructureType;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 

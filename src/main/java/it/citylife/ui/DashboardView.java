@@ -3,13 +3,12 @@ package it.citylife.ui;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import it.citylife.model.CityState;
-import it.citylife.model.StateObserver;
+import it.citylife.model.core.CityState;
+import it.citylife.model.structures.upgrades.StateObserver;
 import it.citylife.ui.components.BuildToolbar;
 import it.citylife.ui.components.DashboardChart;
 import it.citylife.ui.components.DialogHelper;

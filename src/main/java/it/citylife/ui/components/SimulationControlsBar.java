@@ -5,11 +5,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import it.citylife.model.AusterityPolicy;
-import it.citylife.model.DefaultPolicy;
-import it.citylife.model.FossilFuelPolicy;
-import it.citylife.model.GreenPolicy;
-import it.citylife.model.PolicyStrategy;
+import it.citylife.model.policies.AusterityPolicy;
+import it.citylife.model.policies.DefaultPolicy;
+import it.citylife.model.policies.FossilFuelPolicy;
+import it.citylife.model.policies.GreenPolicy;
+import it.citylife.model.policies.PolicyStrategy;
 import it.citylife.ui.SimulationController;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;

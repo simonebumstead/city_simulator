@@ -1,5 +1,9 @@
 package it.citylife.model;
 
+import it.citylife.model.grid.Grid;
+import it.citylife.model.structures.Road;
+import it.citylife.model.structures.Structure;
+import it.citylife.model.structures.StructureType;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 

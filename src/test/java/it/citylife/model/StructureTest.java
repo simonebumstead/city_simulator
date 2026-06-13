@@ -1,5 +1,6 @@
 package it.citylife.model;
 
+import it.citylife.model.structures.ResidentialBuilding;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 

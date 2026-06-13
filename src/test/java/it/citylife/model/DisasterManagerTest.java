@@ -1,5 +1,8 @@
 package it.citylife.model;
 
+import it.citylife.model.core.CityState;
+import it.citylife.model.disasters.DisasterManager;
+import it.citylife.model.disasters.DisasterObserver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
