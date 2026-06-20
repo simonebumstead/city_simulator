@@ -74,8 +74,6 @@ Il giocatore può attivare in qualsiasi momento una delle 4 ordinanze disponibil
 
 **Demolizione** — Il giocatore può demolire qualsiasi struttura pagando il 10% del suo costo; riceve in cambio il 60% (rimborso netto: +50% del costo originale).
 
-## Documentazione
-Tutta la documentazione è nella cartella [docs](docs).
 
 ---
 
@@ -140,3 +138,13 @@ Il progetto non utilizza API HTTP/REST esterne né servizi di rete.
 Tutte le funzionalità si basano su:
 - **File system locale** — i salvataggi vengono scritti nella cartella `saves/` come file JSON (`save_<timestamp>.json`)
 - **Librerie Maven locali** — le dipendenze sono risolte dal repository Maven Central al momento del build
+
+
+---
+## Documentazione
+Tutta la documentazione è nella cartella [docs](docs).
+
+- [**Design Document**](docs/DesignDocument.md): Architettura completa del sistema, diagrammi delle classi e diagrammi di sequenza (versione definitiva).
+- [**System Test Report**](docs/SystemTestReport.md): Report dettagliato dell'esecuzione dei test di sistema e verifica della copertura di tutti i 67 Acceptance Criteria.
+
+
