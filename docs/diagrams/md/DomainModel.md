@@ -66,6 +66,16 @@ classDiagram
         +triggerEarthquake()
     }
 
+    class PopulationManager {
+        +updateDemographics()
+    }
+
+    class PopulationGroup {
+        -jobSatisfaction: double
+        -healthSatisfaction: double
+        -safetySatisfaction: double
+    }
+
     %% --- LOGICAL RELATIONSHIPS ---
     City "1" *-- "1" Grid : contains
     City "1" *-- "1" CityState : tracks
@@ -73,6 +83,10 @@ classDiagram
     City "1" *-- "1" DisasterManager : handles events
     
     City "1" o-- "1" PolicyStrategy : applies policy
+    City ..> PopulationManager : updates demographics
+
+    CityState "1" *-- "1" PopulationGroup : measures
+    PopulationManager ..> PopulationGroup : updates
     
     Grid "1" *-- "400" Cell : composed of
     

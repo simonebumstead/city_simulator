@@ -55,11 +55,8 @@ sequenceDiagram
     
     opt Imposta Politica
         Player->>System: setPolicy(policyType)
-        alt Cooldown passato
-            System-->>Player: status: "OK"
-        else Policy non applicabile / In cooldown
-            System-->>Player: status: "Error: [reason]"
-        end
+        System-->>Player: status: "OK"
+        Note right of System: Applica la nuova policy attiva<br/>(null ripristina la DefaultPolicy).
     end
 ```
 

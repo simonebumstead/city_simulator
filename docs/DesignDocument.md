@@ -72,6 +72,16 @@ classDiagram
         +triggerEarthquake()
     }
 
+    class PopulationManager {
+        +updateDemographics()
+    }
+
+    class PopulationGroup {
+        -jobSatisfaction: double
+        -healthSatisfaction: double
+        -safetySatisfaction: double
+    }
+
     %% --- LOGICAL RELATIONSHIPS ---
     City "1" *-- "1" Grid : contains
     City "1" *-- "1" CityState : tracks
@@ -79,6 +89,10 @@ classDiagram
     City "1" *-- "1" DisasterManager : handles events
     
     City "1" o-- "1" PolicyStrategy : applies policy
+    City ..> PopulationManager : updates demographics
+
+    CityState "1" *-- "1" PopulationGroup : measures
+    PopulationManager ..> PopulationGroup : updates
     
     Grid "1" *-- "400" Cell : composed of
     
@@ -156,11 +170,8 @@ sequenceDiagram
     
     opt Imposta Politica
         Player->>System: setPolicy(policyType)
-        alt Cooldown passato
-            System-->>Player: status: "OK"
-        else Policy non applicabile / In cooldown
-            System-->>Player: status: "Error: [reason]"
-        end
+        System-->>Player: status: "OK"
+        Note right of System: Applica la nuova policy attiva<br/>(null ripristina la DefaultPolicy).
     end
 ```
 
@@ -471,7 +482,7 @@ classDiagram
     }
 
     class SimulationController {
-        -view: DashboardView
+        <<Facade>>
         -gameController: GameController
     }
 
@@ -520,7 +531,7 @@ classDiagram
     }
 
     %% Relazioni interne UI
-    SimulationController "1" *-- "1" DashboardView : manages
+    DashboardView "1" *-- "1" SimulationController : drives
     DashboardView "1" *-- "1" MapGridView : contains
     DashboardView "1" *-- "1" MetricsPanel : contains
     DashboardView "1" *-- "1" SimulationControlsBar : contains

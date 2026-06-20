@@ -278,7 +278,7 @@ classDiagram
     }
 
     class SimulationController {
-        -view: DashboardView
+        <<Facade>>
         -gameController: GameController
     }
 
@@ -327,7 +327,7 @@ classDiagram
     }
 
     %% Relazioni interne UI
-    SimulationController "1" *-- "1" DashboardView : manages
+    DashboardView "1" *-- "1" SimulationController : drives
     DashboardView "1" *-- "1" MapGridView : contains
     DashboardView "1" *-- "1" MetricsPanel : contains
     DashboardView "1" *-- "1" SimulationControlsBar : contains
