@@ -3,7 +3,7 @@ package it.citylife.model.core;
 import it.citylife.model.policies.PolicyModifiers;
 
 /**
- * POJO che rappresenta le soddisfazioni demografiche del gruppo di popolazione (AC-19.1).
+ * POJO che rappresenta le soddisfazioni demografiche del gruppo di popolazione (AC-25.1).
  *
  * Contiene tre indici di soddisfazione, ciascuno nel range [0, 100]:
  *   - jobSatisfaction:    soddisfazione lavorativa, dipende dal rapporto tra
@@ -14,7 +14,7 @@ import it.citylife.model.policies.PolicyModifiers;
  *                         edifici danneggiati ed eventi catastrofici.
  *
  * I valori vengono aggiornati ogni tick da {@link PopulationManager#updateDemographics}
- * e letti da {@link CityState#resolveTick} per calcolare il malus di felicità (AC-19.4).
+ * e letti da {@link CityState#resolveTick} per calcolare il malus di felicità (AC-25.1).
  * Sono inoltre esposti alla UI tramite {@link CityState#getPopulationGroup()}.
  *
  * Tutti i setter applicano il clamping [0, 100] automaticamente.

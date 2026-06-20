@@ -40,7 +40,7 @@ public abstract class Structure implements Placeable, DisasterObserver {
     // True se la struttura è coperta da una PowerPlant nel raggio di 5 celle (aggiornato ogni tick)
     protected boolean powered = true;
 
-    // Punti vita persi ogni tick per invecchiamento naturale (AC-15.1)
+    // Punti vita persi ogni tick per invecchiamento naturale (AC-23.1)
     private static final int HP_DECAY_PER_TICK = 1;
 
     /**
@@ -55,7 +55,7 @@ public abstract class Structure implements Placeable, DisasterObserver {
     }
 
     /**
-     * Applica il decadimento naturale degli HP per il tick corrente (AC-15.1).
+     * Applica il decadimento naturale degli HP per il tick corrente (AC-23.1).
      * Riduce gli HP di HP_DECAY_PER_TICK se la struttura non è già distrutta.
      */
     public void decayTick() {
@@ -68,7 +68,7 @@ public abstract class Structure implements Placeable, DisasterObserver {
      * Infligge danno alla struttura, riducendo gli HP senza scendere sotto zero.
      *
      * Questo metodo è virtuale: SeismicUpgrade lo sovrascrive per dimezzare il danno.
-     * onEarthquake() chiama takeDamage() garantendo il dispatch virtuale (AC-14.2).
+     * onEarthquake() chiama takeDamage() garantendo il dispatch virtuale (AC-24.2).
      *
      * @param amount il danno da infliggere
      * @return gli HP rimanenti dopo il danno
@@ -131,7 +131,7 @@ public abstract class Structure implements Placeable, DisasterObserver {
     }
 
     /**
-     * Punto di notifica per gli eventi sismici (AC-14.2).
+     * Punto di notifica per gli eventi sismici (AC-11.3).
      * Gestisce l'effetto del disastro su questa struttura invocando il metodo
      * per il calcolo dei danni.
      *

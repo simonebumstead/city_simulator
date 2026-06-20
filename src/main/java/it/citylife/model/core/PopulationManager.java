@@ -9,7 +9,7 @@ package it.citylife.model.core;
  * [MAX_DECLINE, MAX_GROWTH]. La crescita è bloccata
  * se nessun edificio residenziale è alimentato.
  *
- * Ogni tick aggiorna anche le tre soddisfazioni del {@link PopulationGroup} (AC-19.2/19.3):
+ * Ogni tick aggiorna anche le tre soddisfazioni del {@link PopulationGroup} (AC-25.2/25.3):
  *   - jobSatisfaction:    ((industrial × 200) + (commercial × 50)) / population × 100
  *   - healthSatisfaction: (hospital × 400) / population × 100
  *   - safetySatisfaction: 100 − pollution − (criticalBuildings × 5) − (terremoto ? 50 : 0)
@@ -51,7 +51,7 @@ public class PopulationManager {
      * Aggiorna la popolazione e le soddisfazioni demografiche per il tick corrente.
      *
      * Sequenza di operazioni:
-     *   1. Calcola e aggiorna le soddisfazioni del PopulationGroup (AC-19.2/19.3)
+     *   1. Calcola e aggiorna le soddisfazioni del PopulationGroup (AC-25.2/25.3)
      *   2. Calcola il delta demografico pesato su happiness, health e pollution
      *   3. Azzera l'effetto della felicità se la salute è critica (< 20)
      *   4. Blocca la crescita se nessun Residential è alimentato
@@ -69,7 +69,7 @@ public class PopulationManager {
     public void updateDemographics(CityState state, boolean hasPowerNearby, int maxCapacity,
             int industrialCount, int commercialCount, int hospitalCount, int residentialCount) {
 
-        // AC-19.2/19.3: aggiorna le soddisfazioni del gruppo demografico
+        // AC-25.2/25.3: aggiorna le soddisfazioni del gruppo demografico
         PopulationGroup pg = state.getPopulationGroup();
         int currentPop = state.getPopulation();
         

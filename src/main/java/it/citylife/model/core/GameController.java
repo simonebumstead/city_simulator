@@ -196,7 +196,7 @@ public class GameController {
     }
 
     /**
-     * Demolisce la struttura nella cella (x, y) applicando costi e rimborso (AC-21.2).
+     * Demolisce la struttura nella cella (x, y) applicando costi e rimborso (AC-21.1, AC-21.2).
      *
      * Costo demolizione:  10% del costo di costruzione della struttura.
      * Rimborso materiali: 60% del costo di costruzione.
@@ -218,7 +218,7 @@ public class GameController {
         }
 
         if (cell.getStructure() instanceof Structure s) {
-            // Costo demolizione = 10% del valore di costruzione (AC-07.3)
+            // Costo demolizione = 10% del valore di costruzione (AC-21.1)
             int demolitionCost = s.getConstructionCost() / 10;
             if (city.getState().getBudget() < demolitionCost) {
                 lastError = "Insufficient budget to demolish! Cost: " + demolitionCost + "$";
@@ -239,9 +239,9 @@ public class GameController {
     }
 
     /**
-     * Ripara completamente la struttura nella cella (x, y) (AC-15.3).
+     * Ripara completamente la struttura nella cella (x, y) (AC-23.3).
      *
-     * Costo riparazione: (maxHp − hp correnti) × 2.
+     * Costo riparazione: (maxHp − hp correnti) / 2.
      * Se la struttura è distrutta (HP = 0) o già integra (HP = maxHp), l'operazione
      * viene rifiutata. Richiede budget sufficiente.
      *
@@ -269,7 +269,7 @@ public class GameController {
                 return false;
             }
 
-            // Costo proporzionale ai danni subiti: (maxHp − hp) / 2 (AC-15.3)
+            // Costo proporzionale ai danni subiti: (maxHp − hp) / 2 (AC-23.3)
             int repairCost = (s.getMaxHp() - s.getHp()) / 2;
             if (city.getState().getBudget() < repairCost) {
                 lastError = "Insufficient budget to repair! Cost: " + repairCost + "$";
@@ -332,11 +332,11 @@ public class GameController {
     }
 
     /**
-     * Applica un upgrade alla struttura nella cella (x, y) avvolgendola in un Decorator (AC-16.1).
+     * Applica un upgrade alla struttura nella cella (x, y) avvolgendola in un Decorator (AC-24.1).
      *
      * Validazioni in ordine:
      *   1. La cella deve contenere una struttura
-     *   2. Il livello di upgrade corrente non deve superare 3 (AC-16.3)
+     *   2. Il livello di upgrade corrente non deve superare 3 (AC-24.4)
      *   3. Il tipo di upgrade deve essere riconosciuto (SEISMIC o WASTE_THERMAL)
      *   4. Il budget deve coprire il costo dell'upgrade
      *
@@ -367,7 +367,7 @@ public class GameController {
             return false;
         }
 
-        // AC-16.3: massimo 3 livelli di decorator annidati per struttura
+        // AC-24.4: massimo 3 livelli di decorator annidati per struttura
         int currentLevel = (base instanceof StructureDecorator d) ? d.getUpgradeLevel() : 0;
         if (currentLevel >= 3) {
             lastError = "Maximum upgrade level (3) reached for this building.";

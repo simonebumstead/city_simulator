@@ -5,14 +5,14 @@ import it.citylife.model.core.CityState;
 import it.citylife.model.core.PowerNetwork;
 
 /**
- * Centro di gestione dei rifiuti: riduce il livello di rifiuti accumulati in città (AC-18.3).
+ * Centro di gestione dei rifiuti: riduce il livello di rifiuti accumulati in città (AC-30.3).
  *
  * Richiede alimentazione elettrica per funzionare; se spento non produce alcun effetto.
  * Ogni centro attivo riduce il deltaWaste di WASTE_REDUCTION_PER_TICK (−10/tick),
  * contrastando i rifiuti generati dagli edifici residenziali (+1/tick ciascuno).
  *
- * Può essere potenziato con {@link WasteThermalUpgrade} (AC-18.4), che aggiunge
- * ulteriori −15 waste/tick e un bonus di +50 budget/tick grazie al recupero
+ * Può essere potenziato con {@link WasteThermalUpgrade} (AC-30.4), che aggiunge
+ * ulteriori −5 waste/tick e un bonus di +50 budget/tick grazie al recupero
  * energetico dai rifiuti trattati.
  *
  * Effetti per tick (quando alimentato):

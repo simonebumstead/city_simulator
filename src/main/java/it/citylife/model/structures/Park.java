@@ -10,8 +10,8 @@ import it.citylife.model.core.CityState;
  * Non richiede alimentazione elettrica né connessione stradale per funzionare.
  * Oltre agli effetti diretti applicati da applyEffects(), il parco partecipa
  * a un secondo passaggio in City.applyParkEffects(), che applica:
- *   - AC-05.4: riduzione aggiuntiva dell'inquinamento globale (−3/tick)
- *   - AC-05.3: bonus happiness (+2/tick) a ogni ResidentialBuilding entro
+ *   - AC-28.3: riduzione aggiuntiva dell'inquinamento globale (−3/tick)
+ *   - AC-28.2: bonus happiness (+2/tick) a ogni ResidentialBuilding entro
  *     una distanza di Chebyshev di 3 celle
  *
  * Effetti diretti per tick (applyEffects):
@@ -38,8 +38,8 @@ public class Park extends Structure {
     /**
      * Applica gli effetti diretti del parco allo stato della città per il tick corrente.
      *
-     * Gli effetti di prossimità ai Residential (AC-05.3) e la riduzione aggiuntiva
-     * di inquinamento (AC-05.4) vengono gestiti separatamente da City.applyParkEffects().
+     * Gli effetti di prossimità ai Residential (AC-28.2) e la riduzione aggiuntiva
+     * di inquinamento (AC-28.3) vengono gestiti separatamente da City.applyParkEffects().
      *
      * @param state lo stato della città su cui accumulare i delta
      * @param power la rete elettrica (non utilizzata dal parco, non consuma energia)

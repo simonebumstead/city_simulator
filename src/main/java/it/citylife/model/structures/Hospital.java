@@ -12,7 +12,7 @@ import it.citylife.model.core.CityState;
  * Non richiede connessione stradale per applicare i propri effetti.
  *
  * L'ospedale contribuisce al calcolo della healthSatisfaction del gruppo demografico
- * (AC-19.2): ogni ospedale copre fino a 200 residenti prima che la soddisfazione
+ * (AC-25.3): ogni ospedale copre fino a 200 residenti prima che la soddisfazione
  * sanitaria inizi a calare (la logica in PopulationManager usa 400 residenti).
  *
  * Effetti per tick (quando alimentato):

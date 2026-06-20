@@ -21,9 +21,13 @@ classDiagram
         +placeBuilding(type: String, x: int, y: int) boolean
         +demolish(x: int, y: int) boolean
         +repair(x: int, y: int) boolean
+        +repairAll() boolean
         +upgradeBuilding(x: int, y: int, upgradeType: String) boolean
         +changePolicy(policy: PolicyStrategy)
         +advanceTick()
+        +saveManualGame(tick: int) Path
+        +loadGame(path: Path) int
+        +listSaves() List~Path~
     }
     
     class City {
@@ -40,8 +44,8 @@ classDiagram
     }
 
     class Grid {
-        -width: int
-        -height: int
+        -WIDTH: int$
+        -HEIGHT: int$
         -matrix: Cell[][]
         +getCell(x: int, y: int) Cell
         +placeStructure(s: Structure, x: int, y: int)
@@ -68,15 +72,22 @@ classDiagram
         -pollution: double
         -health: double
         -wasteLevel: int
+        -populationGroup: PopulationGroup
         +resolveTick(modifiers: PolicyModifiers)
         +updateBudget(amount: double)
     }
 
+    class PopulationGroup {
+        -jobSatisfaction: double
+        -healthSatisfaction: double
+        -safetySatisfaction: double
+    }
+
     class PowerNetwork {
-        -totalGenerated: int
-        -totalConsumed: int
-        +registerProducer(amount: int)
-        +registerConsumer(amount: int)
+        -totalProduction: int
+        -totalConsumption: int
+        +addProduction(amount: int)
+        +addConsumption(amount: int)
         +hasEnoughPower() boolean
         +reset()
     }
@@ -93,7 +104,7 @@ classDiagram
     }
 
     class PopulationManager {
-        +updateDemographics()
+        +updateDemographics(state: CityState, hasPowerNearby: boolean, maxCapacity: int, industrialCount: int, commercialCount: int, hospitalCount: int, residentialCount: int)
     }
 
     class GridQueries {
@@ -108,11 +119,13 @@ classDiagram
     City "1" *-- "1" PowerNetwork : owns
     City "1" *-- "1" DisasterManager : owns
     Grid "1" *-- "400" Cell : composed of
+    CityState "1" *-- "1" PopulationGroup : measures
     
     GameController ..> SaveLoadManager : uses
     GameController ..> GridQueries : uses
     City ..> PopulationManager : uses
     City ..> GridQueries : uses
+    PopulationManager ..> PopulationGroup : updates
     SaveLoadManager ..> City : reads/writes
     Cell o-- Placeable : holds
 ```
@@ -146,22 +159,19 @@ classDiagram
         <<abstract>>
         #hp: int
         #maxHp: int
-        #constructionCost: int
         #powered: boolean
         #connectedToRoad: boolean
         +applyEffects(state: CityState, powerNet: PowerNetwork)*
         +getType() StructureType*
-        +takeDamage(damage: int)
+        +getConstructionCost() int*
+        +decayTick()
+        +takeDamage(damage: int) int
+        +repair(amount: int)
         +fullRepair()
     }
 
-    class ResidentialBuilding {
-        -capacity: int
-        -residents: int
-    }
-    class IndustrialBuilding {
-        -jobsProvided: int
-    }
+    class ResidentialBuilding
+    class IndustrialBuilding
     class CommercialBuilding
     class PowerPlant
     class Park
@@ -179,6 +189,7 @@ classDiagram
     class BuildingFactory {
         <<utility>>
         +createBuilding(type: String)$ Structure
+        +applyUpgrade(base: Structure, upgradeName: String)$ Structure
     }
 
     Structure ..|> Placeable
@@ -220,13 +231,20 @@ classDiagram
     }
     class DisasterObserver {
         <<interface>>
-        +onEarthquake(magnitude: int)
+        +onEarthquake(damage: int)
     }
 
     class PolicyModifiers {
-        -pollutionMultiplier: double
+        -pollutionGenerationMultiplier: double
+        -happinessGenerationMultiplier: double
+        -healthGenerationMultiplier: double
+        -wasteGenerationMultiplier: double
+        -industrialBudgetMultiplier: double
+        -industrialPollutionMultiplier: double
+        -fixedHappinessChange: double
+        -fixedHealthChange: double
+        -fixedPollutionChange: double
         -fixedBudgetChange: int
-        -happinessBonus: double
     }
 
     class DefaultPolicy

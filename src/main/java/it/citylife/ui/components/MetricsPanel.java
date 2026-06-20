@@ -129,7 +129,7 @@ public final class MetricsPanel {
         applyAlerts(s);
     }
 
-    /** Colora di rosso le metriche oltre soglia critica (AC-04.4/13.3). */
+    /** Colora di rosso le metriche oltre soglia critica (AC-10.1). */
     public void applyAlerts(CityState s) {
         budgetLabel.setStyle("-fx-text-fill: "    + (s.getBudget()    <  500 ? "#f85149" : "#facc15") + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");
         happinessLabel.setStyle("-fx-text-fill: " + (s.getHappiness() <   25 ? "#f85149" : "#fb923c") + "; -fx-font-size: 13px; -fx-graphic-text-gap: 8;");

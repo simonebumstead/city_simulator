@@ -4,12 +4,12 @@ import it.citylife.model.core.GameController;
 import it.citylife.model.structures.Structure;
 
 /**
- * Decorator che applica un rinforzo antisismico alla struttura avvolta (AC-16.2).
+ * Decorator che applica un rinforzo antisismico alla struttura avvolta (AC-24.1).
  *
  * Sovrascrive takeDamage() dimezzando qualsiasi danno ricevuto, con un minimo
  * di 1 per garantire che la struttura possa comunque deteriorarsi nel tempo.
  * Il dimezzamento si applica anche ai danni da terremoto grazie al dispatch
- * virtuale su Structure.onEarthquake() → takeDamage() (AC-14.2).
+ * virtuale su Structure.onEarthquake() → takeDamage() (AC-24.2).
  *
  * Tutti gli altri comportamenti (applyEffects, HP, tipo, costo) sono delegati
  * alla struttura avvolta tramite StructureDecorator.

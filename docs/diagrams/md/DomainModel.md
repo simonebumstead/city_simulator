@@ -33,17 +33,14 @@ classDiagram
     class Structure {
         <<abstract>>
         -hp: int
-        -constructionCost: int
+        -maxHp: int
         -powered: boolean
         -connectedToRoad: boolean
         +applyEffects()
+        +getConstructionCost()
     }
 
-    class ResidentialBuilding {
-        -capacity: int
-        -residents: int
-    }
-
+    class ResidentialBuilding
     class CommercialBuilding
     class IndustrialBuilding
     class PowerPlant
@@ -53,8 +50,8 @@ classDiagram
     class Road
 
     class PowerNetwork {
-        -totalGenerated: int
-        -totalConsumed: int
+        -totalProduction: int
+        -totalConsumption: int
     }
 
     class PolicyStrategy {

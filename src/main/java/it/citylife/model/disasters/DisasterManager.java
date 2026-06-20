@@ -23,7 +23,7 @@ import java.util.Random;
  * garantendo che terremoti forti siano significativamente più devastanti di quelli lievi.
  * Esempio: magnitudo 4 → 80 HP, magnitudo 7 → ~245 HP (su edifici con 200–500 HP totali).
  * Gli edifici dotati di SeismicUpgrade subiscono la metà del danno grazie al
- * dispatch virtuale dell'evento (es. onEarthquake() → takeDamage()) (AC-14.2).
+ * dispatch virtuale dell'evento (es. onEarthquake() → takeDamage()) (AC-24.2).
  *
  * @see City#updateState()
  * @see DisasterObserver
@@ -31,7 +31,7 @@ import java.util.Random;
  */
 public class DisasterManager {
 
-    // AC-14.1: probabilità di terremoto per tick; valore nominato per facilitare il bilanciamento
+    // AC-11.1: probabilità di terremoto per tick; valore nominato per facilitare il bilanciamento
     public static final double EARTHQUAKE_PROBABILITY = 0.01;
 
     // Generatore casuale per la magnitudo del terremoto

@@ -12,16 +12,16 @@ import it.citylife.model.core.PowerNetwork;
  * Deve essere adiacente a una Road per essere piazzato (vincolo di GameController.placeBuilding).
  *
  * Ogni edificio residenziale alimentato contribuisce alla capacità abitativa (+200 per edificio)
- * e genera rifiuti (AC-18.1): la convivenza di più persone produce scarti domestici
+ * e genera rifiuti (AC-30.1): la convivenza di più persone produce scarti domestici
  * che si accumulano in CityState.wasteLevel.
  *
- * È il tipo di edificio su cui agiscono i bonus di prossimità dei parchi (AC-05.3)
+ * È il tipo di edificio su cui agiscono i bonus di prossimità dei parchi (AC-28.2)
  * e le soddisfazioni demografiche calcolate da PopulationManager (AC-19).
  *
  * Effetti per tick (quando alimentato):
  *   - Budget:    +2 (tasse comunali dai residenti)
  *   - Happiness: +0.2
- *   - Waste:     +1.0 (AC-18.1)
+ *   - Waste:     +1.0 (AC-30.1)
  *   - Consumo:   5 unità di energia
  *
  * Costo di costruzione: 500. HP massimi: 300.
@@ -57,7 +57,7 @@ public class ResidentialBuilding extends Structure {
 
         state.updateBudget(2);      // Gettito fiscale comunale dai residenti
         state.updateHappiness(0.2); // I cittadini contribuiscono al tessuto sociale della città
-        state.updateWaste(1.0);     // AC-18.1: ogni edificio residenziale genera 1 unità di rifiuti/tick
+        state.updateWaste(1.0);     // AC-30.1: ogni edificio residenziale genera 1 unità di rifiuti/tick
         power.addConsumption(5);    // Consumo domestico: illuminazione, riscaldamento, elettrodomestici
     }
 

@@ -24,7 +24,7 @@ public class CityState {
     // Popolazione iniziale alla prima partita
     private static final int INITIAL_POPULATION = 10;
 
-    // Soglia di wasteLevel oltre la quale si applicano penalità a pollution e happiness (AC-18.2)
+    // Soglia di wasteLevel oltre la quale si applicano penalità a pollution e happiness (AC-30.2)
     private static final double WASTE_POLLUTION_THRESHOLD = 50.0;
 
     // Budget di partenza del giocatore
@@ -127,9 +127,9 @@ public class CityState {
      * Ordine delle operazioni:
      *   1. Applica i moltiplicatori della politica ai delta (es. GreenPolicy riduce deltaPollution)
      *   2. Somma i modificatori flat della politica (es. AusterityPolicy aggiunge +500 budget)
-     *   3. Applica il malus happiness proporzionale alle soddisfazioni demografiche < 50 (AC-19.4)
+     *   3. Applica il malus happiness proporzionale alle soddisfazioni demografiche < 50 (AC-25.1)
      *   4. Se pollution > 30: penalità a happiness e health proporzionale all'eccesso
-     *   5. Se wasteLevel > 50: penalità a pollution (+0.10×eccesso) e happiness (−0.05×eccesso) (AC-18.2)
+     *   5. Se wasteLevel > 50: penalità a pollution (+0.10×eccesso) e happiness (−0.05×eccesso) (AC-30.2)
      *   6. Decadimento naturale dell'inquinamento: −2/tick
      *   7. Commit dei delta ai valori reali con clamping [0, 100] per le metriche bounded
      *   8. Azzeramento dei delta per il tick successivo
@@ -166,7 +166,7 @@ public class CityState {
     }
 
     private void applyThresholdPenalties(TickDeltas d) {
-        // AC-19.4: malus da soddisfazioni demografiche basse
+        // AC-25.1: malus da soddisfazioni demografiche basse
         double groupMalus = 0.0;
         if (populationGroup.getJobSatisfaction()    < 50.0) groupMalus += (50.0 - populationGroup.getJobSatisfaction())    * 0.04;
         if (populationGroup.getHealthSatisfaction() < 50.0) groupMalus += (50.0 - populationGroup.getHealthSatisfaction()) * 0.04;
@@ -179,7 +179,7 @@ public class CityState {
             d.health    -= penalty * 1.5;
         }
 
-        // AC-18.2: rifiuti oltre soglia generano inquinamento extra e riducono felicità
+        // AC-30.2: rifiuti oltre soglia generano inquinamento extra e riducono felicità
         if (wasteLevel > WASTE_POLLUTION_THRESHOLD) {
             double wastePenalty = (wasteLevel - WASTE_POLLUTION_THRESHOLD) * 0.10;
             d.pollution += wastePenalty;

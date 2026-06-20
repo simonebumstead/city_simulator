@@ -144,7 +144,17 @@ Tutte le funzionalità si basano su:
 ## Documentazione
 Tutta la documentazione è nella cartella [docs](docs).
 
-- [**Design Document**](docs/DesignDocument.md): Architettura completa del sistema, diagrammi delle classi e diagrammi di sequenza.
+- [**Design Document**](docs/DesignDocument.md): Architettura completa del sistema, domain model, diagrammi delle classi, diagrammi di sequenza e schema dei dati di salvataggio.
+- [**Design Patterns**](docs/DesignPatterns.md): Pattern GoF (Strategy, Observer, Decorator, Factory, Template Method) e principi GRASP applicati nel progetto.
 - [**System Test Report**](docs/SystemTestReport.md): Report dettagliato dell'esecuzione dei test di sistema e verifica della copertura degli Acceptance Criteria.
+
+### Diagrammi UML (Mermaid)
+I diagrammi sono versionati come testo nella cartella [docs/diagrams/md](docs/diagrams/md):
+
+- [Use Case Diagram](docs/diagrams/md/UseCaseDiagram.md) — casi d'uso del Sindaco con tracciabilità alle storie SCRUM.
+- [Domain Model](docs/diagrams/md/DomainModel.md) — entità di dominio e relazioni concettuali.
+- [Class Diagram](docs/diagrams/md/ClassDiagram.md) — diagramma delle classi suddiviso in 4 moduli.
+- [State & Activity Diagram](docs/diagrams/md/StateActivityDiagram.md) — ciclo di vita di una struttura e flusso del tick.
+- [System Sequence Diagrams](docs/diagrams/md/SystemSequenceDiagrams.md) e Internal Sequence Diagrams [1](docs/diagrams/md/InternalSequenceDiagram1.md)–[5](docs/diagrams/md/InternalSequenceDiagram5.md) — interazioni di sistema e flussi interni.
 
 

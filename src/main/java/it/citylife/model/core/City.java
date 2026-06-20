@@ -65,7 +65,7 @@ public class City {
     // Bonus di felicità aggiunto ogni tick a ogni Residential entro il raggio di un Park
     private static final double PARK_HAPPINESS_BONUS     = 2.0;
 
-    // Riduzione di inquinamento applicata ogni tick da ogni Park (AC-05.4)
+    // Riduzione di inquinamento applicata ogni tick da ogni Park (AC-28.3)
     private static final double PARK_POLLUTION_REDUCTION = 3.0;
 
     /**
@@ -151,15 +151,15 @@ public class City {
     }
 
     private void processStructure(Structure s, BuildingCounts c) {
-        // AC-15.1: ogni struttura decade di HP_DECAY_PER_TICK ogni tick
+        // AC-23.1: ogni struttura decade di HP_DECAY_PER_TICK ogni tick
         s.decayTick();
 
-        // AC-15.2: struttura critica se HP > 0 e inferiore al 20% del massimo
+        // AC-23.2: struttura critica se HP > 0 e inferiore al 20% del massimo
         if (s.getHp() > 0 && s.getHp() < s.getMaxHp() * 0.20) {
             state.incrementCriticalBuildings();
         }
 
-        // AC-15.4: edifici a 0 HP non applicano effetti né generano risorse
+        // AC-23.4: edifici a 0 HP non applicano effetti né generano risorse
         if (s.isDestroyed()) return;
 
         // Edifici che richiedono corrente ma non sono coperti da una PowerPlant non applicano
@@ -363,8 +363,8 @@ public class City {
      * Applica gli effetti di tutti i parchi presenti sulla griglia.
      *
      * Per ogni Park:
-     *   - AC-05.4: riduce il deltaInquinamento globale di PARK_POLLUTION_REDUCTION (−3/tick)
-     *   - AC-05.3: aggiunge PARK_HAPPINESS_BONUS (+2/tick) a ogni ResidentialBuilding
+     *   - AC-28.3: riduce il deltaInquinamento globale di PARK_POLLUTION_REDUCTION (−3/tick)
+     *   - AC-28.2: aggiunge PARK_HAPPINESS_BONUS (+2/tick) a ogni ResidentialBuilding
      *     entro una distanza di Chebyshev pari a PARK_HAPPINESS_RADIUS (3 celle)
      *
      * Chiamato dopo il loop principale degli edifici, prima di resolveTick(),
@@ -376,10 +376,10 @@ public class City {
                 Cell parkCell = grid.getCell(px, py);
                 if (parkCell == null || parkCell.isEmpty() || parkCell.getStructure().getType() != StructureType.PARK) continue;
 
-                // AC-05.4: ogni Park riduce l'inquinamento globale
+                // AC-28.3: ogni Park riduce l'inquinamento globale
                 state.updatePollution(-PARK_POLLUTION_REDUCTION);
 
-                // AC-05.3: bonus happiness per ogni Residential entro raggio
+                // AC-28.2: bonus happiness per ogni Residential entro raggio
                 for (int rx = 0; rx < grid.getWidth(); rx++) {
                     for (int ry = 0; ry < grid.getHeight(); ry++) {
                         Cell resCell = grid.getCell(rx, ry);

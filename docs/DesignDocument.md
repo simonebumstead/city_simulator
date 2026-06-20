@@ -39,17 +39,14 @@ classDiagram
     class Structure {
         <<abstract>>
         -hp: int
-        -constructionCost: int
+        -maxHp: int
         -powered: boolean
         -connectedToRoad: boolean
         +applyEffects()
+        +getConstructionCost()
     }
 
-    class ResidentialBuilding {
-        -capacity: int
-        -residents: int
-    }
-
+    class ResidentialBuilding
     class CommercialBuilding
     class IndustrialBuilding
     class PowerPlant
@@ -59,8 +56,8 @@ classDiagram
     class Road
 
     class PowerNetwork {
-        -totalGenerated: int
-        -totalConsumed: int
+        -totalProduction: int
+        -totalConsumption: int
     }
 
     class PolicyStrategy {
@@ -231,9 +228,13 @@ classDiagram
         +placeBuilding(type: String, x: int, y: int) boolean
         +demolish(x: int, y: int) boolean
         +repair(x: int, y: int) boolean
+        +repairAll() boolean
         +upgradeBuilding(x: int, y: int, upgradeType: String) boolean
         +changePolicy(policy: PolicyStrategy)
         +advanceTick()
+        +saveManualGame(tick: int) Path
+        +loadGame(path: Path) int
+        +listSaves() List~Path~
     }
     
     class City {
@@ -250,8 +251,8 @@ classDiagram
     }
 
     class Grid {
-        -width: int
-        -height: int
+        -WIDTH: int$
+        -HEIGHT: int$
         -matrix: Cell[][]
         +getCell(x: int, y: int) Cell
         +placeStructure(s: Structure, x: int, y: int)
@@ -278,15 +279,22 @@ classDiagram
         -pollution: double
         -health: double
         -wasteLevel: int
+        -populationGroup: PopulationGroup
         +resolveTick(modifiers: PolicyModifiers)
         +updateBudget(amount: double)
     }
 
+    class PopulationGroup {
+        -jobSatisfaction: double
+        -healthSatisfaction: double
+        -safetySatisfaction: double
+    }
+
     class PowerNetwork {
-        -totalGenerated: int
-        -totalConsumed: int
-        +registerProducer(amount: int)
-        +registerConsumer(amount: int)
+        -totalProduction: int
+        -totalConsumption: int
+        +addProduction(amount: int)
+        +addConsumption(amount: int)
         +hasEnoughPower() boolean
         +reset()
     }
@@ -303,7 +311,7 @@ classDiagram
     }
 
     class PopulationManager {
-        +updateDemographics()
+        +updateDemographics(state: CityState, hasPowerNearby: boolean, maxCapacity: int, industrialCount: int, commercialCount: int, hospitalCount: int, residentialCount: int)
     }
 
     class GridQueries {
@@ -318,11 +326,13 @@ classDiagram
     City "1" *-- "1" PowerNetwork : owns
     City "1" *-- "1" DisasterManager : owns
     Grid "1" *-- "400" Cell : composed of
+    CityState "1" *-- "1" PopulationGroup : measures
     
     GameController ..> SaveLoadManager : uses
     GameController ..> GridQueries : uses
     City ..> PopulationManager : uses
     City ..> GridQueries : uses
+    PopulationManager ..> PopulationGroup : updates
     SaveLoadManager ..> City : reads/writes
     Cell o-- Placeable : holds
 ```
@@ -354,22 +364,19 @@ classDiagram
         <<abstract>>
         #hp: int
         #maxHp: int
-        #constructionCost: int
         #powered: boolean
         #connectedToRoad: boolean
         +applyEffects(state: CityState, powerNet: PowerNetwork)*
         +getType() StructureType*
-        +takeDamage(damage: int)
+        +getConstructionCost() int*
+        +decayTick()
+        +takeDamage(damage: int) int
+        +repair(amount: int)
         +fullRepair()
     }
 
-    class ResidentialBuilding {
-        -capacity: int
-        -residents: int
-    }
-    class IndustrialBuilding {
-        -jobsProvided: int
-    }
+    class ResidentialBuilding
+    class IndustrialBuilding
     class CommercialBuilding
     class PowerPlant
     class Park
@@ -387,6 +394,7 @@ classDiagram
     class BuildingFactory {
         <<utility>>
         +createBuilding(type: String)$ Structure
+        +applyUpgrade(base: Structure, upgradeName: String)$ Structure
     }
 
     Structure ..|> Placeable
@@ -426,13 +434,20 @@ classDiagram
     }
     class DisasterObserver {
         <<interface>>
-        +onEarthquake(magnitude: int)
+        +onEarthquake(damage: int)
     }
 
     class PolicyModifiers {
-        -pollutionMultiplier: double
+        -pollutionGenerationMultiplier: double
+        -happinessGenerationMultiplier: double
+        -healthGenerationMultiplier: double
+        -wasteGenerationMultiplier: double
+        -industrialBudgetMultiplier: double
+        -industrialPollutionMultiplier: double
+        -fixedHappinessChange: double
+        -fixedHealthChange: double
+        -fixedPollutionChange: double
         -fixedBudgetChange: int
-        -happinessBonus: double
     }
 
     class DefaultPolicy
@@ -964,3 +979,78 @@ sequenceDiagram
     UI-->>User: Ripristino partita e interfaccia
     deactivate UI
 ```
+
+---
+
+## 5. Persistenza — Schema dei dati di salvataggio
+
+La persistenza è gestita da `SaveLoadManager` tramite la libreria Jackson. Per disaccoppiare il
+formato di salvataggio dal grafo di dominio vivo, la serializzazione passa attraverso un livello di
+DTO (`SaveData` e `BuildingEntry`, classi annidate in `SaveLoadManager`): `SaveDataMapper` estrae lo
+stato del dominio nel DTO, mentre `SaveDataApplier` ricostruisce il dominio a partire dal DTO. Le
+strutture decorate vengono appiattite memorizzando il **tipo base** e la lista ordinata dei nomi
+degli upgrade (es. `["SEISMIC", "WASTE_THERMAL"]`), riapplicati in ordine al caricamento tramite
+`BuildingFactory`.
+
+### 5.1 Struttura del DTO
+
+| DTO | Campo | Tipo | Descrizione |
+|-----|-------|------|-------------|
+| `SaveData` | `tick` | int | Numero del tick corrente al momento del salvataggio |
+| | `activePolicy` | String | Nome della politica attiva (es. `"GreenPolicy"`) |
+| | `budget` | double | Budget della città |
+| | `population` | int | Popolazione corrente |
+| | `pollution` | double | Livello di inquinamento |
+| | `happiness` | double | Livello di felicità |
+| | `health` | double | Livello di salute |
+| | `wasteLevel` | int | Livello di rifiuti accumulati |
+| | `jobSatisfaction` | double | Soddisfazione lavorativa del `PopulationGroup` |
+| | `healthSatisfaction` | double | Soddisfazione sanitaria del `PopulationGroup` |
+| | `safetySatisfaction` | double | Soddisfazione sulla sicurezza del `PopulationGroup` |
+| | `totalProduction` | int | Produzione energetica totale (`PowerNetwork`) |
+| | `totalConsumption` | int | Consumo energetico totale (`PowerNetwork`) |
+| | `buildings` | List\<BuildingEntry\> | Elenco delle strutture presenti sulla griglia |
+| `BuildingEntry` | `type` | String | Tipo base della struttura (es. `"RESIDENTIAL"`) |
+| | `x` | int | Colonna nella griglia |
+| | `y` | int | Riga nella griglia |
+| | `hp` | int | Punti vita correnti |
+| | `upgrades` | List\<String\> | Nomi degli upgrade applicati, in ordine di annidamento |
+
+### 5.2 Esempio di file JSON
+
+```json
+{
+  "tick": 42,
+  "activePolicy": "GreenPolicy",
+  "budget": 3120.0,
+  "population": 85,
+  "pollution": 18.5,
+  "happiness": 71.0,
+  "health": 64.0,
+  "wasteLevel": 12,
+  "jobSatisfaction": 78.0,
+  "healthSatisfaction": 60.0,
+  "safetySatisfaction": 82.0,
+  "totalProduction": 250,
+  "totalConsumption": 120,
+  "buildings": [
+    { "type": "ROAD", "x": 5, "y": 5, "hp": 250, "upgrades": [] },
+    { "type": "RESIDENTIAL", "x": 5, "y": 6, "hp": 287, "upgrades": ["SEISMIC"] },
+    { "type": "WASTE_CENTER", "x": 8, "y": 9, "hp": 350, "upgrades": ["WASTE_THERMAL"] }
+  ]
+}
+```
+
+I file di salvataggio sono scritti nella cartella `saves/` con nome `save_<timestamp>.json`
+(salvataggio manuale) o un nome legato alla sessione per l'autosave.
+
+---
+
+## 6. Diagrammi correlati
+
+Oltre ai diagrammi inclusi in questo documento, il progetto comprende i seguenti artefatti UML
+versionati come testo Mermaid in `docs/diagrams/md/`:
+
+- [Use Case Diagram](diagrams/md/UseCaseDiagram.md) — casi d'uso del Sindaco con tracciabilità alle storie SCRUM.
+- [State & Activity Diagram](diagrams/md/StateActivityDiagram.md) — ciclo di vita di una `Structure` e flusso di attività di `advanceTick()`.
+- [Domain Model](diagrams/md/DomainModel.md), [Class Diagram](diagrams/md/ClassDiagram.md), [System Sequence Diagrams](diagrams/md/SystemSequenceDiagrams.md) e gli Internal Sequence Diagrams (1–5).

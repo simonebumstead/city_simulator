@@ -16,7 +16,7 @@ import java.util.List;
  * alla struttura interna, permettendo alle sottoclassi di sovrascrivere solo
  * i metodi che intendono modificare senza duplicare il resto del comportamento.
  *
- * La catena di Decorator può essere annidata fino a 3 livelli (AC-16.3),
+ * La catena di Decorator può essere annidata fino a 3 livelli (AC-24.4),
  * verificato da GameController.upgradeBuilding() tramite getUpgradeLevel().
  *
  * Al momento del salvataggio, collectUpgrades() percorre la catena dall'interno
@@ -81,7 +81,7 @@ public abstract class StructureDecorator extends Structure {
 
     /**
      * Restituisce il livello di annidamento del Decorator (1-based).
-     * Una struttura senza Decorator ha livello 0; il massimo consentito è 3 (AC-16.3).
+     * Una struttura senza Decorator ha livello 0; il massimo consentito è 3 (AC-24.4).
      *
      * @return profondità della catena di Decorator a partire da questo livello
      */

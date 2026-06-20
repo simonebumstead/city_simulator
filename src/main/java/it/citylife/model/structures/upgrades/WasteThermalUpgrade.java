@@ -7,11 +7,11 @@ import it.citylife.model.structures.Structure;
 import it.citylife.model.structures.WasteManagementCenter;
 
 /**
- * Decorator che aggiunge il recupero energetico dai rifiuti al WasteManagementCenter (AC-18.4).
+ * Decorator che aggiunge il recupero energetico dai rifiuti al WasteManagementCenter (AC-30.4).
  *
  * Estende il comportamento del centro di gestione rifiuti avvolto chiamando prima
  * il suo applyEffects() (che applica la riduzione base di −10 waste/tick),
- * poi aggiunge gli effetti del recupero termico: ulteriori −15 waste/tick
+ * poi aggiunge gli effetti del recupero termico: ulteriori −5 waste/tick
  * e +50 budget/tick come entrata da vendita di energia termica.
  *
  * Gli effetti aggiuntivi sono condizionati all'alimentazione elettrica del centro:
@@ -49,7 +49,7 @@ public class WasteThermalUpgrade extends StructureDecorator {
     /**
      * Applica gli effetti base della struttura avvolta, poi aggiunge gli effetti del recupero termico.
      *
-     * Gli effetti aggiuntivi (−15 waste, +50 budget) si attivano solo se la struttura
+     * Gli effetti aggiuntivi (−5 waste, +50 budget) si attivano solo se la struttura
      * interna è alimentata: senza corrente l'impianto termico non è operativo.
      *
      * @param state lo stato della città su cui accumulare i delta
