@@ -144,7 +144,7 @@ Tutte le funzionalità si basano su:
 ## Documentazione
 Tutta la documentazione è nella cartella [docs](docs).
 
-- [**Design Document**](docs/DesignDocument.md): Architettura completa del sistema, diagrammi delle classi e diagrammi di sequenza (versione definitiva).
-- [**System Test Report**](docs/SystemTestReport.md): Report dettagliato dell'esecuzione dei test di sistema e verifica della copertura di tutti i 67 Acceptance Criteria.
+- [**Design Document**](docs/DesignDocument.md): Architettura completa del sistema, diagrammi delle classi e diagrammi di sequenza.
+- [**System Test Report**](docs/SystemTestReport.md): Report dettagliato dell'esecuzione dei test di sistema e verifica della copertura degli Acceptance Criteria.
 
 
