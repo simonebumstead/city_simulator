@@ -229,7 +229,7 @@ Tutte le acceptance criteria risultano soddisfatte.
 | Fase B | Aggiunto test AC-20.2/AC-20.3 (road → income, demolizione → isolamento)                  |
 | Fase B | Aggiunto test AC-23.5 (`repairAll` con verifica costo)                                   |
 | Fase B | Aggiunte classi `PowerNetworkTest`, `RoadTest`, `PopulationGroupTest`                    |
-| Fase B | Aggiunto test AC-18-P.1 / AC-18-P.3 (cambio policy e ripristino Default)                 |
+| Fase B | Aggiunto test AC-18.1 / AC-18.3 (cambio policy e ripristino Default)                 |
 | Fase C | Danno terremoto calibrato: moltiplicatore da 1× a 5× (AC-11.2)                           |
 | Fase C | Toggle autosave on/off aggiunto in UI (AC-08.5)                                          |
 | Fase C | Documentate soglie asimmetriche `PopulationManager` (design intent)                      |

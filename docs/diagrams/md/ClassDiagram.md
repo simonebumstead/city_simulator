@@ -1,12 +1,135 @@
 # Class Diagram - City Simulator
 
-Questo diagramma mostra la reale struttura tecnica, le interfacce e le gerarchie presenti nel package di dominio, evidenziando le implementazioni esatte dei design pattern (Decorator, Strategy, Observer).
+Essendo un sistema complesso, il Class Diagram è stato suddiviso in **quattro moduli separati** per renderne più agevole la consultazione e il rendering in Mermaid:
+
+1. **Architettura Core**: I controller principali e i sistemi di simulazione del mondo.
+2. **Strutture ed Edifici**: La gerarchia delle costruzioni, le interfacce e i Decorator.
+3. **Politiche e Observer**: Il sistema di policy governative e la notifica degli eventi.
+4. **Livello UI**: I componenti dell'interfaccia JavaFX e il controller di simulazione.
+
+---
+
+## 1. Architettura Core (Controller e Mondo)
 
 ```mermaid
 classDiagram
     direction TB
 
-    %% --- ENUMS ---
+    class GameController {
+        -city: City
+        -ioManager: SaveLoadManager
+        +placeBuilding(type: String, x: int, y: int) boolean
+        +demolish(x: int, y: int) boolean
+        +repair(x: int, y: int) boolean
+        +upgradeBuilding(x: int, y: int, upgradeType: String) boolean
+        +changePolicy(policy: PolicyStrategy)
+        +advanceTick()
+    }
+    
+    class City {
+        -grid: Grid
+        -state: CityState
+        -powerNet: PowerNetwork
+        -activePolicy: PolicyStrategy
+        -disasterManager: DisasterManager
+        -observers: List~StateObserver~
+        +advanceTick()
+        +setPolicy(policy: PolicyStrategy)
+        +addObserver(obs: StateObserver)
+        -updateState()
+    }
+
+    class Grid {
+        -width: int
+        -height: int
+        -matrix: Cell[][]
+        +getCell(x: int, y: int) Cell
+        +placeStructure(s: Structure, x: int, y: int)
+        +removeStructure(x: int, y: int)
+    }
+
+    class Cell {
+        -x: int
+        -y: int
+        -structure: Placeable
+        +getStructure() Placeable
+        +setStructure(structure: Placeable)
+        +isEmpty() boolean
+    }
+
+    class Placeable {
+        <<interface>>
+    }
+
+    class CityState {
+        -budget: double
+        -population: int
+        -happiness: double
+        -pollution: double
+        -health: double
+        -wasteLevel: int
+        +resolveTick(modifiers: PolicyModifiers)
+        +updateBudget(amount: double)
+    }
+
+    class PowerNetwork {
+        -totalGenerated: int
+        -totalConsumed: int
+        +registerProducer(amount: int)
+        +registerConsumer(amount: int)
+        +hasEnoughPower() boolean
+        +reset()
+    }
+
+    class SaveLoadManager {
+        -mapper: ObjectMapper
+        +saveManual(city: City, tick: int) Path
+        +load(city: City, path: Path) int
+    }
+    
+    class DisasterManager {
+        -observers: List~DisasterObserver~
+        +triggerEarthquake(state: CityState)
+    }
+
+    class PopulationManager {
+        +updateDemographics()
+    }
+
+    class GridQueries {
+        <<utility>>
+        +hasAdjacentRoad(grid: Grid, x: int, y: int)$ boolean
+        +isPoweredAt(grid: Grid, x: int, y: int)$ boolean
+    }
+
+    GameController "1" *-- "1" City : owns
+    City "1" *-- "1" Grid : owns
+    City "1" *-- "1" CityState : owns
+    City "1" *-- "1" PowerNetwork : owns
+    City "1" *-- "1" DisasterManager : owns
+    Grid "1" *-- "400" Cell : composed of
+    
+    GameController ..> SaveLoadManager : uses
+    GameController ..> GridQueries : uses
+    City ..> PopulationManager : uses
+    City ..> GridQueries : uses
+    SaveLoadManager ..> City : reads/writes
+    Cell o-- Placeable : holds
+```
+
+---
+
+## 2. Strutture e Gerarchia degli Edifici (Template Method & Decorator)
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Placeable {
+        <<interface>>
+        +getType() StructureType
+    }
+
     class StructureType {
         <<enumeration>>
         RESIDENTIAL
@@ -19,11 +142,74 @@ classDiagram
         WASTE_CENTER
     }
 
-    %% --- INTERFACES ---
-    class Placeable {
-        <<interface>>
-        +getType() StructureType
+    class Structure {
+        <<abstract>>
+        #hp: int
+        #maxHp: int
+        #constructionCost: int
+        #powered: boolean
+        #connectedToRoad: boolean
+        +applyEffects(state: CityState, powerNet: PowerNetwork)*
+        +getType() StructureType*
+        +takeDamage(damage: int)
+        +fullRepair()
     }
+
+    class ResidentialBuilding {
+        -capacity: int
+        -residents: int
+    }
+    class IndustrialBuilding {
+        -jobsProvided: int
+    }
+    class CommercialBuilding
+    class PowerPlant
+    class Park
+    class Road
+    class Hospital
+    class WasteManagementCenter
+
+    class StructureDecorator {
+        <<abstract>>
+        #wrapped: Structure
+    }
+    class SeismicUpgrade
+    class WasteThermalUpgrade
+
+    class BuildingFactory {
+        <<utility>>
+        +createBuilding(type: String)$ Structure
+    }
+
+    Structure ..|> Placeable
+    
+    Structure <|-- ResidentialBuilding
+    Structure <|-- IndustrialBuilding
+    Structure <|-- CommercialBuilding
+    Structure <|-- PowerPlant
+    Structure <|-- Park
+    Structure <|-- Road
+    Structure <|-- Hospital
+    Structure <|-- WasteManagementCenter
+    
+    Structure <|-- StructureDecorator
+    StructureDecorator "1" o-- "1" Structure : wraps
+    StructureDecorator <|-- SeismicUpgrade
+    StructureDecorator <|-- WasteThermalUpgrade
+
+    BuildingFactory ..> Structure : instantiates
+    Placeable ..> StructureType : returns
+    BuildingFactory ..> StructureType : uses
+```
+
+---
+
+## 3. Politiche Economiche e Observer Pattern
+
+```mermaid
+classDiagram
+    direction TB
+
     class PolicyStrategy {
         <<interface>>
         +getModifiers() PolicyModifiers
@@ -37,163 +223,123 @@ classDiagram
         +onEarthquake(magnitude: int)
     }
 
-    %% --- CORE ---
-    class GameController {
-        -city: City
-        +placeBuilding(type: String, x: int, y: int)
-        +demolish(x: int, y: int)
-        +advanceTick()
-    }
-    
-    class City {
-        -grid: Grid
-        -state: CityState
-        -powerNet: PowerNetwork
-        -activePolicy: PolicyStrategy
-        -disasterManager: DisasterManager
-        -observers: List~StateObserver~
-        +advanceTick()
-        +setPolicy(policy: PolicyStrategy)
-        +addObserver(observer: StateObserver)
-        -notifyObservers()
-    }
-    
-    class Grid {
-        -matrix: Cell[][]
-        +getCell(x: int, y: int) Cell
-    }
-    
-    class Cell {
-        -structure: Placeable
-        +getStructure() Placeable
-        +setStructure(structure: Placeable)
-        +isEmpty() boolean
-    }
-    
-    class CityState {
-        -budget: double
-        -population: int
-        -happiness: double
-        -pollution: double
-        +resolveTick(modifiers: PolicyModifiers)
-        +updateBudget(amount: double)
-        +getBudget() double
-    }
-    
-    class PowerNetwork {
-        -totalGenerated: int
-        -totalConsumed: int
-        +registerProducer(amount: int)
-        +registerConsumer(amount: int)
-        +hasSufficientPower() boolean
-    }
-    
-    class DisasterManager {
-        -observers: List~DisasterObserver~
-        +addObserver(observer: DisasterObserver)
-        +removeObserver(observer: DisasterObserver)
-        +triggerEarthquake(state: CityState)
-    }
-    
-    class SaveLoadManager {
-        +saveGame(city: City, path: String) boolean
-        +loadGame(path: String) City
-    }
-
-    %% --- STRUCTURES (Template Method) ---
-    class Structure {
-        <<abstract>>
-        #hp: int
-        #maxHp: int
-        +applyEffects(state: CityState, powerNet: PowerNetwork)*
-        +getType() StructureType*
-        +takeDamage(amount: int)
-    }
-    class ResidentialBuilding
-    class IndustrialBuilding
-    class CommercialBuilding
-    class PowerPlant
-    class Park
-    class Road
-    class Hospital
-    class WasteManagementCenter
-
-    %% --- DECORATORS ---
-    class StructureDecorator {
-        <<abstract>>
-        #wrapped: Structure
-    }
-    class SeismicUpgrade
-    class WasteThermalUpgrade
-
-    %% --- STRATEGIES (Policies) ---
     class PolicyModifiers {
         -pollutionMultiplier: double
         -fixedBudgetChange: int
+        -happinessBonus: double
     }
+
     class DefaultPolicy
     class GreenPolicy
     class AusterityPolicy
     class FossilFuelPolicy
 
-    %% --- FACTORY ---
-    class BuildingFactory {
-        +createBuilding(type: String)$ Structure
-        +applyUpgrade(base: Structure, upgradeType: String)$ Structure
+    class City {
+        -activePolicy: PolicyStrategy
+        -observers: List~StateObserver~
+        +setPolicy(policy: PolicyStrategy)
+        +addObserver(obs: StateObserver)
     }
 
-    %% --- RELATIONSHIPS & PATTERNS ---
-    Structure ..|> Placeable
-    Structure ..|> DisasterObserver
+    class DisasterManager {
+        -observers: List~DisasterObserver~
+        +addObserver(obs: DisasterObserver)
+    }
 
-    %% GameController owns the City (Composition)
-    GameController "1" *-- "1" City : controls
-    
-    %% City components (Composition)
-    City "1" *-- "1" Grid : contains
-    City "1" *-- "1" CityState : tracks
-    City "1" *-- "1" PowerNetwork : manages
-    City "1" *-- "1" DisasterManager : uses
-    
-    %% City has an active policy (Aggregation)
-    City "1" o-- "1" PolicyStrategy : applies
-
-    %% Grid owns Cells (Composition)
-    Grid "1" *-- "*" Cell : composed of
-    
-    %% Cell aggregates Placeable (Aggreagtion, structure can be moved/destroyed)
-    Cell "1" o-- "0..1" Placeable : holds
-
-    ResidentialBuilding --|> Structure
-    IndustrialBuilding --|> Structure
-    CommercialBuilding --|> Structure
-    PowerPlant --|> Structure
-    Park --|> Structure
-    Road --|> Structure
-    Hospital --|> Structure
-    WasteManagementCenter --|> Structure
-
-    %% Decorator Pattern
-    StructureDecorator --|> Structure
-    StructureDecorator "1" o-- "1" Structure : wraps
-    SeismicUpgrade --|> StructureDecorator
-    WasteThermalUpgrade --|> StructureDecorator
-
-    %% Strategy Pattern
     DefaultPolicy ..|> PolicyStrategy
     GreenPolicy ..|> PolicyStrategy
     AusterityPolicy ..|> PolicyStrategy
     FossilFuelPolicy ..|> PolicyStrategy
 
-    CityState ..> PolicyModifiers : uses
     PolicyStrategy ..> PolicyModifiers : creates
 
-    %% Factory Dependencies
-    GameController ..> BuildingFactory : uses
-    SaveLoadManager ..> BuildingFactory : uses
+    City "1" o-- "1" PolicyStrategy : current policy
+    City "1" o-- "*" StateObserver : updates
+    DisasterManager "1" o-- "*" DisasterObserver : manages
+```
 
-    %% Other Dependencies
-    City "1" o-- "*" StateObserver : notifies
-    Placeable ..> StructureType : returns
-    Structure ..> StructureType : returns
+---
+
+## 4. Livello UI (User Interface e JavaFX)
+
+```mermaid
+classDiagram
+    direction TB
+
+    %% Classi esterne per evidenziare l'integrazione
+    class GameController {
+        <<Controller>>
+    }
+    class StateObserver {
+        <<interface>>
+    }
+    class CityState {
+        <<Domain>>
+    }
+
+    class SimulationController {
+        -view: DashboardView
+        -gameController: GameController
+    }
+
+    class DashboardView {
+        -mapGridView: MapGridView
+        -metricsPanel: MetricsPanel
+        -controlsBar: SimulationControlsBar
+        -buildToolbar: BuildToolbar
+        -chart: DashboardChart
+        +showEarthquakeWarning()
+        +onStateChanged(state: CityState)
+    }
+
+    class MapGridView {
+        -canvas: Canvas
+        +drawGrid()
+        +highlightCell()
+    }
+
+    class MetricsPanel {
+        +updateMetrics(state: CityState)
+        +log(message: String)
+    }
+
+    class SimulationControlsBar {
+        +setPlayPauseHandler()
+        +setPolicyHandler()
+    }
+
+    class BuildToolbar {
+        +setToolSelectionHandler()
+    }
+
+    class DashboardChart {
+        +addDataPoint(tick: int, state: CityState)
+    }
+
+    class DialogHelper {
+        <<utility>>
+        +showError()
+        +showSaveDialog()
+    }
+    
+    class IconCatalog {
+        <<utility>>
+    }
+
+    %% Relazioni interne UI
+    SimulationController "1" *-- "1" DashboardView : manages
+    DashboardView "1" *-- "1" MapGridView : contains
+    DashboardView "1" *-- "1" MetricsPanel : contains
+    DashboardView "1" *-- "1" SimulationControlsBar : contains
+    DashboardView "1" *-- "1" BuildToolbar : contains
+    DashboardView "1" *-- "1" DashboardChart : contains
+    DashboardView ..> DialogHelper : uses
+    DashboardView ..> IconCatalog : uses
+
+    %% Relazioni con il Core
+    SimulationController --> GameController : delegates commands
+    DashboardView ..|> StateObserver : implements
+    DashboardView ..> CityState : receives
+    MetricsPanel ..> CityState : reads data
+    DashboardChart ..> CityState : reads data
 ```

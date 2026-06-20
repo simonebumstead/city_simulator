@@ -1,371 +1,364 @@
 # Documento di Design — CityLogic City Simulator
 
-**Versione:** 1.1 — 2026-05-18
+**Versione:** 2.0 (Aggiornata con i nuovi diagrammi dettagliati)
 
 ---
 
 ## 1. Domain Model
 
-Il dominio di CityLogic ruota attorno alla classe `City`, che orchestra tutti i sottosistemi della simulazione. La `City` possiede una `Grid` 20×20 di celle (`Cell`), ognuna delle quali può contenere al massimo una struttura (`Structure`). Lo stato globale della città — budget, popolazione, happiness, health, pollution, waste — è raccolto in `CityState`, che accumula i delta prodotti dagli edifici ad ogni tick e li risolve applicando i modificatori della `PolicyStrategy` attiva.
-
-Le strutture concrete (8 tipi: `ResidentialBuilding`, `IndustrialBuilding`, `CommercialBuilding`, `PowerPlant`, `Park`, `Road`, `Hospital`, `WasteManagementCenter`) ereditano da `Structure` (classe astratta) e implementano `applyEffects()` secondo il **Template Method Pattern**. I potenziamenti (`SeismicUpgrade`, `WasteThermalUpgrade`) avvolgono le strutture con il **Decorator Pattern** senza modificarne il codice sorgente.
-
-La `PowerNetwork` tiene traccia del bilancio energetico produzione/consumo. Il `DisasterManager` gestisce i terremoti con probabilità 1%/tick, notificando tutte le strutture registrate tramite il **Observer Pattern** (`DisasterObserver`). Le politiche cittadine (Default, Green, FossilFuel, Austerity) implementano la `PolicyStrategy` (**Strategy Pattern**) e alterano i moltiplicatori di `CityState.resolveTick()`. Il `SaveLoadManager` serializza e deserializza lo stato completo in JSON tramite Jackson (**Pure Fabrication**). Il `PopulationManager` calcola ogni tick la crescita demografica e le tre soddisfazioni del `PopulationGroup` (lavoro, salute, sicurezza).
+Il dominio di CityLogic ruota attorno alla classe `City`, che orchestra tutti i sottosistemi della simulazione. La `City` possiede una `Grid` 20x20 di celle (`Cell`), ognuna delle quali può contenere al massimo una struttura (`Structure`). Lo stato globale della città è raccolto in `CityState`.
 
 ```mermaid
 classDiagram
     direction TB
 
+    %% --- DOMAIN ENTITIES ---
     class City {
-        -grid: Grid
-        -state: CityState
-        -powerNet: PowerNetwork
-        -activePolicy: PolicyStrategy
-        -disasterManager: DisasterManager
         +advanceTick()
-        +setPolicy(policy: PolicyStrategy)
-    }
-
-    class Grid {
-        -matrix: Cell[][] 20x20
-        +getCell(x, y) Cell
-        +placeStructure(s, x, y)
-        +removeStructure(x, y)
-    }
-
-    class Cell {
-        -structure: Placeable
-        +isEmpty() boolean
     }
 
     class CityState {
         -budget: double
         -population: int
         -happiness: double
-        -health: double
         -pollution: double
+        -health: double
         -wasteLevel: int
-        +resolveTick(modifiers: PolicyModifiers)
     }
 
-    class PowerNetwork {
-        -totalProduction: int
-        -totalConsumption: int
-        +hasEnoughPower() boolean
+    class Grid {
+        -width: int
+        -height: int
     }
 
-    class PopulationManager {
-        +updateDemographics(state, hasPower, capacity, ...)
-    }
-
-    class PopulationGroup {
-        -jobSatisfaction: double
-        -healthSatisfaction: double
-        -safetySatisfaction: double
-    }
-
-    class DisasterManager {
-        -observers: List~DisasterObserver~
-        +triggerEarthquake(state: CityState)
-    }
-
-    class SaveLoadManager {
-        +saveManual(city, tick) Path
-        +saveAuto(city, tick, sessionId) Path
-        +load(city, path) int
+    class Cell {
+        -x: int
+        -y: int
     }
 
     class Structure {
         <<abstract>>
-        #hp: int
-        #maxHp: int
-        +applyEffects(state, power)*
-        +takeDamage(amount) int
-        +decayTick()
+        -hp: int
+        -constructionCost: int
+        -powered: boolean
+        -connectedToRoad: boolean
+        +applyEffects()
     }
 
-    class StructureDecorator {
-        <<abstract>>
-        #wrapped: Structure
-        +collectUpgrades() List~String~
+    class ResidentialBuilding {
+        -capacity: int
+        -residents: int
+    }
+
+    class CommercialBuilding
+    class IndustrialBuilding
+    class PowerPlant
+    class Park
+    class Hospital
+    class WasteManagementCenter
+    class Road
+
+    class PowerNetwork {
+        -totalGenerated: int
+        -totalConsumed: int
     }
 
     class PolicyStrategy {
         <<interface>>
-        +getModifiers() PolicyModifiers
+        +getModifiers()
     }
 
-    class PolicyModifiers {
-        -pollutionMultiplier: double
-        -industrialBudgetMultiplier: double
-        -fixedBudgetChange: double
+    class DisasterManager {
+        +triggerEarthquake()
     }
 
-    City "1" o-- "1" Grid
-    City "1" o-- "1" CityState
-    City "1" o-- "1" PowerNetwork
-    City "1" o-- "1" PolicyStrategy
-    City "1" o-- "1" DisasterManager
-    Grid "1" *-- "400" Cell
-    Cell "1" o-- "0..1" Structure
-    CityState "1" *-- "1" PopulationGroup
-    PopulationManager ..> CityState : aggiorna
-    Structure <|-- StructureDecorator
-    StructureDecorator "1" o-- "1" Structure : wraps
-    PolicyStrategy ..> PolicyModifiers : crea
-    CityState ..> PolicyModifiers : usa
-    SaveLoadManager ..> City : serializza
+    %% --- LOGICAL RELATIONSHIPS ---
+    City "1" *-- "1" Grid : contains
+    City "1" *-- "1" CityState : tracks
+    City "1" *-- "1" PowerNetwork : manages
+    City "1" *-- "1" DisasterManager : handles events
+    
+    City "1" o-- "1" PolicyStrategy : applies policy
+    
+    Grid "1" *-- "400" Cell : composed of
+    
+    Cell "1" o-- "0..1" Structure : holds
+    
+    Structure <|-- ResidentialBuilding
+    Structure <|-- CommercialBuilding
+    Structure <|-- IndustrialBuilding
+    Structure <|-- PowerPlant
+    Structure <|-- Park
+    Structure <|-- Hospital
+    Structure <|-- WasteManagementCenter
+    Structure <|-- Road
+
+    Structure ..> PowerNetwork : consumes / produces
+    Structure ..> CityState : alters
 ```
 
 ---
 
 ## 2. System Sequence Diagrams
 
-Il diagramma seguente mostra le interazioni tra l'attore esterno (Player) e il Sistema visto come scatola nera. Documenta le 4 categorie di operazioni disponibili: costruzione/potenziamento, gestione simulazione, interrogazione dati e persistenza.
+I diagrammi seguenti mostra le interazioni tra l'attore esterno (Player) e il Sistema senza classi interne.
 
-```plantuml
-@startuml
-!theme vibrant
+```mermaid
+sequenceDiagram
+    actor Player
+    participant System as :System
 
-title System Sequence Diagram (SSD) — CityLogic
+    Note over Player, System: 1. Costruzione, Demolizione e Potenziamento
 
-actor Player
-participant ":System" as System
+    opt Costruisci
+        Player->>System: placeBuilding(type, x, y)
+        alt Budget sufficiente e posizione valida
+            System-->>Player: status: "OK"
+            Note right of System: Il sistema crea la struttura (tramite BuildingFactory),<br/>aggiorna budget e mappa.
+        else Errore di validazione o budget
+            System-->>Player: status: "Error: [reason]"
+        end
+    end
+    
+    opt Demolisci
+        Player->>System: demolish(x, y)
+        alt Cella occupata e demolibile
+            System-->>Player: status: "OK"
+            Note right of System: Rimuove la struttura e<br/>rimborsa una percentuale dei costi.
+        else Cella non valida
+            System-->>Player: status: "Error: Impossibile demolire"
+        end
+    end
+    
+    opt Potenzia
+        Player->>System: upgradeBuilding(x, y, upgradeType)
+        alt Requisiti soddisfatti
+            System-->>Player: status: "OK"
+            Note right of System: Applica l'upgrade (es. SeismicUpgrade)<br/>alla struttura.
+        else Requisiti mancanti (es. Max livello)
+            System-->>Player: status: "Error: [reason]"
+        end
+    end
+```
 
-group Costruzione e Potenziamento
-    Player -> System: placeBuilding(type, x, y)
-    activate System
-    note right of System: Valida posizione, controlla budget,\ncrea struttura, aggiorna stato.
-    System --> Player: status: "OK" / "Error: [motivo]"
-    deactivate System
+```mermaid
+sequenceDiagram
+    actor Player
+    participant System as :System
 
-    Player -> System: demolish(x, y)
-    activate System
-    note right of System: Valida posizione, rimuove struttura,\nrimborsa il 50% netto del costo.
-    System --> Player: status: "OK"
-    deactivate System
+    Note over Player, System: 2. Gestione e Avanzamento Simulazione
 
-    Player -> System: upgradeBuilding(x, y, upgradeType)
-    activate System
-    note right of System: Applica Decorator (SEISMIC o WASTE_THERMAL)\nse budget sufficiente e livello < 3.
-    System --> Player: status: "OK" / "Error: [motivo]"
-    deactivate System
+    opt Avanza Tempo (Tick)
+        Player->>System: advanceTick()
+        System-->>Player: tickResult (metrics, disasters/events)
+        Note right of System: Ricalcola i parametri, applica Policy,<br/>gestisce consumi, produzioni ed eventi (DisasterManager).
+    end
+    
+    opt Imposta Politica
+        Player->>System: setPolicy(policyType)
+        alt Cooldown passato
+            System-->>Player: status: "OK"
+        else Policy non applicabile / In cooldown
+            System-->>Player: status: "Error: [reason]"
+        end
+    end
+```
 
-    Player -> System: repairBuilding(x, y)
-    activate System
-    note right of System: Ripara edificio al costo (maxHp−hp)/2.
-    System --> Player: status: "OK" / "Error: budget insufficiente"
-    deactivate System
-end
 
-group Gestione Simulazione
-    Player -> System: advanceTick()
-    activate System
-    note right of System: Aggiorna flag powered/connectedToRoad,\napplica effetti di tutti gli edifici,\nricalcola policy, demografia e disastri.
-    System --> Player: updatedCityMetrics
-    deactivate System
 
-    Player -> System: setPolicy(policyType)
-    activate System
-    note right of System: Sostituisce la politica attiva;\nla precedente viene dismessa e l'utente notificato.
-    System --> Player: status: "OK"
-    deactivate System
-end
+```mermaid
+sequenceDiagram
+    actor Player
+    participant System as :System
 
-group Interrogazione Dati (Query)
-    Player -> System: getCityMetrics()
-    activate System
-    System --> Player: {budget, popolazione, happiness, health, pollution, waste}
-    deactivate System
+    Note over Player, System: 3. Persistenza Dati
 
-    Player -> System: getStructureDetails(x, y)
-    activate System
-    System --> Player: {tipo, hp, maxHp, powered, connectedToRoad} / "Cella vuota"
-    deactivate System
-end
-
-group Persistenza Dati
-    Player -> System: saveGame()
-    activate System
-    note right of System: Serializza griglia + metriche in JSON\nnella cartella saves/.
-    System --> Player: status: "OK" / "Error: I/O"
-    deactivate System
-
-    Player -> System: loadGame(fileName)
-    activate System
-    note right of System: Deserializza da JSON e ricostruisce\nla griglia con tutti gli upgrade.
-    System --> Player: tickCaricato
-    deactivate System
-end
-
-@enduml
+    opt Salva Partita
+        Player->>System: saveGame(fileName)
+        alt Scrittura I/O OK
+            System-->>Player: status: "OK"
+            Note right of System: Usa SaveDataMapper per<br/>serializzare lo stato.
+        else Errore I/O
+            System-->>Player: status: "Error: [reason]"
+        end
+    end
+    
+    opt Carica Partita
+        Player->>System: loadGame(fileName)
+        alt File valido e integrità OK
+            System-->>Player: loadedCityState
+            Note right of System: Distrugge stato corrente e ripristina<br/>il salvataggio via SaveDataApplier.
+        else File corrotto o assente
+            System-->>Player: status: "Error: File non valido"
+        end
+    end
 ```
 
 ---
 
 ## 3. Design Class Model
 
-Il modello di design riflette la struttura tecnica completa, incluso il layer UI e il facade. I pattern architetturali chiave sono:
+Il modello di design riflette la struttura tecnica completa, inclusi i layer di controllo. Per rendere più agevole la consultazione e il rendering in Mermaid, questo sistema complesso è stato **suddiviso in tre moduli separati**. I pattern architetturali e di design chiave implementati e visibili in questi diagrammi sono:
 
-- **Facade** — `SimulationController` è un wrapper leggero attorno a `GameController`; la UI non tocca mai il dominio direttamente.
-- **GRASP Controller** — `GameController` è l'unico punto di ingresso per le operazioni che mutano lo stato (place, demolish, repair, repairAll, upgrade, policy change, save/load).
-- **Strategy** — `PolicyStrategy` con 4 implementazioni; `CityState.resolveTick(PolicyModifiers)` applica i modificatori senza conoscere la policy concreta.
-- **Observer** — `City` notifica `StateObserver` (la UI) ad ogni tick; `DisasterManager` notifica `DisasterObserver` (le strutture) ad ogni terremoto.
-- **Decorator** — `StructureDecorator` avvolge `Structure` per aggiungere comportamento (dimezzamento danni, recupero termico) senza modificare le classi base.
-- **Factory** — `BuildingFactory` centralizza la costruzione di tutte le istanze `Structure` e la riapplicazione degli upgrade al caricamento del salvataggio.
-- **Template Method** — `Structure` definisce lo scheletro del ciclo di vita (decayTick, applyEffects, takeDamage); ogni sottoclasse sovrascrive solo `applyEffects()` e `getType()`.
+- **Facade** *(Modulo 1)* — `SimulationController` è un wrapper leggero attorno a `GameController`; la UI non tocca mai il dominio direttamente.
+- **GRASP Controller** *(Modulo 1)* — `GameController` è l'unico punto di ingresso per le operazioni che mutano lo stato (place, demolish, repair, repairAll, upgrade, policy change, save/load).
+- **Strategy** *(Modulo 3)* — `PolicyStrategy` con 4 implementazioni; `CityState.resolveTick(PolicyModifiers)` applica i modificatori senza conoscere la policy concreta.
+- **Observer** *(Modulo 3)* — `City` notifica gli `StateObserver` (la UI) ad ogni tick; `DisasterManager` notifica i `DisasterObserver` (le strutture) ad ogni terremoto.
+- **Decorator** *(Modulo 2)* — `StructureDecorator` avvolge `Structure` per aggiungere comportamento (dimezzamento danni, recupero termico) senza modificare le classi base.
+- **Factory** *(Modulo 2)* — `BuildingFactory` centralizza la costruzione di tutte le istanze `Structure` e la riapplicazione degli upgrade al caricamento del salvataggio.
+- **Template Method** *(Modulo 2)* — `Structure` definisce lo scheletro del ciclo di vita (decayTick, applyEffects, takeDamage); ogni sottoclasse sovrascrive solo `applyEffects()` e `getType()`.
+
+### 3.1 Architettura Core (Controller e Mondo)
 
 ```mermaid
 classDiagram
     direction TB
 
-    %% --- LAYER UI ---
-    class DashboardView {
-        +onStateChanged(state: CityState)
-        +launch()
-    }
-    class SimulationController {
-        +tick()
-        +placeBuilding(type, x, y) boolean
-        +demolish(x, y) boolean
-        +repair(x, y) boolean
-        +repairAll() boolean
-        +upgrade(x, y, type) boolean
-        +setPolicy(policy)
-        +saveManual(tick) Path
-        +load(path) int
-    }
-
-    %% --- DOMAIN CONTROLLER ---
     class GameController {
         -city: City
+        -ioManager: SaveLoadManager
+        +placeBuilding(type: String, x: int, y: int) boolean
+        +demolish(x: int, y: int) boolean
+        +repair(x: int, y: int) boolean
+        +upgradeBuilding(x: int, y: int, upgradeType: String) boolean
+        +changePolicy(policy: PolicyStrategy)
         +advanceTick()
-        +placeBuilding(type, x, y) boolean
-        +demolish(x, y) boolean
-        +repair(x, y) boolean
-        +repairAll() boolean
-        +upgradeBuilding(x, y, type) boolean
-        +changePolicy(policy)
-        +saveManualGame(tick) Path
-        +loadGame(path) int
     }
-
-    %% --- CORE DOMAIN ---
+    
     class City {
         -grid: Grid
         -state: CityState
         -powerNet: PowerNetwork
         -activePolicy: PolicyStrategy
         -disasterManager: DisasterManager
+        -observers: List~StateObserver~
         +advanceTick()
-        +setPolicy(PolicyStrategy)
-        +addObserver(StateObserver)
-        +notifyObserversPublic()
+        +setPolicy(policy: PolicyStrategy)
+        +addObserver(obs: StateObserver)
+        -updateState()
     }
 
     class Grid {
-        -matrix: Cell[][] 20x20
-        +getCell(x, y) Cell
-        +placeStructure(s, x, y)
-        +removeStructure(x, y)
-        +isCellEmpty(x, y) boolean
+        -width: int
+        -height: int
+        -matrix: Cell[][]
+        +getCell(x: int, y: int) Cell
+        +placeStructure(s: Structure, x: int, y: int)
+        +removeStructure(x: int, y: int)
     }
 
     class Cell {
+        -x: int
+        -y: int
         -structure: Placeable
         +getStructure() Placeable
+        +setStructure(structure: Placeable)
         +isEmpty() boolean
+    }
+
+    class Placeable {
+        <<interface>>
     }
 
     class CityState {
         -budget: double
         -population: int
         -happiness: double
-        -health: double
         -pollution: double
+        -health: double
         -wasteLevel: int
-        -populationGroup: PopulationGroup
-        +resolveTick(PolicyModifiers)
-        +updateBudget(double)
-        +setBudget(double)
-    }
-
-    class PopulationGroup {
-        -jobSatisfaction: double
-        -healthSatisfaction: double
-        -safetySatisfaction: double
-    }
-
-    class PopulationManager {
-        +updateDemographics(state, hasPower, maxCap, ...)
+        +resolveTick(modifiers: PolicyModifiers)
+        +updateBudget(amount: double)
     }
 
     class PowerNetwork {
-        +addProduction(int)
-        +addConsumption(int)
+        -totalGenerated: int
+        -totalConsumed: int
+        +registerProducer(amount: int)
+        +registerConsumer(amount: int)
         +hasEnoughPower() boolean
         +reset()
     }
 
+    class SaveLoadManager {
+        -mapper: ObjectMapper
+        +saveManual(city: City, tick: int) Path
+        +load(city: City, path: Path) int
+    }
+    
     class DisasterManager {
         -observers: List~DisasterObserver~
-        +addObserver(DisasterObserver)
-        +removeObserver(DisasterObserver)
-        +triggerEarthquake(CityState)
+        +triggerEarthquake(state: CityState)
     }
 
-    class SaveLoadManager {
-        +saveManual(City, tick) Path
-        +saveAuto(City, tick, sessionId) Path
-        +load(City, Path) int
-    }
-
-    class BuildingFactory {
-        <<utility>>
-        +createBuilding(type)$ Structure
+    class PopulationManager {
+        +updateDemographics()
     }
 
     class GridQueries {
         <<utility>>
-        +isPoweredAt(grid, x, y)$ boolean
-        +hasAdjacentRoad(grid, x, y)$ boolean
-        POWER_RADIUS = 5
+        +hasAdjacentRoad(grid: Grid, x: int, y: int)$ boolean
+        +isPoweredAt(grid: Grid, x: int, y: int)$ boolean
     }
 
-    %% --- INTERFACES ---
+    GameController "1" *-- "1" City : owns
+    City "1" *-- "1" Grid : owns
+    City "1" *-- "1" CityState : owns
+    City "1" *-- "1" PowerNetwork : owns
+    City "1" *-- "1" DisasterManager : owns
+    Grid "1" *-- "400" Cell : composed of
+    
+    GameController ..> SaveLoadManager : uses
+    GameController ..> GridQueries : uses
+    City ..> PopulationManager : uses
+    City ..> GridQueries : uses
+    SaveLoadManager ..> City : reads/writes
+    Cell o-- Placeable : holds
+```
+
+### 3.2 Strutture e Gerarchia degli Edifici (Template Method & Decorator)
+
+```mermaid
+classDiagram
+    direction TB
+
     class Placeable {
         <<interface>>
         +getType() StructureType
     }
-    class PolicyStrategy {
-        <<interface>>
-        +getModifiers() PolicyModifiers
-    }
-    class StateObserver {
-        <<interface>>
-        +onStateChanged(CityState)
-    }
-    class DisasterObserver {
-        <<interface>>
-        +onEarthquake(int)
+
+    class StructureType {
+        <<enumeration>>
+        RESIDENTIAL
+        INDUSTRIAL
+        COMMERCIAL
+        POWER_PLANT
+        PARK
+        ROAD
+        HOSPITAL
+        WASTE_CENTER
     }
 
-    %% --- STRUCTURES (Template Method) ---
     class Structure {
         <<abstract>>
         #hp: int
         #maxHp: int
+        #constructionCost: int
         #powered: boolean
         #connectedToRoad: boolean
-        +applyEffects(CityState, PowerNetwork)*
+        +applyEffects(state: CityState, powerNet: PowerNetwork)*
         +getType() StructureType*
-        +takeDamage(int) int
-        +decayTick()
+        +takeDamage(damage: int)
         +fullRepair()
     }
 
-    class ResidentialBuilding
-    class IndustrialBuilding
+    class ResidentialBuilding {
+        -capacity: int
+        -residents: int
+    }
+    class IndustrialBuilding {
+        -jobsProvided: int
+    }
     class CommercialBuilding
     class PowerPlant
     class Park
@@ -373,60 +366,20 @@ classDiagram
     class Hospital
     class WasteManagementCenter
 
-    %% --- DECORATORS ---
     class StructureDecorator {
         <<abstract>>
         #wrapped: Structure
-        +getUpgradeLevel() int
-        +collectUpgrades() List~String~
     }
-    class SeismicUpgrade {
-        COST = 500
-        +takeDamage(int) int
+    class SeismicUpgrade
+    class WasteThermalUpgrade
+
+    class BuildingFactory {
+        <<utility>>
+        +createBuilding(type: String)$ Structure
     }
-    class WasteThermalUpgrade {
-        COST = 700
-        +applyEffects(CityState, PowerNetwork)
-    }
-
-    %% --- STRATEGIES ---
-    class PolicyModifiers {
-        -pollutionMultiplier: double
-        -industrialBudgetMultiplier: double
-        -fixedBudgetChange: double
-        -fixedHappinessChange: double
-    }
-    class DefaultPolicy
-    class GreenPolicy
-    class AusterityPolicy
-    class FossilFuelPolicy
-
-    %% --- RELATIONSHIPS ---
-    DashboardView ..|> StateObserver
-    DashboardView --> SimulationController : usa
-    SimulationController --> GameController : delega
-
-    GameController "1" o-- "1" City
-    GameController ..> BuildingFactory : usa
-    GameController ..> GridQueries : usa
-
-    City "1" o-- "1" Grid
-    City "1" o-- "1" CityState
-    City "1" o-- "1" PowerNetwork
-    City "1" o-- "1" PolicyStrategy
-    City "1" o-- "1" DisasterManager
-    City "1" o-- "*" StateObserver : notifica
-    City ..> PopulationManager : usa
-
-    Grid "1" *-- "400" Cell
-    Cell "1" o-- "0..1" Placeable
-
-    CityState "1" *-- "1" PopulationGroup
-    CityState ..> PolicyModifiers : usa
-    PolicyStrategy ..> PolicyModifiers : crea
 
     Structure ..|> Placeable
-    Structure ..|> DisasterObserver
+    
     Structure <|-- ResidentialBuilding
     Structure <|-- IndustrialBuilding
     Structure <|-- CommercialBuilding
@@ -435,196 +388,568 @@ classDiagram
     Structure <|-- Road
     Structure <|-- Hospital
     Structure <|-- WasteManagementCenter
-
+    
     Structure <|-- StructureDecorator
     StructureDecorator "1" o-- "1" Structure : wraps
     StructureDecorator <|-- SeismicUpgrade
     StructureDecorator <|-- WasteThermalUpgrade
+
+    BuildingFactory ..> Structure : instantiates
+    Placeable ..> StructureType : returns
+    BuildingFactory ..> StructureType : uses
+```
+
+### 3.3 Politiche Economiche e Observer Pattern
+
+```mermaid
+classDiagram
+    direction TB
+
+    class PolicyStrategy {
+        <<interface>>
+        +getModifiers() PolicyModifiers
+    }
+    class StateObserver {
+        <<interface>>
+        +onStateChanged(state: CityState)
+    }
+    class DisasterObserver {
+        <<interface>>
+        +onEarthquake(magnitude: int)
+    }
+
+    class PolicyModifiers {
+        -pollutionMultiplier: double
+        -fixedBudgetChange: int
+        -happinessBonus: double
+    }
+
+    class DefaultPolicy
+    class GreenPolicy
+    class AusterityPolicy
+    class FossilFuelPolicy
+
+    class City {
+        -activePolicy: PolicyStrategy
+        -observers: List~StateObserver~
+        +setPolicy(policy: PolicyStrategy)
+        +addObserver(obs: StateObserver)
+    }
+
+    class DisasterManager {
+        -observers: List~DisasterObserver~
+        +addObserver(obs: DisasterObserver)
+    }
 
     DefaultPolicy ..|> PolicyStrategy
     GreenPolicy ..|> PolicyStrategy
     AusterityPolicy ..|> PolicyStrategy
     FossilFuelPolicy ..|> PolicyStrategy
 
-    DisasterManager ..> DisasterObserver : notifica
-    SaveLoadManager ..> BuildingFactory : usa
+    PolicyStrategy ..> PolicyModifiers : creates
+
+    City "1" o-- "1" PolicyStrategy : current policy
+    City "1" o-- "*" StateObserver : updates
+    DisasterManager "1" o-- "*" DisasterObserver : manages
+```
+
+### 3.4 Livello UI (User Interface e JavaFX)
+
+```mermaid
+classDiagram
+    direction TB
+
+    %% Classi esterne per evidenziare l'integrazione
+    class GameController {
+        <<Controller>>
+    }
+    class StateObserver {
+        <<interface>>
+    }
+    class CityState {
+        <<Domain>>
+    }
+
+    class SimulationController {
+        -view: DashboardView
+        -gameController: GameController
+    }
+
+    class DashboardView {
+        -mapGridView: MapGridView
+        -metricsPanel: MetricsPanel
+        -controlsBar: SimulationControlsBar
+        -buildToolbar: BuildToolbar
+        -chart: DashboardChart
+        +showEarthquakeWarning()
+        +onStateChanged(state: CityState)
+    }
+
+    class MapGridView {
+        -canvas: Canvas
+        +drawGrid()
+        +highlightCell()
+    }
+
+    class MetricsPanel {
+        +updateMetrics(state: CityState)
+        +log(message: String)
+    }
+
+    class SimulationControlsBar {
+        +setPlayPauseHandler()
+        +setPolicyHandler()
+    }
+
+    class BuildToolbar {
+        +setToolSelectionHandler()
+    }
+
+    class DashboardChart {
+        +addDataPoint(tick: int, state: CityState)
+    }
+
+    class DialogHelper {
+        <<utility>>
+        +showError()
+        +showSaveDialog()
+    }
+    
+    class IconCatalog {
+        <<utility>>
+    }
+
+    %% Relazioni interne UI
+    SimulationController "1" *-- "1" DashboardView : manages
+    DashboardView "1" *-- "1" MapGridView : contains
+    DashboardView "1" *-- "1" MetricsPanel : contains
+    DashboardView "1" *-- "1" SimulationControlsBar : contains
+    DashboardView "1" *-- "1" BuildToolbar : contains
+    DashboardView "1" *-- "1" DashboardChart : contains
+    DashboardView ..> DialogHelper : uses
+    DashboardView ..> IconCatalog : uses
+
+    %% Relazioni con il Core
+    SimulationController --> GameController : delegates commands
+    DashboardView ..|> StateObserver : implements
+    DashboardView ..> CityState : receives
+    MetricsPanel ..> CityState : reads data
+    DashboardChart ..> CityState : reads data
 ```
 
 ---
 
+
 ## 4. Internal Sequence Diagrams
 
-I tre diagrammi interni documentano le interazioni tra i componenti del dominio per le operazioni più significative, annotando i pattern GRASP e GoF applicati.
+I diagrammi interni documentano le interazioni tra i componenti del dominio per le operazioni più significative, annotando i pattern GRASP e GoF applicati.
 
 ### 4.1 advanceTick() — Flusso tick completo
 
-La UI delega al `SimulationController` (Facade), che delega al `GameController` (GRASP Controller). Il controller esegue una **pre-pass** per aggiornare i flag `powered` e `connectedToRoad` su ogni struttura, poi delega a `City` (Information Expert). `City` itera sugli edifici applicando gli effetti via polimorfismo (Template Method / GRASP Polymorphism), poi applica i modificatori della policy attiva (GoF Strategy) e aggiorna la demografia (`PopulationManager`). Infine notifica la UI via Observer.
-
 ```mermaid
 sequenceDiagram
-    participant UI as :DashboardView
-    participant SC as :SimulationController
-    participant GC as :GameController
-    participant City as :City
-    participant Grid as :Grid
-    participant S as :CityState
-    participant B as :Structure
-    participant P as activePolicy:PolicyStrategy
-    participant PM as :PopulationManager
-    participant DM as :DisasterManager
+    actor User
+    participant UI as SimulationController
+    participant GC as GameController
+    participant City as City
+    participant Grid as Grid
+    participant Queries as <<static>><br/>GridQueries
+    participant Structure as Structure
+    participant State as CityState
+    participant PowerNet as PowerNetwork
+    participant Policy as PolicyStrategy
+    participant Disaster as DisasterManager
+    participant PopManager as PopulationManager
+    participant Observer as StateObserver
 
-    UI->>SC: tick()
-    SC->>GC: advanceTick()
+    User->>UI: Avanza la simulazione<br/>(timer automatico o manuale)
+    activate UI
+    UI->>GC: advanceTick()
     activate GC
-    Note over GC: Pre-pass: aggiorna\npowered e connectedToRoad\nsu ogni struttura
 
-    GC->>Grid: itera celle
-    Grid-->>GC: strutture
-    GC->>B: setPowered(GridQueries.isPoweredAt(...))
-    GC->>B: setConnectedToRoad(GridQueries.hasAdjacentRoad(...))
+    %% Fase Pre-Pass
+    GC->>Grid: getCells()
+    activate Grid
+    Grid-->>GC: cells
+    deactivate Grid
 
+    loop per ogni cella non vuota
+        GC->>Structure: setPowered(GridQueries.isPoweredAt(...))
+        activate Structure
+        Structure-->>GC: ok
+        deactivate Structure
+
+        GC->>Structure: setConnectedToRoad(GridQueries.hasAdjacentRoad(...))
+        activate Structure
+        Structure-->>GC: ok
+        deactivate Structure
+    end
+
+    %% Fase Simulazione Dominio
     GC->>City: advanceTick()
     activate City
 
-    City->>S: reset delta accumulatori
-    City->>Grid: itera strutture
-    loop Per ogni struttura
-        City->>B: decayTick()
-        City->>B: applyEffects(S, powerNet)
-        activate B
-        Note right of B: Template Method Pattern
-        B->>S: updateBudget / updatePollution / ...
-        deactivate B
+    City->>City: tickStructuresPhase()
+    activate City
+    loop per ogni cella non vuota
+        City->>Structure: decayTick()
+        activate Structure
+        Structure-->>City: ok
+        deactivate Structure
+
+        City->>Structure: applyEffects(state, powerNet)
+        activate Structure
+        Structure->>State: modifica stato
+        Structure->>PowerNet: consuma/produce
+        Structure-->>City: ok
+        deactivate Structure
     end
-
-    City->>City: applicaEffettiParchi()
-    Note right of City: Bonus happiness ai Residenziali\nentro raggio Chebyshev 3
-
-    Note over City,P: Strategy Pattern
-    City->>P: getModifiers()
-    P-->>City: PolicyModifiers
-    City->>S: resolveTick(modifiers)
-    activate S
-    Note right of S: Applica moltiplicatori,\npenalità soglia, commit delta
-    deactivate S
-
-    City->>PM: updateDemographics(S, hasPower, ...)
-    activate PM
-    PM->>S: setPopulation(newPop)
-    deactivate PM
-
-    City->>DM: (1% prob) triggerEarthquake(S)
-    activate DM
-    Note right of DM: Observer Pattern:\nnotifica tutte le strutture
-    DM->>B: onEarthquake(damage)
-    deactivate DM
-
-    City->>UI: onStateChanged(S)
-    Note right of City: Observer Pattern:\naggiorna la dashboard
     deactivate City
+
+    City->>City: tickCapacityPhase(residentialCount)
+    activate City
+    opt popolazione > maxCapacity
+        City->>State: setOverpopulated(true)
+    end
+    deactivate City
+
+    City->>Policy: getModifiers()
+    activate Policy
+    Policy-->>City: modifiers
+    deactivate Policy
+
+    City->>State: resolveTick(modifiers)
+    activate State
+    State-->>City: ok
+    deactivate State
+
+    City->>City: tickDisastersPhase()
+    activate City
+    opt probabilità di terremoto raggiunta
+        City->>Disaster: triggerEarthquake(state)
+        activate Disaster
+        Disaster-->>City: ok
+        deactivate Disaster
+
+        City->>State: setEarthquakeOccurred(true)
+
+        loop per ogni Structure s distrutta dal sisma
+            City->>Grid: removeStructure(x, y)
+            City->>Disaster: removeObserver(s)
+        end
+
+        opt se almeno un edificio è crollato nel sisma
+            City->>City: updateRoadConnections()
+        end
+    end
+    deactivate City
+
+    City->>City: tickDemographicsPhase(...)
+    activate City
+    City->>PopManager: new PopulationManager()
+    City->>PopManager: updateDemographics(...)
+    activate PopManager
+    PopManager-->>City: ok
+    deactivate PopManager
+    deactivate City
+
+    City->>City: logTickSummary(...)
+
+    %% Notifica UI
+    City->>City: notifyObservers()
+    activate City
+    loop per ogni StateObserver registrato
+        City->>Observer: onStateChanged(state)
+        activate Observer
+        Observer-->>City: ok
+        deactivate Observer
+    end
+    deactivate City
+
+    City-->>GC: ok
+    deactivate City
+
+    GC-->>UI: ok
     deactivate GC
+
+    UI-->>User: Refresh della dashboard e mappa
+    deactivate UI
 ```
 
 ### 4.2 placeBuilding(type, x, y)
 
-Il `GameController` riceve la richiesta dalla UI tramite facade, usa `BuildingFactory` per istanziare la struttura (GoF Factory), valida le precondizioni (budget, cella libera, strada per i Residential) e piazza. In caso di successo notifica gli observer.
-
 ```mermaid
 sequenceDiagram
-    participant UI as :DashboardView
-    participant SC as :SimulationController
-    participant GC as :GameController
-    participant F as :BuildingFactory
-    participant City as :City
-    participant Grid as :Grid
-    participant S as :CityState
+    actor User
+    participant UI as SimulationController
+    participant GC as GameController
+    participant City as City
+    participant State as CityState
+    participant Factory as <<static>><br/>BuildingFactory
+    participant Grid as Grid
+    participant Queries as <<static>><br/>GridQueries
+    participant Structure as Structure
 
-    UI->>SC: placeBuilding(type, x, y)
-    SC->>GC: placeBuilding(type, x, y)
+    User->>UI: Richiesta posizionamento<br/>(click su cella vuota)
+    activate UI
+    UI->>GC: placeBuilding(type, x, y)
     activate GC
-    Note over GC: GRASP Controller
 
-    GC->>F: createBuilding(type)
-    activate F
-    Note right of F: Factory Pattern
-    F-->>GC: structure
-    deactivate F
+    GC->>GC: consumeOneShotEvents()
+    activate GC
+    GC->>City: getState()
+    activate City
+    City-->>GC: state
+    deactivate City
+    GC->>State: isEarthquakeOccurred()
+    activate State
+    State-->>GC: occurred
+    deactivate State
 
-    GC->>Grid: getCell(x, y)
-    Grid-->>GC: cell
-
-    alt cella occupata o fuori griglia
-        GC-->>SC: false (lastError = "Cell occupied")
-    else tipo RESIDENTIAL e nessuna Road adiacente
-        GC-->>SC: false (lastError = "Must build next to a Road")
-    else budget < constructionCost
-        GC-->>SC: false (lastError = "Insufficient budget")
-    else OK
-        GC->>Grid: placeStructure(structure, x, y)
-        GC->>S: setBudget(budget − cost)
-        GC->>City: addDisasterObserver(structure)
-        GC->>City: updateRoadConnections()
-        GC->>City: notifyObserversPublic()
-        Note right of City: Observer Pattern
-        City->>UI: onStateChanged(S)
-        GC-->>SC: true
+    opt occurred == true
+        GC->>State: setEarthquakeOccurred(false)
+        activate State
+        State-->>GC: ok
+        deactivate State
     end
     deactivate GC
+
+    GC->>Factory: createBuilding(type)
+    activate Factory
+    Factory-->>GC: building
+    deactivate Factory
+
+    GC->>City: getGrid()
+    activate City
+    City-->>GC: grid
+    deactivate City
+
+    GC->>Grid: getCell(x, y)
+    activate Grid
+    Grid-->>GC: cell
+    deactivate Grid
+
+    alt cell == null OR !cell.isEmpty()
+        GC->>GC: lastError = "Cell occupied or invalid."
+        GC-->>UI: false
+    else cell is valid and empty
+        GC->>Structure: getType()
+        activate Structure
+        Structure-->>GC: structureType
+        deactivate Structure
+
+        opt structureType == StructureType.RESIDENTIAL
+            GC->>City: getGrid()
+            activate City
+            City-->>GC: grid
+            deactivate City
+
+            GC->>Queries: hasAdjacentRoad(grid, x, y)
+            activate Queries
+            Queries-->>GC: hasRoad
+            deactivate Queries
+        end
+
+        alt structureType == StructureType.RESIDENTIAL AND !hasRoad
+            GC->>GC: lastError = "Must build next to a road!"
+            GC-->>UI: false
+        else road condition satisfied
+            GC->>City: getState()
+            activate City
+            City-->>GC: state
+            deactivate City
+
+            GC->>State: getBudget()
+            activate State
+            State-->>GC: budget
+            deactivate State
+
+            GC->>Structure: getConstructionCost()
+            activate Structure
+            Structure-->>GC: cost
+            deactivate Structure
+
+            alt budget < cost
+                GC->>GC: lastError = "Insufficient budget..."
+                GC-->>UI: false
+            else budget sufficient
+                GC->>Grid: placeStructure(building, x, y)
+                activate Grid
+                Grid-->>GC: ok
+                deactivate Grid
+
+                GC->>City: addDisasterObserver(building)
+                activate City
+                City-->>GC: ok
+                deactivate City
+
+                GC->>City: getState()
+                activate City
+                City-->>GC: state
+                deactivate City
+
+                GC->>State: getBudget()
+                activate State
+                State-->>GC: currentBudget
+                deactivate State
+
+                GC->>Structure: getConstructionCost()
+                activate Structure
+                Structure-->>GC: cost
+                deactivate Structure
+
+                GC->>State: setBudget(currentBudget - cost)
+                activate State
+                State-->>GC: ok
+                deactivate State
+
+                GC->>City: updateRoadConnections()
+                activate City
+                City-->>GC: ok
+                deactivate City
+
+                GC->>City: notifyObserversPublic()
+                activate City
+                City-->>GC: ok
+                deactivate City
+
+                GC-->>UI: true
+            end
+        end
+    end
+
+    deactivate GC
+    UI-->>User: Aggiornamento interfaccia<br/>e feedback visivo
+    deactivate UI
 ```
 
-### 4.3 saveGame() / loadGame()
-
-Il `GameController` delega I/O al `SaveLoadManager` (GRASP Pure Fabrication). Al salvataggio, `SaveDataMapper` estrae i DTO dal dominio. Al caricamento, `SaveDataApplier` ricostruisce la griglia usando `BuildingFactory` per ogni struttura e riapplica gli upgrade in ordine.
+### 4.3 changePolicy(policy)
 
 ```mermaid
 sequenceDiagram
-    participant UI as :DashboardView
-    participant SC as :SimulationController
-    participant GC as :GameController
-    participant IO as :SaveLoadManager
-    participant Mapper as :SaveDataMapper
-    participant Applier as :SaveDataApplier
-    participant F as :BuildingFactory
-    participant City as :City
+    actor User
+    participant UI as SimulationController
+    participant GC as GameController
+    participant City as City
+    participant DefaultPolicy as DefaultPolicy
 
-    Note over UI,City: === SALVATAGGIO ===
-    UI->>SC: saveManual(tick)
-    SC->>GC: saveManualGame(tick)
+    User->>UI: Seleziona una politica<br/>(o nessuna)
+    activate UI
+    UI->>GC: changePolicy(policy)
+    activate GC
+
+    alt policy == null
+        GC->>DefaultPolicy: new DefaultPolicy()
+        GC->>City: setPolicy(defaultPolicy)
+        activate City
+        City-->>GC: ok
+        deactivate City
+    else policy != null
+        GC->>City: setPolicy(policy)
+        activate City
+        City-->>GC: ok
+        deactivate City
+    end
+
+    GC-->>UI: ok
+    deactivate GC
+    UI-->>User: Aggiornamento interfaccia
+    deactivate UI
+```
+
+### 4.4 saveManualGame(tick)
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as SimulationController
+    participant GC as GameController
+    participant IO as SaveLoadManager
+    participant Mapper as <<static>><br/>SaveDataMapper
+    participant ObjMapper as ObjectMapper
+
+    User->>UI: Richiesta salvataggio manuale
+    activate UI
+    UI->>GC: saveManualGame(tick)
+    activate GC
+
     GC->>IO: saveManual(city, tick)
     activate IO
+
+    IO->>IO: filename = "save_" + timestamp + ".json"
+
+    IO->>IO: saveToFile(city, tick, filename)
+    activate IO
+
     IO->>Mapper: toSaveData(city, tick)
     activate Mapper
-    Note right of Mapper: GRASP Information Expert:\nestrae stato da City, Grid,\nCityState e decoratori
-    Mapper-->>IO: SaveData (DTO)
+    Mapper-->>IO: saveData
     deactivate Mapper
-    Note over IO: Jackson serializza SaveData → JSON\nnella cartella saves/
-    IO-->>GC: Path del file creato
+
+    IO->>ObjMapper: writeValue(file, saveData)
+    activate ObjMapper
+    ObjMapper-->>IO: ok
+    deactivate ObjMapper
+
+    IO-->>IO: file (Path)
     deactivate IO
 
-    Note over UI,City: === CARICAMENTO ===
-    UI->>SC: load(path)
-    SC->>GC: loadGame(path)
+    IO-->>GC: file (Path)
+    deactivate IO
+
+    GC-->>UI: file (Path)
+    deactivate GC
+
+    UI-->>User: Notifica salvataggio completato
+    deactivate UI
+```
+
+### 4.5 loadGame(path)
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as SimulationController
+    participant GC as GameController
+    participant IO as SaveLoadManager
+    participant ObjMapper as ObjectMapper
+    participant Applier as <<static>><br/>SaveDataApplier
+    participant City as City
+
+    User->>UI: Richiesta caricamento partita
+    activate UI
+    UI->>GC: loadGame(path)
+    activate GC
+
     GC->>IO: load(city, path)
     activate IO
-    Note over IO: Jackson deserializza JSON → SaveData
+
+    IO->>ObjMapper: readValue(file, SaveData.class)
+    activate ObjMapper
+    ObjMapper-->>IO: saveData
+    deactivate ObjMapper
+
     IO->>Applier: apply(city, saveData)
     activate Applier
-    Note right of Applier: GRASP Pure Fabrication:\nricostruisce il dominio dal DTO
-    loop Per ogni BuildingEntry in saveData.buildings
-        Applier->>F: createBuilding(entry.type)
-        F-->>Applier: structure
-        loop Per ogni upgrade in entry.upgrades
-            Applier->>F: applyUpgrade(structure, upgradeType)
-        end
-        Applier->>City: placeStructure(structure, x, y)
-        Applier->>City: restoreHp(structure, entry.hp)
-    end
-    Applier->>City: setCityState(saveData metrics)
-    Applier->>City: setPolicy(saveData.activePolicy)
+    Applier-->>IO: ok
     deactivate Applier
-    IO-->>GC: tick caricato
+
+    IO-->>GC: tick
     deactivate IO
+
     GC->>City: updateRoadConnections()
+    activate City
+    City-->>GC: ok
+    deactivate City
+
     GC->>City: notifyObserversPublic()
-    City->>UI: onStateChanged(state)
+    activate City
+    City-->>GC: ok
+    deactivate City
+
+    GC-->>UI: tick
+    deactivate GC
+
+    UI-->>User: Ripristino partita e interfaccia
+    deactivate UI
 ```

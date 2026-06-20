@@ -6,7 +6,7 @@ Il progetto *CityLogic* fa un uso intensivo e metodico dei pattern di progettazi
 
 ### 1. Strategy Pattern
 * **Contesto**: Gestione delle politiche economiche della città.
-* **Implementazione**: L'interfaccia `PolicyStrategy` definisce il contratto comune (es. `getModifiers()`). La classe `City` mantiene un riferimento all'interfaccia. Classi concrete come `DefaultPolicy`, `GreenPolicy` e `AusterityPolicy` incapsulano i diversi algoritmi e bonus fiscali/ambientali.
+* **Implementazione**: L'interfaccia `PolicyStrategy` definisce il contratto comune (es. `getModifiers()`). La classe `City` mantiene un riferimento all'interfaccia. Classi concrete come `DefaultPolicy`, `GreenPolicy`, `AusterityPolicy` e `FossilFuelPolicy` incapsulano i diversi algoritmi e bonus fiscali/ambientali.
 * **Vantaggi**: Rispetta il principio Open/Closed. Aggiungere una nuova politica economica richiede solo di creare una nuova classe che implementi `PolicyStrategy`, senza alterare il motore di simulazione.
 
 ### 2. Observer Pattern
