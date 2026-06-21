@@ -3,6 +3,9 @@ package it.citylife.model;
 import it.citylife.model.core.CityState;
 import it.citylife.model.disasters.DisasterManager;
 import it.citylife.model.disasters.DisasterObserver;
+import it.citylife.model.structures.ResidentialBuilding;
+import it.citylife.model.structures.Structure;
+import it.citylife.model.structures.upgrades.SeismicUpgrade;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,5 +67,31 @@ class DisasterManagerTest {
         double healthPrima = state.getHealth();
         dm.triggerEarthquake(state);
         assertTrue(state.getHealth() <= healthPrima);
+    }
+
+    @Test
+    @DisplayName("SeismicUpgrade dimezza il danno da terremoto rispetto a una struttura non potenziata (AC-24.2)")
+    void testSeismicUpgradeDimezzaDanno() {
+        DisasterManager dm = new DisasterManager();
+        CityState state = new CityState();
+
+        // Due strutture identiche (ResidentialBuilding, 300 HP): una nuda, una con rinforzo antisismico.
+        Structure nuda = new ResidentialBuilding();
+        Structure sismica = new SeismicUpgrade(new ResidentialBuilding());
+        int hpNudaPrima = nuda.getHp();
+        int hpSismicaPrima = sismica.getHp();
+
+        // Lo stesso terremoto notifica entrambe con il medesimo danno: la sismica lo dimezza internamente.
+        // Il danno massimo (magnitudo < 7 → < 245) resta sotto i 300 HP, quindi nessun floor a 0 falsa il confronto.
+        dm.addObserver(nuda);
+        dm.addObserver(sismica);
+        dm.triggerEarthquake(state);
+
+        int dannoNuda = hpNudaPrima - nuda.getHp();
+        int dannoSismica = hpSismicaPrima - sismica.getHp();
+
+        assertTrue(dannoNuda > 0, "La struttura non potenziata deve subire danno");
+        // Il danno sulla struttura sismica è la metà (divisione intera) di quello sulla nuda (AC-24.2)
+        assertEquals(dannoNuda / 2, dannoSismica);
     }
 }

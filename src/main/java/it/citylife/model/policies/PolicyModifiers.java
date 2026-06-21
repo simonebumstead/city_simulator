@@ -36,7 +36,6 @@ public class PolicyModifiers {
 
     // Moltiplicatore dedicato al budget degli edifici industriali (usato da FossilFuelPolicy)
     private double industrialBudgetMultiplier    = 1.0;
-    private double industrialPollutionMultiplier = 1.0;
 
     /** Crea un PolicyModifiers con tutti i valori neutri (moltiplicatori 1.0, flat 0). */
     public PolicyModifiers() {}
@@ -47,7 +46,6 @@ public class PolicyModifiers {
     public double getHealthGenerationMultiplier()    { return healthGenerationMultiplier; }
     public double getWasteGenerationMultiplier()     { return wasteGenerationMultiplier; }
     public double getIndustrialBudgetMultiplier()    { return industrialBudgetMultiplier; }
-    public double getIndustrialPollutionMultiplier() { return industrialPollutionMultiplier; }
 
     // --- Getter flat ---
     public double getFixedHappinessChange() { return fixedHappinessChange; }
@@ -71,9 +69,6 @@ public class PolicyModifiers {
 
     /** Imposta il moltiplicatore applicato al solo delta budget degli edifici industriali. */
     public PolicyModifiers setIndustrialBudgetMultiplier(double value) { this.industrialBudgetMultiplier = value; return this; }
-
-    /** Imposta il moltiplicatore applicato al solo delta inquinamento degli edifici industriali. */
-    public PolicyModifiers setIndustrialPollutionMultiplier(double value) { this.industrialPollutionMultiplier = value; return this; }
 
     // --- Setter flat (restituiscono this per method chaining) ---
 

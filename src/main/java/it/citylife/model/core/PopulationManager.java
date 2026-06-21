@@ -52,8 +52,11 @@ public class PopulationManager {
      *
      * Sequenza di operazioni:
      *   1. Calcola e aggiorna le soddisfazioni del PopulationGroup (AC-25.2/25.3)
-     *   2. Calcola il delta demografico pesato su happiness, health e pollution
-     *   3. Azzera l'effetto della felicità se la salute è critica (< 20)
+     *   2. Calcola il delta demografico come somma pesata delle tre soddisfazioni
+     *      (job/health/safety) e delle metriche generali happiness e health,
+     *      misurate rispetto a NEUTRAL_POINT (50), poi clampato in [MAX_DECLINE, MAX_GROWTH]
+     *   3. Blocca la crescita (deltaPop ≤ 0) se sussiste una condizione critica:
+     *      happiness < 25, health < 25, pollution > 75, o una soddisfazione < 25
      *   4. Blocca la crescita se nessun Residential è alimentato
      *   5. Applica malus diretti se la popolazione supera la capacità massima
      *   6. Aggiorna il contatore di popolazione (minimo garantito: 10)

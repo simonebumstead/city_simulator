@@ -443,7 +443,6 @@ classDiagram
         -healthGenerationMultiplier: double
         -wasteGenerationMultiplier: double
         -industrialBudgetMultiplier: double
-        -industrialPollutionMultiplier: double
         -fixedHappinessChange: double
         -fixedHealthChange: double
         -fixedPollutionChange: double
@@ -594,12 +593,12 @@ sequenceDiagram
     activate GC
 
     %% Fase Pre-Pass
-    GC->>Grid: getCells()
-    activate Grid
-    Grid-->>GC: cells
-    deactivate Grid
+    loop per ogni cella (x, y) della griglia
+        GC->>Grid: getCell(x, y)
+        activate Grid
+        Grid-->>GC: cell
+        deactivate Grid
 
-    loop per ogni cella non vuota
         GC->>Structure: setPowered(GridQueries.isPoweredAt(...))
         activate Structure
         Structure-->>GC: ok

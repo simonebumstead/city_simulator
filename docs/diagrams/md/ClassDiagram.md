@@ -240,7 +240,6 @@ classDiagram
         -healthGenerationMultiplier: double
         -wasteGenerationMultiplier: double
         -industrialBudgetMultiplier: double
-        -industrialPollutionMultiplier: double
         -fixedHappinessChange: double
         -fixedHealthChange: double
         -fixedPollutionChange: double

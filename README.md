@@ -17,16 +17,16 @@ Ogni decisione ha conseguenze concrete e durature: un'area industriale aumenta i
 
 La città si costruisce posizionando sulla griglia 8 tipi di struttura, ognuna con effetti specifici sulle metriche:
 
-| Edificio | Costo | Effetti principali | Note |
+| Edificio | Costo | Effetti principali (per tick) | Note |
 |----------|------:|--------------------|------|
-| **Strada** | 100 | Connette gli edifici alla rete viaria | Richiesta da Residenziali per funzionare |
-| **Residenziale** | 500 | +budget (tasse), +felicità, +rifiuti/tick | Richiede strada adiacente e alimentazione |
-| **Commerciale** | 750 | +budget, +felicità | Richiede strada adiacente e alimentazione |
-| **Industriale** | 1.000 | +budget (elevato), +inquinamento, −felicità | Richiede strada adiacente e alimentazione |
-| **Centrale Elettrica** | 2.000 | Alimenta tutti gli edifici entro raggio 5 | +inquinamento, −felicità |
-| **Parco** | 300 | −inquinamento, +felicità, +salute | Bonus +2 felicità ai Residenziali nel raggio 3 |
-| **Ospedale** | 1.200 | +salute, +felicità | Copre fino a 400 residenti; richiede alimentazione |
-| **Centro Raccolta Rifiuti** | 900 | −rifiuti/tick | Controbilancia i rifiuti prodotti dai Residenziali |
+| **Strada** | 100 | +0.1 inquinamento (traffico) | Connette gli edifici; richiesta dai Residenziali per funzionare |
+| **Residenziale** | 500 | +2 budget (tasse), +0.2 felicità, +1 rifiuti | Richiede strada adiacente e alimentazione |
+| **Commerciale** | 750 | +15 budget, +1 felicità, +0.3 inquinamento | Richiede strada adiacente e alimentazione |
+| **Industriale** | 1.000 | +30 budget, +2.5 inquinamento, −1 felicità, −0.8 salute | Richiede strada adiacente e alimentazione |
+| **Centrale Elettrica** | 2.000 | +250 energia (raggio 5), −20 budget, +3.5 inquinamento, −1 felicità, −1 salute | Alimenta gli edifici entro raggio Chebyshev 5 |
+| **Parco** | 300 | −0.5 inquinamento, +1.5 felicità, +1 salute, −10 budget | Bonus +2 felicità ai Residenziali nel raggio 3; −3 inquinamento globale |
+| **Ospedale** | 1.200 | +10 salute, +0.5 felicità, −25 budget | Copre fino a 400 residenti; richiede alimentazione |
+| **Centro Raccolta Rifiuti** | 900 | −10 rifiuti, −20 budget | Controbilancia i rifiuti dei Residenziali; richiede alimentazione |
 
 Gli edifici non alimentati da una Centrale Elettrica non producono effetti e vengono evidenziati visivamente sulla mappa. Ogni struttura (eccetto le Strade) perde 1 HP per tick: se scende sotto il 20% dell'HP massimo viene segnalata come critica.
 
@@ -127,7 +127,7 @@ mvn javafx:run
 | **Jackson Databind** (`com.fasterxml.jackson.core:jackson-databind`) | 2.15.2 | Serializzazione e deserializzazione JSON per il salvataggio e caricamento delle partite (`SaveLoadManager`) |
 | **Ikonli JavaFX** (`org.kordamp.ikonli:ikonli-javafx`) | 12.3.1 | Integrazione di icone vettoriali SVG in componenti JavaFX (`FontIcon`) |
 | **Ikonli FontAwesome 5** (`org.kordamp.ikonli:ikonli-fontawesome5-pack`) | 12.3.1 | Pack di icone FontAwesome 5 Solid usate nella mappa, toolbar e pannelli (`IconCatalog`) |
-| **JUnit Jupiter** (`org.junit.jupiter`) | 5.10.0 | Framework per i test automatizzati (scope `test`); 151 test, 0 failure |
+| **JUnit Jupiter** (`org.junit.jupiter`) | 5.10.0 | Framework per i test automatizzati (scope `test`); 162 test, 0 failure |
 
 ---
 

@@ -148,6 +148,18 @@ class CityStateTest {
         assertEquals(100.0, state.getHealth(), 0.001);
     }
 
+    // ── Salute vs inquinamento (AC-09.3) ─────────────────────────────────────
+
+    @Test
+    @DisplayName("Pollution > 30 riduce la health nel resolveTick (AC-09.3)")
+    void testPollutionReducesHealth() {
+        // Inquinamento oltre la soglia di 30: penalità = (50-30)*0.15 = 3.0 → health -= 3.0*1.5 = 4.5
+        state.setPollution(50.0);
+        state.resolveTick(defaultMod);
+        // health = 100 - 4.5 = 95.5
+        assertEquals(95.5, state.getHealth(), 0.001);
+    }
+
     // ── Waste penalty (AC-18.2) ──────────────────────────────────────────────
 
     @Test
